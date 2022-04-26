@@ -43,6 +43,17 @@ namespace BrinksAPI.Controllers
                 UniversalShipmentData universalShipmentData = new UniversalShipmentData();
                 Shipment shipment = new Shipment();
 
+                if(document.DocumentReference == DocumentReferenceType.SHIPMENT)
+                {
+
+                }
+                else if(document.DocumentReference == DocumentReferenceType.MAWB)
+                { 
+                
+                }
+                else if(document.DocumentReference == DocumentReferenceType.CUSTOMER){
+
+                }
                 #region Data Context
                 DataContext dataContext = new DataContext();
                 DataTarget dataTarget = new DataTarget();
