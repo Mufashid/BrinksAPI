@@ -6,20 +6,22 @@ namespace BrinksAPI.Models
     #region Document
     public class BrinksDocument
     {
-        [Required]
+        [Key]
+        public int Id { get; set; }
+        [Required(ErrorMessage ="Request ID is required")]
         public string? RequestId { get; set; }
         [Required]
         public string? CWDocumentId { get; set; }
         [Required]
         //[MaxLength(5)]
         [EnumDataType(typeof(DocumentType))]
-        public DocumentType DocumentTypeCode { get; set; }
+        public DocumentType? DocumentTypeCode { get; set; }
         [Required]
         [MaxLength(100)]
         public string? FileName { get; set; }
         [Required]
         //[MaxLength(20)]
-        public DocumentReferenceType DocumentReference { get; set; }
+        public DocumentReferenceType? DocumentReference { get; set; }
 
         [Required]
         [MaxLength(20)]
@@ -30,7 +32,7 @@ namespace BrinksAPI.Models
 
         [Required]
         //[MaxLength(4)]
-        public DocumentFormatType DocumentFormat { get; set; }
+        public DocumentFormatType? DocumentFormat { get; set; }
         [Required]
         [MaxLength(255)]
         public string? DocumentDescription { get; set; }
@@ -83,8 +85,7 @@ namespace BrinksAPI.Models
     public enum DocumentReferenceType
     {
         SHIPMENT,
-        MAWB,
-        CUSTOMER
+        MAWB
     }
     #endregion
 

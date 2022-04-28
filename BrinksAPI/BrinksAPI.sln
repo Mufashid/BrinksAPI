@@ -7,9 +7,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrinksAPI", "BrinksAPI.cspr
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DEPENDENCIES", "DEPENDENCIES", "{BA42AB8B-AF0D-4466-84EB-52F140AD81A1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Cargowise", "..\Cargowise\Cargowise.csproj", "{9083DD16-2E70-4140-9282-FE643678625A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Cargowise", "..\Cargowise\Cargowise.csproj", "{9083DD16-2E70-4140-9282-FE643678625A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "eAdaptor", "..\eAdaptor\eAdaptor.csproj", "{993E05B9-9673-41CB-90C5-F0564CC7A5E9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "eAdaptor", "..\eAdaptor\eAdaptor.csproj", "{993E05B9-9673-41CB-90C5-F0564CC7A5E9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{756CAC55-E3D3-4F0D-AFD2-86019B54CE9C}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

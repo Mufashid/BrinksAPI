@@ -4,16 +4,19 @@ using System.Net;
 using eAdaptor;
 using BrinksAPI.Helpers;
 using Cargowise;
+using System.Xml.Serialization;
+using BrinksAPI.Auth;
 
 namespace BrinksAPI.Controllers
 {
     public class DocumentController : Controller
     {
         private readonly IConfigManager Configuration;
-
-        public DocumentController(IConfigManager _configuration)
+        private readonly ApplicationDbContext _context;
+        public DocumentController(IConfigManager _configuration, ApplicationDbContext applicationDbContext)
         {
             Configuration = _configuration;
+            _context = applicationDbContext;
         }
 
         #region GET DOCUMENT GET /api/document/
@@ -29,36 +32,101 @@ namespace BrinksAPI.Controllers
         }
         #endregion
 
-        #region Create Document POST /api/document
+        #region CREATE DOCUMENT POST /api/document
         [HttpPost]
         [Route("api/document/")]
         public IActionResult Create(BrinksDocument document)
         {
-            string response;
+            Response dataResponse = new Response();
             try
             {
                 if (!ModelState.IsValid)
-                    return BadRequest();
+                {
+                    //dataResponse.Status = "Validation Error";
+                    //dataResponse.Message = String.Format("{0} Error found", ModelState.ErrorCount);
+                    //dataResponse.Data = ModelState.ToString();
+                    return BadRequest(ModelState);
+                }
 
                 UniversalShipmentData universalShipmentData = new UniversalShipmentData();
                 Shipment shipment = new Shipment();
 
-                if(document.DocumentReference == DocumentReferenceType.SHIPMENT)
+                string? documentReferenceId = document.DocumentReferenceId;
+                if (document.DocumentReference == DocumentReferenceType.MAWB)
                 {
+                    Events.UniversalEventData universalEventData = new Events.UniversalEventData();
+                    Events.Event @event = new Events.Event();
 
-                }
-                else if(document.DocumentReference == DocumentReferenceType.MAWB)
-                { 
-                
-                }
-                else if(document.DocumentReference == DocumentReferenceType.CUSTOMER){
+                    #region Data Context
+                    Events.DataContext eventDataContext = new Events.DataContext();
+                    Events.DataTarget eventDataTarget = new Events.DataTarget();
+                    eventDataTarget.Type = "ForwardingShipment";
 
+                    List<Events.DataTarget> eventDataTargets = new List<Events.DataTarget>();
+                    eventDataTargets.Add(eventDataTarget);
+                    eventDataContext.DataTargetCollection = eventDataTargets.ToArray();
+
+                    Events.Company eventCompany = new Events.Company();
+                    eventCompany.Code =Configuration.CompanyCode;
+                    eventDataContext.Company = eventCompany;
+
+                    eventDataContext.DataProvider = Configuration.ServiceDataProvider;
+                    eventDataContext.EnterpriseID = Configuration.EnterpriseId;
+                    eventDataContext.ServerID = Configuration.ServerId;
+
+                    @event.DataContext = eventDataContext;
+                    #endregion
+
+                    @event.EventTime = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff");
+                    @event.EventType = "Z00";
+                    @event.IsEstimate = true;
+
+                    List<Events.Context> contexts = new List<Events.Context>();
+                    Events.Context context = new Events.Context();
+                    Events.ContextType contextType = new Events.ContextType();
+                    contextType.Value = "HAWBNumber";
+                    context.Type = contextType;
+                    context.Value = document.DocumentReferenceId;
+                    contexts.Add(context);
+
+                    @event.ContextCollection = contexts.ToArray();
+                    universalEventData.Event = @event;
+
+                    string eventXML = Utilities.Serialize(universalEventData);
+                    var eventResponse = Services.SendToCargowise(eventXML,Configuration.URI, Configuration.Username, Configuration.Password);
+                    if (eventResponse.Status != "ERROR" && eventResponse.Data.Status == "PRS")
+                    {
+                        string stringXML = eventResponse.Data.Data.OuterXml.ToString();
+                        Events.UniversalEventData eventResult = new Events.UniversalEventData();
+                        using (TextReader reader = new StringReader(stringXML))
+                        {
+                            var serializer = new XmlSerializer(typeof(Events.UniversalEventData));
+                            eventResult = (Events.UniversalEventData)serializer.Deserialize(reader);
+                        }
+
+
+                        bool isHouseBill = eventResult.Event.EventType == "DIM";
+                        if (isHouseBill)
+                        {
+                            documentReferenceId = eventResult.Event.DataContext.DataSourceCollection.Where(s => s.Type == "ForwardingShipment").First().Key;
+                        }
+                        else
+                        {
+                            dataResponse.Status = "Not Found";
+                            dataResponse.Message = String.Format("Housbill {0} Number is invalid.", documentReferenceId);
+                            return BadRequest(dataResponse);
+                        }
+
+
+                    }
                 }
+
+
                 #region Data Context
                 DataContext dataContext = new DataContext();
                 DataTarget dataTarget = new DataTarget();
                 dataTarget.Type = "ForwardingShipment";
-                dataTarget.Key = document.DocumentReferenceId;
+                dataTarget.Key = documentReferenceId;
 
                 List<DataTarget> dataTargets = new List<DataTarget>();
                 dataTargets.Add(dataTarget);
@@ -76,28 +144,33 @@ namespace BrinksAPI.Controllers
 
                 #endregion
 
-                //universalShipmentData.Shipment = shipment;
-                //string shipmentXML = Utilities.Serialize(universalShipmentData);
-                //dataResponse = SendToCargowise(shipmentXML, username, password);
-                //if (dataResponse.Status == "ERROR")
-                //{
-                //    dataResponse.Status = "Not Found";
-                //    dataResponse.Message = String.Format("{0} not found", id);
-                //    dataResponse.data = null;
-                //    return Content(HttpStatusCode.NotFound, dataResponse);
-                //}
+                universalShipmentData.Shipment = shipment;
+                string shipmentXML = Utilities.Serialize(universalShipmentData);
+                var shipmentResponse = Services.SendToCargowise(shipmentXML, Configuration.URI, Configuration.Username, Configuration.Password);
+                if (shipmentResponse.Status == "ERROR")
+                {
+                    dataResponse.Status = "Not Found";
+                    dataResponse.Message = String.Format("Shipment {0} not found in the CW.", documentReferenceId);
+                    return NotFound(dataResponse);
+                }
 
 
                 #region Document
                 List<AttachedDocument> attachedDocuments = new List<AttachedDocument>();
                 AttachedDocument attachedDocument = new AttachedDocument();
+
                 attachedDocument.FileName = document.FileName;
                 attachedDocument.ImageData = document.DocumentContent;
                 
+                string documentTypeInDB = _context.documentTypes
+                    .Where(d => d.BrinksCode == document.DocumentTypeCode.Value.ToString())
+                    .SingleOrDefault()
+                    .CWCode;
                 DocumentType documentType = new DocumentType();
-                documentType.Code = document.DocumentFormat.ToString();
+                documentType.Code = documentTypeInDB;
                 documentType.Description = document.DocumentDescription;
                 attachedDocument.Type = documentType;
+                
                 attachedDocument.IsPublishedSpecified = true;
                 attachedDocument.IsPublished = true;
                  attachedDocument.SaveDateUTC = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.f");
@@ -111,15 +184,22 @@ namespace BrinksAPI.Controllers
                 universalShipmentData.Shipment = shipment;
 
                 string xml = Utilities.Serialize(universalShipmentData);
-                response = Services.SendToCargowise(xml,Configuration.URI, Configuration.Username, Configuration.Password);
+                var documentResponse = Services.SendToCargowise(xml,Configuration.URI, Configuration.Username, Configuration.Password);
+                dataResponse.Status = "SUCCESS";
+                dataResponse.Message = "Successfully created the document.";
+                dataResponse.Data = documentResponse.Data.Data.OuterXml;
 
             }
             catch (Exception ex)
             {
+                dataResponse.Status = "Internal Error";
+                dataResponse.Message = ex.Message;
                 return BadRequest(ex.Message);
             }
-            return Ok(response);
-        } 
+            return Created("",dataResponse);
+        }
         #endregion
+
+        
     }
 }

@@ -16,5 +16,7 @@ namespace BrinksAPI.Auth
             base.OnModelCreating(builder);
         }
         public DbSet<DB.ServiceLevel> serviceLevels { get; set; }
+        public DbSet<BrinksDocument> documents { get; set; }
+        public DbSet<DB.DocumentType> documentTypes { get; set; }
     }
 }

@@ -22,5 +22,14 @@ namespace BrinksAPI.Models
             public string Description { get; set; }
 
         }
+    public class DocumentType
+        {
+            [Key]
+            public int Id { get; set; }
+            [Required]
+            public string BrinksCode { get; set; }
+            [Required]
+            public string CWCode { get; set; }
+        }
     }
 }

@@ -237,7 +237,7 @@ namespace BrinksAPI.Controllers
                 universalShipmentData.Shipment = shipment;
 
                 string xml = Utilities.Serialize(universalShipmentData);
-                responseData = Services.SendToCargowise(xml, Configuration.URI, Configuration.Username, Configuration.Password);
+                //responseData = Services.SendToCargowise(xml, Configuration.URI, Configuration.Username, Configuration.Password);
 
             }
             catch (Exception ex)

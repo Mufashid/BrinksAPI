@@ -1,15 +1,17 @@
-﻿using System.IO.Compression;
+﻿using eAdaptor.Entities;
+using System.IO.Compression;
 using System.Net;
 using System.Text;
+using System.Xml.Serialization;
 
 namespace eAdaptor
 {
     public class Services
     {
         #region Send XML to CW
-        public static string SendToCargowise(string xml, string uri,string username, string password)
+        public static XMLDataResponse SendToCargowise(string xml, string uri,string username, string password)
         {
-            string responseData = "";
+            XMLDataResponse responseData = new XMLDataResponse();
             try
             {
                 var client = new HttpXmlClient(new Uri(uri), true, username, password);
@@ -19,7 +21,6 @@ namespace eAdaptor
                     var responseStatus = response.StatusCode;
                     if (responseStatus == HttpStatusCode.OK)
                     {
-
                         if (response.Content != null)
                         {
                             var stream = response.Content.ReadAsStreamAsync().Result;
@@ -31,9 +32,20 @@ namespace eAdaptor
 
                             using (var reader = new StreamReader(stream))
                             {
-                                responseData = reader.ReadToEnd();
+                                var serializer = new XmlSerializer(typeof(UniversalResponseData));
+                                UniversalResponseData result = (UniversalResponseData)serializer.Deserialize(reader);
+
+                                bool isError = result.Data.InnerText.Contains("Error");
+                                responseData.Status = isError ? "ERROR" : "SUCCESS";
+                                responseData.Message = isError ? "Please fix the errors." : "Successfull";
+                                responseData.Data = result;
                             }
                         }
+                    }
+                    else
+                    {
+                        responseData.Status = "ERROR";
+                        responseData.Message = response.ReasonPhrase;
                     }
                 }
             }
@@ -46,5 +58,7 @@ namespace eAdaptor
 
         }
         #endregion
+
+
     }
 }

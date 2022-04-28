@@ -2,7 +2,6 @@
 
 namespace Cargowise
 {
-
     public class CargoWiseConfig:IConfigManager
     {
         private readonly IConfiguration Configuration;

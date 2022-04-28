@@ -62,7 +62,7 @@ namespace BrinksAPI.Controllers
 
         [HttpPost]
         [Authorize(Roles = UserRoles.Admin)]
-        [Route("register")]
+        [Route("register/user")]
         public async Task<IActionResult> Register([FromBody] Register model)
         {
             var userExists = await _userManager.FindByNameAsync(model.Username);
@@ -83,7 +83,7 @@ namespace BrinksAPI.Controllers
         }
 
         [HttpPost]
-        [Route("register-admin")]
+        [Route("register/admin")]
         public async Task<IActionResult> RegisterAdmin([FromBody] Register model)
         {
             var userExists = await _userManager.FindByNameAsync(model.Username);
