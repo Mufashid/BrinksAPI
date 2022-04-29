@@ -6,7 +6,7 @@ namespace BrinksAPI.Controllers
     [Authorize]
     //[ApiController]
     [Route("[controller]")]
-    [ApiExplorerSettings(IgnoreApi = true)]
+    //[ApiExplorerSettings(IgnoreApi = true)]
     public class WeatherForecastController : ControllerBase
     {
         private static readonly string[] Summaries = new[]
@@ -24,6 +24,8 @@ namespace BrinksAPI.Controllers
         [HttpGet(Name = "GetWeatherForecast")]
         public IEnumerable<WeatherForecast> Get()
         {
+            _logger.LogDebug(string.Format("test"));
+            _logger.LogError("Tets test");
             return Enumerable.Range(1, 5).Select(index => new WeatherForecast
             {
                 Date = DateTime.Now.AddDays(index),

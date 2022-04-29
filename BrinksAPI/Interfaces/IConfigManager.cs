@@ -1,4 +1,4 @@
-﻿namespace Cargowise
+﻿namespace BrinksAPI.Interfaces
 {
     public interface IConfigManager
     {

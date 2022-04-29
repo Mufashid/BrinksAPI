@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using eAdaptor;
 using BrinksAPI.Helpers;
-using Cargowise;
 using System.Xml.Serialization;
 using BrinksAPI.Auth;
+using BrinksAPI.Interfaces;
 
 namespace BrinksAPI.Controllers
 {
@@ -33,6 +33,24 @@ namespace BrinksAPI.Controllers
         #endregion
 
         #region CREATE DOCUMENT POST /api/document
+        /// <summary>
+        /// Creates a Documents.
+        /// </summary>
+        /// <param name="item"></param>
+        /// <returns>A newly created TodoItem</returns>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     POST /Todo
+        ///     {
+        ///        "id": 1,
+        ///        "name": "Item #1",
+        ///        "isComplete": true
+        ///     }
+        ///
+        /// </remarks>
+        /// <response code="201">Returns the newly created document</response>
+        /// <response code="400">If the item is null</response>
         [HttpPost]
         [Route("api/document/")]
         public IActionResult Create(BrinksDocument document)
@@ -93,7 +111,7 @@ namespace BrinksAPI.Controllers
                     universalEventData.Event = @event;
 
                     string eventXML = Utilities.Serialize(universalEventData);
-                    var eventResponse = Services.SendToCargowise(eventXML,Configuration.URI, Configuration.Username, Configuration.Password);
+                    var eventResponse =eAdaptor.Services.SendToCargowise(eventXML,Configuration.URI, Configuration.Username, Configuration.Password);
                     if (eventResponse.Status != "ERROR" && eventResponse.Data.Status == "PRS")
                     {
                         string stringXML = eventResponse.Data.Data.OuterXml.ToString();
@@ -146,7 +164,7 @@ namespace BrinksAPI.Controllers
 
                 universalShipmentData.Shipment = shipment;
                 string shipmentXML = Utilities.Serialize(universalShipmentData);
-                var shipmentResponse = Services.SendToCargowise(shipmentXML, Configuration.URI, Configuration.Username, Configuration.Password);
+                var shipmentResponse = eAdaptor.Services.SendToCargowise(shipmentXML, Configuration.URI, Configuration.Username, Configuration.Password);
                 if (shipmentResponse.Status == "ERROR")
                 {
                     dataResponse.Status = "Not Found";
@@ -184,7 +202,7 @@ namespace BrinksAPI.Controllers
                 universalShipmentData.Shipment = shipment;
 
                 string xml = Utilities.Serialize(universalShipmentData);
-                var documentResponse = Services.SendToCargowise(xml,Configuration.URI, Configuration.Username, Configuration.Password);
+                var documentResponse = eAdaptor.Services.SendToCargowise(xml,Configuration.URI, Configuration.Username, Configuration.Password);
                 dataResponse.Status = "SUCCESS";
                 dataResponse.Message = "Successfully created the document.";
                 dataResponse.Data = documentResponse.Data.Data.OuterXml;

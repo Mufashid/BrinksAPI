@@ -1,12 +1,12 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using BrinksAPI.Interfaces;
 
-namespace Cargowise
+namespace BrinksAPI.Services
 {
-    public class CargoWiseConfig:IConfigManager
+    public class Config: IConfigManager
     {
         private readonly IConfiguration Configuration;
 
-        public CargoWiseConfig(IConfiguration _configuration)
+        public Config(IConfiguration _configuration)
         {
             Configuration = _configuration;
         }
@@ -58,6 +58,7 @@ namespace Cargowise
             {
                 return Configuration["DataContext:CompanyCode"];
             }
-        }     
+        }
     }
 }
+

@@ -1,7 +1,8 @@
 ﻿using BrinksAPI.Auth;
 using BrinksAPI.Helpers;
+using BrinksAPI.Interfaces;
 using BrinksAPI.Models;
-using Cargowise;
+
 using eAdaptor;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,7 +25,7 @@ namespace BrinksAPI.Controllers
         #region Create Multiple Shipments
         [HttpPost]
         [Route("api/shipments/multiple")]
-        public IActionResult CreateMultipleShipments(BrinksMultipleShipment brinksShipment)
+        public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment brinksShipment)
         {
             string responseData = "";
             try

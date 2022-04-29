@@ -20,5 +20,6 @@ namespace BrinksAPI.Helpers
             }
         }
         #endregion
+
     }
 }

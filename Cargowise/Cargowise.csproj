@@ -7,6 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="CargoWiseConfig.cs" />
+    <Compile Remove="IConfigManager.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="Models\" />
   </ItemGroup>
 

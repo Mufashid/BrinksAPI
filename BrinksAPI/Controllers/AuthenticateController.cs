@@ -28,10 +28,11 @@ namespace BrinksAPI.Controllers
             _roleManager = roleManager;
             _configuration = configuration;
         }
-
+     
+        #region Login
         [HttpPost]
         [Route("login")]
-        public async Task<IActionResult> Login([FromBody] Login model)
+        public async Task<IActionResult> Login(Login model)
         {
             var user = await _userManager.FindByNameAsync(model.Username);
             if (user != null && await _userManager.CheckPasswordAsync(user, model.Password))
@@ -59,6 +60,9 @@ namespace BrinksAPI.Controllers
             }
             return Unauthorized();
         }
+        #endregion
+
+        #region User Register
 
         [HttpPost]
         [Authorize(Roles = UserRoles.Admin)]
@@ -81,7 +85,9 @@ namespace BrinksAPI.Controllers
 
             return Ok(new Response { Status = "Success", Message = "User created successfully!" });
         }
+        #endregion
 
+        #region Admin Register
         [HttpPost]
         [Route("register/admin")]
         public async Task<IActionResult> RegisterAdmin([FromBody] Register model)
@@ -115,7 +121,9 @@ namespace BrinksAPI.Controllers
             }
             return Ok(new Response { Status = "Success", Message = "User created successfully!" });
         }
+        #endregion
 
+        #region Generate Token
         private JwtSecurityToken GetToken(List<Claim> authClaims)
         {
             var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]));
@@ -129,7 +137,8 @@ namespace BrinksAPI.Controllers
                 );
 
             return token;
-        }
+        } 
+        #endregion
     }
 }
 
