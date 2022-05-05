@@ -52,6 +52,7 @@ options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddSwaggerGen(option =>
 {
+    option.CustomSchemaIds(type => type.ToString());
     option.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "BRINKS API",

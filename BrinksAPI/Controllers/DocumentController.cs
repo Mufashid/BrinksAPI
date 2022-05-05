@@ -6,9 +6,11 @@ using BrinksAPI.Helpers;
 using System.Xml.Serialization;
 using BrinksAPI.Auth;
 using BrinksAPI.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BrinksAPI.Controllers
 {
+    [Authorize]
     public class DocumentController : Controller
     {
         private readonly IConfigManager Configuration;
@@ -19,7 +21,7 @@ namespace BrinksAPI.Controllers
             _context = applicationDbContext;
         }
 
-        #region GET DOCUMENT GET /api/document/
+        #region GET DOCUMENT
         [HttpGet]
         [Route("api/document/")]
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -32,7 +34,7 @@ namespace BrinksAPI.Controllers
         }
         #endregion
 
-        #region CREATE DOCUMENT POST /api/document
+        #region CREATE DOCUMENT
         /// <summary>
         /// Creates a Documents.
         /// </summary>
@@ -44,8 +46,8 @@ namespace BrinksAPI.Controllers
         ///     POST /Todo
         ///     {
         ///        "id": 1,
-        ///        "name": "Item #1",
-        ///        "isComplete": true
+        ///        "RequestId": "Test",
+        ///        "CWDocumentID": "Test"
         ///     }
         ///
         /// </remarks>

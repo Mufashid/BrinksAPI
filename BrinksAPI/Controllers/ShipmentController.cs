@@ -9,16 +9,17 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BrinksAPI.Controllers
 {
-    //[Authorize]
+    [Authorize]
     //[ApiController]
     public class ShipmentController : Controller
     {
         private readonly IConfigManager Configuration;
 
         private readonly ApplicationDbContext _context;
-        public ShipmentController(IConfigManager _configuration)
+        public ShipmentController(IConfigManager _configuration, ApplicationDbContext applicationDbContext)
         {
             Configuration = _configuration;
+            _context = applicationDbContext;
 
         }
 
@@ -28,10 +29,16 @@ namespace BrinksAPI.Controllers
         public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment brinksShipment)
         {
             string responseData = "";
+            Response dataResponse = new Response();
             try
             {
                 if (!ModelState.IsValid)
-                    return BadRequest();
+                {
+                    //dataResponse.Status = "Validation Error";
+                    //dataResponse.Message = String.Format("{0} Error found", ModelState.ErrorCount);
+                    //dataResponse.Data = ModelState.ToString();
+                    return BadRequest(ModelState);
+                }
                 UniversalShipmentData universalShipmentData = new UniversalShipmentData();
                 Shipment shipment = new Shipment();
 
@@ -238,16 +245,22 @@ namespace BrinksAPI.Controllers
                 universalShipmentData.Shipment = shipment;
 
                 string xml = Utilities.Serialize(universalShipmentData);
-                //responseData = Services.SendToCargowise(xml, Configuration.URI, Configuration.Username, Configuration.Password);
+                var documentResponse = eAdaptor.Services.SendToCargowise(xml, Configuration.URI, Configuration.Username, Configuration.Password);
+                dataResponse.Status = "SUCCESS";
+                dataResponse.Message = "Successfully created the shipment.";
+                dataResponse.Data = documentResponse.Data.Data.OuterXml;
 
             }
             catch (Exception ex)
             {
+                dataResponse.Status = "Internal Error";
+                dataResponse.Message = ex.Message;
                 return BadRequest(ex.Message);
             }
 
-            return Created("", responseData);
+            return Created("", dataResponse);
         } 
         #endregion
+
     }
 }
