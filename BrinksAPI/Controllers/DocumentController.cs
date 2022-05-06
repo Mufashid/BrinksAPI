@@ -38,21 +38,31 @@ namespace BrinksAPI.Controllers
         /// <summary>
         /// Creates a Documents.
         /// </summary>
-        /// <param name="item"></param>
+        /// <param name="document"></param>
         /// <returns>A newly created TodoItem</returns>
         /// <remarks>
         /// Sample request:
         ///
-        ///     POST /Todo
+        ///     POST /api/document
         ///     {
         ///        "id": 1,
         ///        "RequestId": "Test",
-        ///        "CWDocumentID": "Test"
+        ///        "CWDocumentID": "Test",
+        ///        "DocumentTypeCode":"OTH",
+        ///        "FileName":"Tiny PreAlert.txt",
+        ///        "DocumentReference":"MAWB",
+        ///        "DocumentReferenceId":"12345678",
+        ///        "DocumentContent":"SGV5ISBXYWtlIFVwIQ==",
+        ///        "DocumentFormat":"PDF",
+        ///        "DocumentDescription":"Pre Alert",
+        ///        "UserId":"1234567"
+        ///        
         ///     }
         ///
         /// </remarks>
         /// <response code="201">Returns the newly created document</response>
-        /// <response code="400">If the item is null</response>
+        /// <response code="400">If the document parameter is null</response>
+        /// <response code="401">Unauthorized</response>
         [HttpPost]
         [Route("api/document/")]
         public IActionResult Create(BrinksDocument document)
@@ -179,6 +189,7 @@ namespace BrinksAPI.Controllers
                 List<AttachedDocument> attachedDocuments = new List<AttachedDocument>();
                 AttachedDocument attachedDocument = new AttachedDocument();
 
+                //string fileName = document.CWDocumentId + "_" + document.FileName;
                 attachedDocument.FileName = document.FileName;
                 attachedDocument.ImageData = document.DocumentContent;
                 

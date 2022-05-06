@@ -1,17 +1,19 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace BrinksAPI.Models
 {
 
     #region Document
+    [Keyless]
     public class BrinksDocument
     {
-        [Key]
-        public int Id { get; set; }
-        [Required(ErrorMessage ="Request ID is required")]
-        public string? RequestId { get; set; }
-        [Required]
-        public string? CWDocumentId { get; set; }
+        //[Key]
+        //public int Id { get; set; }
+        //[Required(ErrorMessage ="Request ID is required")]
+        //public string? RequestId { get; set; }
+        //[Required]
+        //public string? CWDocumentId { get; set; }
         [Required]
         //[MaxLength(5)]
         [EnumDataType(typeof(DocumentType))]

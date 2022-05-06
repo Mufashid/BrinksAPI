@@ -12,7 +12,6 @@ var builder = WebApplication.CreateBuilder(args);
 ConfigurationManager configuration = builder.Configuration;
 
 // Add services to the container.
-
 #region Entity Framework
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(configuration.GetConnectionString("ConnStr")));
 #endregion
@@ -103,39 +102,58 @@ builder.Services.AddSwaggerGen(option =>
 });
 #endregion
 
-
-
 builder.Services.AddEndpointsApiExplorer();
+
+#region Enum Converter
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
-    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
+#endregion
 
-// Reading Cargowise Configuaration From Appsettings.json
-//builder.Services.AddSingleton<IConfigManager, CargoWiseConfig>();
-builder.Services.AddSingleton<BrinksAPI.Interfaces.IConfigManager, BrinksAPI.Services.Config>();
+#region Reading Cargowise Configuaration From Appsettings.json
+builder.Services.AddSingleton<BrinksAPI.Interfaces.IConfigManager, BrinksAPI.Services.Config>(); 
+#endregion
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    // Customize Swagger UI
-    app.UseStaticFiles();
-    app.UseSwaggerUI(options =>
-    {
-        options.InjectStylesheet("/swagger-ui/css/custom.css");
-        options.InjectJavascript("/swgger-ui/js/custom.js");
-    });
+#region For Development
+//if (app.Environment.IsDevelopment())
+//{
+//} 
+#endregion
 
-}
+#region Swagger 
+app.UseSwagger();
+app.UseStaticFiles();
+app.UseSwaggerUI(options =>
+{
+    options.InjectStylesheet("/swagger-ui/css/custom.css");
+    options.InjectJavascript("/swgger-ui/js/custom.js");
+}); 
+#endregion
+
 app.UseHttpsRedirection();
 
-// Authentication & Authorization
+#region Authentication & Authorization
 app.UseAuthentication();
-app.UseAuthorization();
+app.UseAuthorization(); 
+#endregion
 
 app.MapControllers();
+
+#region Error Handling
+//app.Use(async (context, next) =>
+//{
+//    await next(); 
+//    if (context.Response.StatusCode == 404)
+//    {
+//        await context.Response.WriteAsync("tes");
+//        await next();
+//    }
+//});
+
+//app.UseStatusCodePages();
+#endregion
 
 app.Run();
