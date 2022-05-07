@@ -24,6 +24,136 @@ namespace BrinksAPI.Controllers
         }
 
         #region Create Multiple Shipments
+        /// <summary>
+        /// Creates a Shipment.
+        /// </summary>
+        /// <param name="shipment"></param>
+        /// <returns>A newly created Shipmnet</returns>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     POST /api/shipments/multiple
+        ///     {
+        ///         "requestId": "1234567890",
+        ///         "shipInfo": {
+        ///             "billingType": "P",
+        ///             "shipper": {
+        ///                 "name": "BRINK'S GLOBAL SERVICES KOREA LTD",
+        ///                 "address1": "#1122, 86 MAPO-DAERO",
+        ///                 "address2": "MAPO-GU",
+        ///                 "city": "SEOUL",
+        ///                 "provinceCode": "",
+        ///                 "postalCode": "04168",
+        ///                 "countryCode": "KR",
+        ///                 "phoneNumber": "469.549.6618"
+        ///             },
+        ///             "consignee": {
+        ///                 "name": "VALE EUROPE LIMITED",
+        ///                 "address1": "BASHLEY ROAD",
+        ///                 "address2": "",
+        ///                 "city": "LONDON",
+        ///                 "provinceCode": "",
+        ///                 "postalCode": "NW10 6SN",
+        ///                 "countryCode": "GB",
+        ///                 "contactName": "DEW",
+        ///                 "phoneNumber": "469.549.6618"
+        ///             },
+        ///             "serviceType": "DD",
+        ///             "modeOfTransportCode": "A",
+        ///             "requestLabelImage": "true",
+        ///             "shipmentLabelRequest": {
+        ///                 "labelType": "PDF",
+        ///                 "printOption": "Label"
+        ///             },
+        ///             "lvpOptions": null,
+        ///             "shipmentItems": [
+        ///                 {
+        ///                     "licenseCode": "C33",
+        ///                     "exportLicenseNumber": "NLR",
+        ///                     "exportOrigin": "D",
+        ///                     "insuranceLiabilityValue": 500.00,
+        ///                     "customsCurrencyCode": "USD",
+        ///                     "customsValue": 500.00,
+        ///                     "packageWeightUOM": "KGS",
+        ///                     "packageWeight": 2.0,
+        ///                     "netWeight": 1.80,
+        ///                     "netWeightUOM": "KGS",
+        ///                     "commodityId": 5,
+        ///                     "packageTypeCode": "BOX",
+        ///                     "termCode": "CIF",
+        ///                     "pickupLocation": {
+        ///                         "name": "BRINK'S GLOBAL SERVICES KOREA LTD",
+        ///                         "address1": "#1122, 86 MAPO-DAERO",
+        ///                         "address2": "MAPO-GU",
+        ///                         "city": "SEOUL",
+        ///                         "provinceCode": "",
+        ///                         "postalCode": "04168",
+        ///                         "countryCode": "KR",
+        ///                         "contactName": "DEW",
+        ///                         "phoneNumber": "469.549.6618"
+        ///                     },
+        ///                     "deliveryLocation": {
+        ///                         "name": "VALE EUROPE LIMITED",
+        ///                         "address1": "BASHLEY ROAD",
+        ///                         "address2": "",
+        ///                         "city": "LONDON",
+        ///                         "provinceCode": "",
+        ///                         "postalCode": "NW10 6SN",
+        ///                         "countryCode": "GB",
+        ///                         "contactName": "DEW",
+        ///                         "phoneNumber": "469.549.6618"
+        ///                     }
+        ///                 },
+        ///                 {
+        ///                     "licenseCode": "C33",
+        ///                     "exportLicenseNumber": "NLR",
+        ///                     "exportOrigin": "D",
+        ///                     "insuranceLiabilityValue": 599.90,
+        ///                     "customsCurrencyCode": "USD",
+        ///                     "customsValue": 599.90,
+        ///                     "packageWeightUOM": "KGS",
+        ///                     "packageWeight": 1.0,
+        ///                     "netWeight": 1.0,
+        ///                     "netWeightUOM": "KGS",
+        ///                     "commodityId": 241,
+        ///                     "packageTypeCode": "BOX",
+        ///                     "termCode": "CIF",
+        ///                     "pickupLocation": {
+        ///                         "name": "BRINK'S GLOBAL SERVICES KOREA LTD",
+        ///                         "address1": "#1122, 86 MAPO-DAERO",
+        ///                         "address2": "MAPO-GU",
+        ///                         "city": "SEOUL",
+        ///                         "provinceCode": "",
+        ///                         "postalCode": "04168",
+        ///                         "countryCode": "KR",
+        ///                         "contactName": "DEW",
+        ///                         "phoneNumber": "469.549.6618"
+        ///                     },
+        ///                     "deliveryLocation": {
+        ///                         "name": "BRINKS LTD",
+        ///                         "address1": "UNIT 1, RADIUS PARK",
+        ///                         "address2": "FELTHAM",
+        ///                         "city": "LONDON",
+        ///                         "provinceCode": "",
+        ///                         "postalCode": "TW14 0NG",
+        ///                         "countryCode": "GB",
+        ///                         "contactName": "BGS",
+        ///                         "phoneNumber": "469.549.6618"
+        ///                     }
+        ///                 }
+        ///             ]
+        ///         }
+        ///      }
+        ///
+        /// </remarks>
+        /// <response code="201">Returns the newly created document</response>
+        /// <response code="400">Data not valid</response>
+        /// <response code="401">Unauthorized</response>
+        /// <response code="500">Internal server error</response>
+        [ProducesResponseType(201)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(500)]
         [HttpPost]
         [Route("api/shipments/multiple")]
         public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment brinksShipment)

@@ -39,7 +39,7 @@ namespace BrinksAPI.Controllers
         /// Creates a Documents.
         /// </summary>
         /// <param name="document"></param>
-        /// <returns>A newly created TodoItem</returns>
+        /// <returns>A newly created Document</returns>
         /// <remarks>
         /// Sample request:
         ///
@@ -58,10 +58,15 @@ namespace BrinksAPI.Controllers
         ///
         /// </remarks>
         /// <response code="201">Returns the newly created document</response>
-        /// <response code="400">If the document parameter is null</response>
+        /// <response code="400">Data not valid</response>
         /// <response code="401">Unauthorized</response>
+        /// <response code="500">Internal server error</response>
         [HttpPost]
         [Route("api/document/")]
+        [ProducesResponseType(201)]
+        [ProducesResponseType(400)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(500)]
         public IActionResult Create([FromBody]BrinksDocument document)
         {
             Response dataResponse = new Response();
