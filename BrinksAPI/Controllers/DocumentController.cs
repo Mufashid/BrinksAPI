@@ -45,9 +45,6 @@ namespace BrinksAPI.Controllers
         ///
         ///     POST /api/document
         ///     {
-        ///        "id": 1,
-        ///        "RequestId": "Test",
-        ///        "CWDocumentID": "Test",
         ///        "DocumentTypeCode":"OTH",
         ///        "FileName":"Tiny PreAlert.txt",
         ///        "DocumentReference":"MAWB",
@@ -65,7 +62,7 @@ namespace BrinksAPI.Controllers
         /// <response code="401">Unauthorized</response>
         [HttpPost]
         [Route("api/document/")]
-        public IActionResult Create(BrinksDocument document)
+        public IActionResult Create([FromBody]BrinksDocument document)
         {
             Response dataResponse = new Response();
             try
