@@ -45,14 +45,14 @@ namespace BrinksAPI.Controllers
         ///
         ///     POST /api/document
         ///     {
-        ///        "DocumentTypeCode":"OTH",
-        ///        "FileName":"Tiny PreAlert.txt",
-        ///        "DocumentReference":"MAWB",
-        ///        "DocumentReferenceId":"12345678",
-        ///        "DocumentContent":"SGV5ISBXYWtlIFVwIQ==",
-        ///        "DocumentFormat":"PDF",
-        ///        "DocumentDescription":"Pre Alert",
-        ///        "UserId":"1234567"
+        ///        "documentTypeCode":"OTH",
+        ///        "fileName":"Tiny PreAlert.txt",
+        ///        "documentReference":"MAWB",
+        ///        "documentReferenceId":"12345678",
+        ///        "documentContent":"SGV5ISBXYWtlIFVwIQ==",
+        ///        "documentFormat":"PDF",
+        ///        "documentDescription":"Pre Alert",
+        ///        "userId":"1234567"
         ///        
         ///     }
         ///
