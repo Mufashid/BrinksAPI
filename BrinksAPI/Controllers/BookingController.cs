@@ -296,7 +296,7 @@ namespace BrinksAPI.Controllers
                 dataResponse.Message = ex.Message;
                 return BadRequest(ex.Message);
             }
-            return Created("", dataResponse);
+            return Ok(dataResponse);
         }
         #endregion
 
@@ -625,7 +625,7 @@ namespace BrinksAPI.Controllers
                 dataResponse.Message = ex.Message;
                 return BadRequest(ex.Message);
             }
-            return Created("", dataResponse);
+            return Ok(dataResponse);
         }
         #endregion
     }

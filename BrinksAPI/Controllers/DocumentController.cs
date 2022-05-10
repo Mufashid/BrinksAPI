@@ -57,13 +57,13 @@ namespace BrinksAPI.Controllers
         ///     }
         ///
         /// </remarks>
-        /// <response code="201">Returns the newly created document</response>
+        /// <response code="200">Success</response>
         /// <response code="400">Data not valid</response>
         /// <response code="401">Unauthorized</response>
         /// <response code="500">Internal server error</response>
         [HttpPost]
         [Route("api/document/")]
-        [ProducesResponseType(201)]
+        [ProducesResponseType(200)]
         [ProducesResponseType(400)]
         [ProducesResponseType(401)]
         [ProducesResponseType(500)]
@@ -229,7 +229,7 @@ namespace BrinksAPI.Controllers
                 dataResponse.Message = ex.Message;
                 return BadRequest(ex.Message);
             }
-            return Created("",dataResponse);
+            return Ok(dataResponse);
         }
         #endregion
 
