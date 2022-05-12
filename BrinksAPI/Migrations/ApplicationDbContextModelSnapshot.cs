@@ -22,63 +22,24 @@ namespace BrinksAPI.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
 
-            modelBuilder.Entity("BrinksAPI.Models.BrinksDocument", b =>
+            modelBuilder.Entity("BrinksAPI.Entities.AuthenticationLevel", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("AuthId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AuthId"), 1L, 1);
 
-                    b.Property<string>("CWDocumentId")
+                    b.Property<string>("AuthName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<byte[]>("DocumentContent")
-                        .IsRequired()
-                        .HasColumnType("varbinary(max)");
+                    b.HasKey("AuthId");
 
-                    b.Property<string>("DocumentDescription")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<int>("DocumentFormat")
-                        .HasMaxLength(4)
-                        .HasColumnType("int");
-
-                    b.Property<int>("DocumentReference")
-                        .HasMaxLength(20)
-                        .HasColumnType("int");
-
-                    b.Property<string>("DocumentReferenceId")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<int>("DocumentTypeCode")
-                        .HasMaxLength(5)
-                        .HasColumnType("int");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("RequestId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserId")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("documents");
+                    b.ToTable("AuthenticationLevels");
                 });
 
-            modelBuilder.Entity("BrinksAPI.Models.DB+DocumentType", b =>
+            modelBuilder.Entity("BrinksAPI.Entities.DocumentType", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -99,7 +60,7 @@ namespace BrinksAPI.Migrations
                     b.ToTable("documentTypes");
                 });
 
-            modelBuilder.Entity("BrinksAPI.Models.DB+ServiceLevel", b =>
+            modelBuilder.Entity("BrinksAPI.Entities.ServiceLevel", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -118,13 +79,92 @@ namespace BrinksAPI.Migrations
                         .HasColumnType("nvarchar(10)");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)");
 
                     b.HasKey("Id");
 
                     b.ToTable("serviceLevels");
+                });
+
+            modelBuilder.Entity("BrinksAPI.Entities.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"), 1L, 1);
+
+                    b.Property<int>("AuthLevelRefId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("isActive")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthLevelRefId");
+
+                    b.ToTable("users");
+                });
+
+            modelBuilder.Entity("BrinksAPI.Models.BrinksDocument", b =>
+                {
+                    b.Property<byte[]>("DocumentContent")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("DocumentDescription")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("DocumentFormat")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DocumentReference")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DocumentReferenceId")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("DocumentTypeCode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("UserId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.ToTable("documents");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -325,6 +365,15 @@ namespace BrinksAPI.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("BrinksAPI.Entities.User", b =>
+                {
+                    b.HasOne("BrinksAPI.Entities.AuthenticationLevel", null)
+                        .WithMany("Users")
+                        .HasForeignKey("AuthLevelRefId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -374,6 +423,11 @@ namespace BrinksAPI.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("BrinksAPI.Entities.AuthenticationLevel", b =>
+                {
+                    b.Navigation("Users");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,9 +1,10 @@
+using BrinksAPI.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BrinksAPI.Controllers
 {
-    [Authorize]
+    //[Authorize]
     //[ApiController]
     [Route("[controller]")]
     [ApiExplorerSettings(IgnoreApi = true)]
@@ -21,18 +22,18 @@ namespace BrinksAPI.Controllers
             _logger = logger;
         }
 
+        [Authorize(Roles =UserRoles.Admin)]
         [HttpGet(Name = "GetWeatherForecast")]
-        public IEnumerable<WeatherForecast> Get()
+        public IActionResult Get()
         {
-            _logger.LogDebug(string.Format("test"));
-            _logger.LogError("Tets test");
-            return Enumerable.Range(1, 5).Select(index => new WeatherForecast
+            var data =  Enumerable.Range(1, 5).Select(index => new WeatherForecast
             {
                 Date = DateTime.Now.AddDays(index),
                 TemperatureC = Random.Shared.Next(-20, 55),
                 Summary = Summaries[Random.Shared.Next(Summaries.Length)]
             })
             .ToArray();
+            return Ok(data);
         }
     }
 }

@@ -49,6 +49,71 @@ namespace BrinksAPI.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "documents",
+                columns: table => new
+                {
+                    DocumentTypeCode = table.Column<int>(type: "int", nullable: false),
+                    FileName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    DocumentReference = table.Column<int>(type: "int", nullable: false),
+                    DocumentReferenceId = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    DocumentContent = table.Column<byte[]>(type: "varbinary(max)", nullable: false),
+                    DocumentFormat = table.Column<int>(type: "int", nullable: false),
+                    DocumentDescription = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    UserId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true)
+                },
+                constraints: table =>
+                {
+                });
+
+            migrationBuilder.CreateTable(
+                name: "documentTypes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    BrinksCode = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CWCode = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_documentTypes", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "serviceLevels",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    CWCode = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    BrinksCode = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(30)", maxLength: 30, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_serviceLevels", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "users",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    FirstName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    LastName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Password = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    isActive = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedTime = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedTime = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_users", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "AspNetRoleClaims",
                 columns: table => new
                 {
@@ -210,6 +275,18 @@ namespace BrinksAPI.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetUserTokens");
+
+            migrationBuilder.DropTable(
+                name: "documents");
+
+            migrationBuilder.DropTable(
+                name: "documentTypes");
+
+            migrationBuilder.DropTable(
+                name: "serviceLevels");
+
+            migrationBuilder.DropTable(
+                name: "users");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");

@@ -1,4 +1,5 @@
-﻿using BrinksAPI.Models;
+﻿using BrinksAPI.Entities;
+using BrinksAPI.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -15,8 +16,13 @@ namespace BrinksAPI.Auth
         {
             base.OnModelCreating(builder);
         }
-        public DbSet<DB.ServiceLevel> serviceLevels { get; set; }
+        public DbSet<User> users { get; set; }
+        public DbSet<AuthenticationLevel> AuthenticationLevels { get; set; }
+
+        #region Mapping tables
+        public DbSet<Entities.ServiceLevel> serviceLevels { get; set; }
+        public DbSet<Entities.DocumentType> documentTypes { get; set; } 
+        #endregion
         public DbSet<BrinksDocument> documents { get; set; }
-        public DbSet<DB.DocumentType> documentTypes { get; set; }
     }
 }
