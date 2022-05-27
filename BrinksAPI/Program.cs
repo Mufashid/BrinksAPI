@@ -9,7 +9,15 @@ var builder = WebApplication.CreateBuilder(args);
 ConfigurationManager configuration = builder.Configuration;
 
 // Add services to the container.
-
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AnyOrigin", builder =>
+    {
+        builder
+            .AllowAnyOrigin()
+            .AllowAnyMethod();
+    });
+});
 #region Entity Framework
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(configuration.GetConnectionString("ConnStr")));
 #endregion
@@ -91,7 +99,7 @@ builder.Services.AddSingleton<BrinksAPI.Interfaces.IConfigManager, BrinksAPI.Ser
 #endregion
 
 var app = builder.Build();
-
+app.UseCors("AnyOrigin");
 #region For Development
 //if (app.Environment.IsDevelopment())
 //{
@@ -103,8 +111,9 @@ app.UseSwagger();
 app.UseStaticFiles();
 app.UseSwaggerUI(options =>
 {
+    options.DefaultModelsExpandDepth(-1);
     options.InjectStylesheet("/swagger-ui/css/custom.css");
-    options.InjectJavascript("/swgger-ui/js/custom.js");
+    options.InjectJavascript("/swagger-ui/js/custom.js");
 }); 
 #endregion
 
