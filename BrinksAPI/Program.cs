@@ -139,5 +139,6 @@ app.MapControllers();
 
 //app.UseStatusCodePages();
 #endregion
-
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.Run();
