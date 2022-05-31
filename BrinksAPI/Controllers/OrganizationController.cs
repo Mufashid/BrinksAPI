@@ -404,6 +404,7 @@ namespace BrinksAPI.Controllers
 
                 string xml = Utilities.Serialize(native);
                 var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+
                 if (documentResponse.Status == "ERROR")
                 {
                     dataResponse.Status = documentResponse.Status;
