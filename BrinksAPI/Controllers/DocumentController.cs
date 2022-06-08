@@ -64,22 +64,15 @@ namespace BrinksAPI.Controllers
         [HttpPost]
         [Route("api/document/")]
         [ProducesResponseType(200)]
-        [ProducesResponseType(400)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(500)]
-        public IActionResult Create([FromBody]BrinksDocument document)
+        public ActionResult<DocumentResponse> Create([FromBody]BrinksDocument document)
         {
-            Response dataResponse = new Response();
+            DocumentResponse dataResponse = new DocumentResponse();
             try
             {
                 if (!ModelState.IsValid)
-                {
-                    //dataResponse.Status = "Validation Error";
-                    //dataResponse.Message = String.Format("{0} Error found", ModelState.ErrorCount);
-                    //dataResponse.Data = ModelState.ToString();
                     return BadRequest(ModelState);
-                }
 
+                dataResponse.RequestId = document.RequestId;
                 UniversalShipmentData universalShipmentData = new UniversalShipmentData();
                 Shipment shipment = new Shipment();
 
@@ -109,10 +102,13 @@ namespace BrinksAPI.Controllers
                     @event.DataContext = eventDataContext;
                     #endregion
 
+                    #region Event
                     @event.EventTime = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.fff");
                     @event.EventType = "Z00";
                     @event.IsEstimate = true;
+                    #endregion
 
+                    #region Contexts
                     List<Events.Context> contexts = new List<Events.Context>();
                     Events.Context context = new Events.Context();
                     Events.ContextType contextType = new Events.ContextType();
@@ -120,8 +116,9 @@ namespace BrinksAPI.Controllers
                     context.Type = contextType;
                     context.Value = document.DocumentReferenceId;
                     contexts.Add(context);
+                    @event.ContextCollection = contexts.ToArray(); 
+                    #endregion
 
-                    @event.ContextCollection = contexts.ToArray();
                     universalEventData.Event = @event;
 
                     string eventXML = Utilities.Serialize(universalEventData);
@@ -135,8 +132,6 @@ namespace BrinksAPI.Controllers
                             var serializer = new XmlSerializer(typeof(Events.UniversalEventData));
                             eventResult = (Events.UniversalEventData)serializer.Deserialize(reader);
                         }
-
-
                         bool isHouseBill = eventResult.Event.EventType == "DIM";
                         if (isHouseBill)
                         {
@@ -146,7 +141,7 @@ namespace BrinksAPI.Controllers
                         {
                             dataResponse.Status = "Not Found";
                             dataResponse.Message = String.Format("Housbill {0} Number is invalid.", documentReferenceId);
-                            return BadRequest(dataResponse);
+                            return NotFound(dataResponse);
                         }
 
 
@@ -220,7 +215,7 @@ namespace BrinksAPI.Controllers
                 var documentResponse = eAdaptor.Services.SendToCargowise(xml,Configuration.URI, Configuration.Username, Configuration.Password);
                 dataResponse.Status = "SUCCESS";
                 dataResponse.Message = "Successfully created the document.";
-                dataResponse.Data = documentResponse.Data.Data.OuterXml;
+                dataResponse.Data = document;
 
             }
             catch (Exception ex)

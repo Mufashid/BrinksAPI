@@ -8,10 +8,8 @@ namespace BrinksAPI.Models
     [Keyless]
     public class BrinksDocument
     {
-        //[Key]
-        //public int Id { get; set; }
-        //[Required(ErrorMessage ="Request ID is required")]
-        //public string? RequestId { get; set; }
+        [Required]
+        public string? RequestId { get; set; }
         //[Required]
         //public string? CWDocumentId { get; set; }
         [Required]

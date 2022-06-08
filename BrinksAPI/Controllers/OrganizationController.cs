@@ -62,7 +62,7 @@ namespace BrinksAPI.Controllers
         ///        "brokerGlobalCustomerCode":"BROKER",
         ///        "taxId": "123456789",
         ///        "creditRiskNotes": "This is credit risk Note",
-        ///        "restrictPickup":"Y",
+        ///        "knownShipper":"Y",
         ///        "customerGroupCode": "12345678",
         ///        "tsaValidationId":"00002-56",
         ///        "tsaDate":"2022-02-01 10:00:00",
@@ -92,7 +92,7 @@ namespace BrinksAPI.Controllers
         /// <response code="401">Unauthorized</response>
         /// <response code="500">Internal server error</response>
         [HttpPost]
-        [Route("api/organization")]
+        [Route("api/organization/create")]
         [ApiExplorerSettings(IgnoreApi = true)]
         public IActionResult CreateOrganization([FromBody] Organization organization)
         {
@@ -123,7 +123,7 @@ namespace BrinksAPI.Controllers
                 nativeOrganization.FullName = organization.name;
                 nativeOrganization.Language = "EN";
                 #region CONSIGNOR OR CONSIGNEE
-                if (organization.restrictPickup == YesOrNo.N)
+                if (organization.knownShipper == YesOrNo.Y)
                 {
                     nativeOrganization.IsConsigneeSpecified = true;
                     nativeOrganization.IsConsignee = true;
@@ -466,7 +466,7 @@ namespace BrinksAPI.Controllers
         ///        "brokerGlobalCustomerCode":"BROKER",
         ///        "taxId": "123456789",
         ///        "creditRiskNotes": "This is credit risk Note",
-        ///        "restrictPickup":"Y",
+        ///        "knownShipper":"Y",
         ///        "customerGroupCode": "12345678",
         ///        "tsaValidationId":"00002-56",
         ///        "tsaDate":"2022-02-01 10:00:00",
@@ -729,6 +729,7 @@ namespace BrinksAPI.Controllers
         ///
         ///     POST /api/organization/
         ///		{
+        ///		   "requestId":"12345678",
         ///        "riskCode": "CR1",
         ///        "name": "CENGLOBAL",
         ///        "address1": "Office 15",
@@ -747,7 +748,7 @@ namespace BrinksAPI.Controllers
         ///        "apAccountNumber":"123",
         ///        "preferredCurrency": "AED",
         ///        "billingAttention": "Contact01",
-        ///        "dateCreated": "2022-05-24T06:35:44.248Z",
+        ///        "dateCreated": "2022-05-24 06:35:44",
         ///        "notes": "Note 01",
         ///        "invoiceType":"C",
         ///        "siteCode": "26",
@@ -756,7 +757,7 @@ namespace BrinksAPI.Controllers
         ///        "brokerGlobalCustomerCode":"BROKER",
         ///        "taxId": "123456789",
         ///        "creditRiskNotes": "This is credit risk Note",
-        ///        "restrictPickup":"Y",
+        ///        "knownShipper":"Y",
         ///        "customerGroupCode": "12345678",
         ///        "tsaValidationId":"00002-56",
         ///        "tsaDate":"2022-02-01 10:00:00",
@@ -787,16 +788,18 @@ namespace BrinksAPI.Controllers
         /// <response code="404">Not Found</response>
         /// <response code="500">Internal server error</response>
         [HttpPost]
+        [ProducesResponseType(200)]
         [Route("api/organization")]
-        public IActionResult UpsertOrganization([FromBody] Organization organization)
+        public ActionResult<OrganizationResponse> UpsertOrganization([FromBody] Organization organization)
         {
-            Response dataResponse = new Response();
+            OrganizationResponse dataResponse = new OrganizationResponse();
             string successMessage = "";
             try
             {
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
+                dataResponse.RequestId = organization.requestId;
                 if (organization.globalCustomerCode == null)
                 {
                     dataResponse.Status = "ERROR";
@@ -826,7 +829,7 @@ namespace BrinksAPI.Controllers
                     nativeOrganization.FullName = organization.name;
                     nativeOrganization.Language = "EN";
                     #region CONSIGNOR OR CONSIGNEE
-                    if (organization.restrictPickup == YesOrNo.N)
+                    if (organization.knownShipper == YesOrNo.Y)
                     {
                         nativeOrganization.IsConsigneeSpecified = true;
                         nativeOrganization.IsConsignee = true;
@@ -1116,9 +1119,9 @@ namespace BrinksAPI.Controllers
                     #region CONSIGNOR OR CONSIGNEE
                     organizationData.OrgHeader.IsConsigneeSpecified = true;
                     organizationData.OrgHeader.IsConsignorSpecified = true;
-                    if (organization.restrictPickup == YesOrNo.N)
+                    if (organization.knownShipper == YesOrNo.Y)
                         organizationData.OrgHeader.IsConsignee = true;
-                    if (organization.restrictPickup == YesOrNo.Y)
+                    if (organization.knownShipper == YesOrNo.N)
                         organizationData.OrgHeader.IsConsignee = false;
 
                     if (organization.allowCollect == YesOrNo.Y)
@@ -1269,14 +1272,13 @@ namespace BrinksAPI.Controllers
                 if (documentResponse.Status == "ERROR")
                 {
                     dataResponse.Status = documentResponse.Status;
-                    dataResponse.Message = documentResponse.Message;
-                    dataResponse.Data = documentResponse.Data.Data.OuterXml;
+                    dataResponse.Message = documentResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
                     return BadRequest(dataResponse);
                 }
 
                 dataResponse.Status = "SUCCESS";
                 dataResponse.Message = successMessage;
-                dataResponse.Data = documentResponse.Data.Data.OuterXml;
+                dataResponse.Data = organization;
                 return Ok(dataResponse);
             }
             catch (Exception ex)

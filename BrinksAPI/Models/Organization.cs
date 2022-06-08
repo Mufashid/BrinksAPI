@@ -7,6 +7,8 @@ namespace BrinksAPI.Models
 {
     public class Organization
     {
+        [Required]
+        public string? requestId { get; set; }
         public RiskCodes? riskCode { get; set; }
         [Required]
         [StringLength(40)]
@@ -48,7 +50,7 @@ namespace BrinksAPI.Models
         public string? preferredCurrency { get; set; }
         [StringLength(25)]
         public string? billingAttention { get; set; }
-        public DateTime dateCreated { get; set; }
+        public string? dateCreated { get; set; }
         [StringLength(8)]
         public string? userId { get; set; }
         public string? notes { get; set; }
@@ -65,7 +67,7 @@ namespace BrinksAPI.Models
         public string? taxId { get; set; }
         [StringLength(2000)]
         public string? creditRiskNotes { get; set; }
-        public YesOrNo? restrictPickup { get; set; }
+        public YesOrNo? knownShipper { get; set; }
         [StringLength(10)]
         public string? customerGroupCode { get; set; }
         [StringLength(15)]
