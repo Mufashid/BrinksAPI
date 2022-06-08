@@ -45,6 +45,7 @@ namespace BrinksAPI.Controllers
         ///
         ///     POST /api/document
         ///     {
+        ///        "requestId":"123456",
         ///        "documentTypeCode":"OTH",
         ///        "fileName":"Tiny PreAlert.txt",
         ///        "documentReference":"MAWB",

@@ -10,34 +10,29 @@ namespace BrinksAPI.Models
     {
         [Required]
         public string? RequestId { get; set; }
-        //[Required]
-        //public string? CWDocumentId { get; set; }
         [Required]
-        //[MaxLength(5)]
         [EnumDataType(typeof(DocumentType))]
         public DocumentType? DocumentTypeCode { get; set; }
         [Required]
-        [MaxLength(100)]
+        [StringLength(100)]
         public string? FileName { get; set; }
         [Required]
-        //[MaxLength(20)]
         public DocumentReferenceType? DocumentReference { get; set; }
 
         [Required]
-        [MaxLength(20)]
+        [StringLength(20)]
         public string? DocumentReferenceId { get; set; }
 
         [Required]
         public byte[]? DocumentContent { get; set; }
 
         [Required]
-        //[MaxLength(4)]
         public DocumentFormatType? DocumentFormat { get; set; }
         [Required]
-        [MaxLength(255)]
+        [StringLength(255)]
         public string? DocumentDescription { get; set; }
 
-        [MaxLength(50)]
+        [StringLength(50)]
         public string? UserId { get; set; }
 
     }
