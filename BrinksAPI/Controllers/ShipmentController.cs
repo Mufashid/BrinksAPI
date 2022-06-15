@@ -422,7 +422,7 @@ namespace BrinksAPI.Controllers
         ///         "userId": "HJ",
         ///         "actionType": "DLVD",
         ///         "areaType": "HJ",
-        ///         "historyDetails": "This is a test event details new for delivary",
+        ///         "historyDetails": "This is a test event details new for delivery",
         ///         "historyDate": "2022-05-21 10:00:00",
         ///         "siteCode": "3210",
         ///         "serverId": "TRN",
