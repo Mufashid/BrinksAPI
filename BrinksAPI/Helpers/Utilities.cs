@@ -1,4 +1,6 @@
-﻿using System.Xml;
+﻿using System.Runtime.Serialization;
+using System.Xml;
+using System.Xml.Linq;
 using System.Xml.Serialization;
 
 namespace BrinksAPI.Helpers
@@ -26,16 +28,15 @@ namespace BrinksAPI.Helpers
         public static XmlElement SerializeToXmlElement(object o)
         {
             XmlDocument doc = new XmlDocument();
-
+            XDocument doc2 = new XDocument();
             using (XmlWriter writer = doc.CreateNavigator().AppendChild())
             {
                 new XmlSerializer(o.GetType()).Serialize(writer, o);
             }
-
+            
             return doc.DocumentElement;
-        } 
+        }
         #endregion
-
 
 
     }

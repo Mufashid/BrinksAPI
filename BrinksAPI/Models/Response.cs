@@ -31,4 +31,11 @@
         public BrinksDocument? Data { get; set; }
 
     }
+    public class ShipemtHistoryResponse
+    {
+        public string? RequestId { get; set; }
+        public string? Status { get; set; }
+        public string? Message { get; set; }
+        public Shipment.History? Data { get; set; }
+    }
 }

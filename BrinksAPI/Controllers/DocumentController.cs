@@ -53,7 +53,7 @@ namespace BrinksAPI.Controllers
         ///        "documentContent":"SGV5ISBXYWtlIFVwIQ==",
         ///        "documentFormat":"PDF",
         ///        "documentDescription":"Pre Alert",
-        ///        "userId":"1234567"
+        ///        "userId":"HJ"
         ///        
         ///     }
         ///

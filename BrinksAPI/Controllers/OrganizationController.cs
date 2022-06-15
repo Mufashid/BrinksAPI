@@ -974,20 +974,31 @@ namespace BrinksAPI.Controllers
                     #region RELATED PARTIES
                     if (organization.brokerGlobalCustomerCode != null)
                     {
-                        List<NativeOrganizationOrgRelatedParty> relatedParties = new List<NativeOrganizationOrgRelatedParty>();
-                        NativeOrganizationOrgRelatedParty relatedParty = new NativeOrganizationOrgRelatedParty();
-                        relatedParty.ActionSpecified = true;
-                        relatedParty.Action = NativeOrganization.Action.INSERT;
-                        relatedParty.PartyType = "CAB";
-                        relatedParty.FreightTransportMode = "ALL";
-                        relatedParty.FreightDirection = "PAD";
-                        NativeOrganizationOrgRelatedPartyRelatedParty relatedPartyCode = new NativeOrganizationOrgRelatedPartyRelatedParty();
-                        relatedPartyCode.ActionSpecified = true;
-                        relatedPartyCode.Action = NativeOrganization.Action.INSERT;
-                        relatedPartyCode.Code = organization.brokerGlobalCustomerCode;
-                        relatedParty.RelatedParty = relatedPartyCode;
-                        relatedParties.Add(relatedParty);
-                        nativeOrganization.OrgRelatedPartyCollection = relatedParties.ToArray();
+                        OrganizationData brokerOrganizationData = SearchOrgWithCode(organization.brokerGlobalCustomerCode);
+                        if (brokerOrganizationData.OrgHeader != null)
+                        {
+                            List<NativeOrganizationOrgRelatedParty> relatedParties = new List<NativeOrganizationOrgRelatedParty>();
+                            NativeOrganizationOrgRelatedParty relatedParty = new NativeOrganizationOrgRelatedParty();
+                            relatedParty.ActionSpecified = true;
+                            relatedParty.Action = NativeOrganization.Action.INSERT;
+                            relatedParty.PartyType = "CAB";
+                            relatedParty.FreightTransportMode = "ALL";
+                            relatedParty.FreightDirection = "PAD";
+                            NativeOrganizationOrgRelatedPartyRelatedParty relatedPartyCode = new NativeOrganizationOrgRelatedPartyRelatedParty();
+                            relatedPartyCode.PK = brokerOrganizationData.OrgHeader.PK;
+                            relatedPartyCode.Code = organization.brokerGlobalCustomerCode;
+                            relatedParty.RelatedParty = relatedPartyCode;
+                            relatedParties.Add(relatedParty);
+                            nativeOrganization.OrgRelatedPartyCollection = relatedParties.ToArray();
+                        }
+                        else
+                        {
+                            dataResponse.Status = "ERROR";
+                            dataResponse.Message = "The Broker customer code " + organization.brokerGlobalCustomerCode + " not found in CW.";
+                            return BadRequest(dataResponse);
+                        }
+
+
                     }
                     #endregion
 
@@ -1192,11 +1203,22 @@ namespace BrinksAPI.Controllers
                     #region RELATED PARTIES
                     if (organization.brokerGlobalCustomerCode != null)
                     {
-                        organizationData.OrgHeader.OrgRelatedPartyCollection[0].ActionSpecified = true;
-                        organizationData.OrgHeader.OrgRelatedPartyCollection[0].Action = NativeOrganization.Action.UPDATE;
-                        organizationData.OrgHeader.OrgRelatedPartyCollection[0].RelatedParty.ActionSpecified = true;
-                        organizationData.OrgHeader.OrgRelatedPartyCollection[0].RelatedParty.Action = NativeOrganization.Action.UPDATE;
-                        organizationData.OrgHeader.OrgRelatedPartyCollection[0].RelatedParty.Code = organization.brokerGlobalCustomerCode;
+                        OrganizationData brokerOrganizationData =  SearchOrgWithCode(organization.brokerGlobalCustomerCode);
+                        if (brokerOrganizationData.OrgHeader != null)
+                        {
+                            organizationData.OrgHeader.OrgRelatedPartyCollection[0].ActionSpecified = true;
+                            organizationData.OrgHeader.OrgRelatedPartyCollection[0].Action = NativeOrganization.Action.UPDATE;
+                            organizationData.OrgHeader.OrgRelatedPartyCollection[0].RelatedParty.ActionSpecified = true;
+                            organizationData.OrgHeader.OrgRelatedPartyCollection[0].RelatedParty.Action = NativeOrganization.Action.UPDATE;
+                            organizationData.OrgHeader.OrgRelatedPartyCollection[0].RelatedParty.PK =brokerOrganizationData.OrgHeader.PK;
+                            organizationData.OrgHeader.OrgRelatedPartyCollection[0].RelatedParty.Code = organization.brokerGlobalCustomerCode;
+                        }
+                        else
+                        {
+                            dataResponse.Status = "ERROR";
+                            dataResponse.Message = "The Broker customer code " + organization.brokerGlobalCustomerCode + " not found in CW.";
+                            return BadRequest(dataResponse);
+                        }
                     }
                     #endregion
 
@@ -1289,6 +1311,55 @@ namespace BrinksAPI.Controllers
             }
         }
         #endregion
+
+        public OrganizationData SearchOrgWithCode(string orgCode)
+        {
+            OrganizationData organizationData = new OrganizationData();
+            try 
+            {
+                NativeRequest.Native native = new NativeRequest.Native();
+                NativeRequest.NativeBody body = new NativeRequest.NativeBody();
+                body.ItemElementName = ItemChoiceType.Organization;
+                CriteriaData criteria = new CriteriaData();
+
+                CriteriaGroupType criteriaGroupType = new CriteriaGroupType();
+                criteriaGroupType.Type = TypeEnum.Key;
+                List<CriteriaType> criteriaTypes = new List<CriteriaType>();
+
+                CriteriaType criteriaType1 = new CriteriaType();
+                criteriaType1.Entity = "OrgHeader";
+                criteriaType1.FieldName = "Code";
+                criteriaType1.Value = orgCode;
+                criteriaTypes.Add(criteriaType1);
+                criteriaGroupType.Criteria = criteriaTypes.ToArray();
+
+                criteria.CriteriaGroup = criteriaGroupType;
+                body.ItemElementName = ItemChoiceType.Organization;
+                body.Item = criteria;
+                native.Body = body;
+                string xml = Utilities.Serialize(native);
+                var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+                if (documentResponse.Status == "SUCCESS" && documentResponse.Data.Status == "PRS" && documentResponse.Data.ProcessingLog != null)
+                {
+                    using (TextReader reader = new StringReader(documentResponse.Data.Data.OuterXml))
+                    {
+                        var serializer = new XmlSerializer(typeof(NativeOrganization.Native));
+                        NativeOrganization.Native result = (NativeOrganization.Native)serializer.Deserialize(reader);
+                        string organization = result.Body.Any[0].OuterXml;
+                        using (TextReader reader2 = new StringReader(organization))
+                        {
+                            var serializer2 = new XmlSerializer(typeof(OrganizationData));
+                            organizationData = (OrganizationData)serializer2.Deserialize(reader2);
+                        }
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                throw ex;
+            }
+            return organizationData;
+        }
         public OrganizationData SearchOrgWithRegNo(string regNo) 
         {
             OrganizationData organizationData = new OrganizationData();

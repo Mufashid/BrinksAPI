@@ -8055,7 +8055,15 @@ using System.Xml.Serialization;
 
             /// <remarks/>
             HandlingDate,
-        }
+            DepartureReceiptRequested,
+            ArrivalReceiptRequested,
+            DepartureDispatchRequested,
+            ArrivalDispatchRequested,
+            PickupReceiptRequested,
+            DeliveryReceiptRequested,
+            PickupDispatchRequested,
+            DeliveryDispatchRequested
+}
 
         /// <remarks/>
         [System.CodeDom.Compiler.GeneratedCodeAttribute("xsd", "4.8.3928.0")]

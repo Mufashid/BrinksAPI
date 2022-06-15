@@ -16,7 +16,6 @@ namespace BrinksAPI.Models
         [Required]
         [StringLength(30)]
         public string? address1 { get; set; }
-        [Required]
         [StringLength(30)]
         public string? address2 { get; set; }
         [StringLength(30)]
