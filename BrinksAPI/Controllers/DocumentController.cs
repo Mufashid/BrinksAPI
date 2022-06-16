@@ -190,13 +190,13 @@ namespace BrinksAPI.Controllers
                 //string fileName = document.CWDocumentId + "_" + document.FileName;
                 attachedDocument.FileName = document.FileName;
                 attachedDocument.ImageData = document.DocumentContent;
+
+                var documentTypeInDB = _context.documentTypes
+                    .Where(d => d.BrinksCode == document.DocumentTypeCode.Value.ToString()).FirstOrDefault();
                 
-                string documentTypeInDB = _context.documentTypes
-                    .Where(d => d.BrinksCode == document.DocumentTypeCode.Value.ToString())
-                    .SingleOrDefault()
-                    .CWCode;
+
                 DocumentType documentType = new DocumentType();
-                documentType.Code = documentTypeInDB;
+                documentType.Code = documentTypeInDB != null? documentTypeInDB.CWCode: "OTH";
                 documentType.Description = document.DocumentDescription;
                 attachedDocument.Type = documentType;
                 
@@ -216,7 +216,7 @@ namespace BrinksAPI.Controllers
                 var documentResponse = eAdaptor.Services.SendToCargowise(xml,Configuration.URI, Configuration.Username, Configuration.Password);
                 dataResponse.Status = "SUCCESS";
                 dataResponse.Message = "Successfully created the document.";
-                dataResponse.Data = document;
+                //dataResponse.Data = document;
 
             }
             catch (Exception ex)

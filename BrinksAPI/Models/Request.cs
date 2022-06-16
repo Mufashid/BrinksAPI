@@ -8,7 +8,6 @@ namespace BrinksAPI.Models
     [Keyless]
     public class BrinksDocument
     {
-        [Required]
         public string? RequestId { get; set; }
         [Required]
         [EnumDataType(typeof(DocumentType))]

@@ -4,7 +4,6 @@ namespace BrinksAPI.Models
 {
     public class Mawb
     {
-        [Required]
         public string? requestId { get; set; }
         [Required]
         [StringLength(13)]

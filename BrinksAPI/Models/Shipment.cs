@@ -8,7 +8,6 @@ namespace BrinksAPI.Models
         #region HISTORY
         public class History
         {
-            [Required]
             public string? RequestId { get; set; }
 
             [Required]

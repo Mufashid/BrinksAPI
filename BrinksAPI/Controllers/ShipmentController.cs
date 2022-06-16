@@ -380,7 +380,7 @@ namespace BrinksAPI.Controllers
                 var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
                 dataResponse.Status = "SUCCESS";
                 dataResponse.Message = "Successfully created the shipment.";
-                dataResponse.Data = documentResponse.Data.Data.OuterXml;
+                //dataResponse.Data = documentResponse.Data.Data.OuterXml;
 
             }
             catch (Exception ex)
@@ -588,7 +588,7 @@ namespace BrinksAPI.Controllers
                                 }
                                 dataResponse.Status = "SUCCESS";
                                 dataResponse.Message = message;
-                                dataResponse.Data = history;
+                                //dataResponse.Data = history;
                             }
                         }
                     }

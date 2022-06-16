@@ -21,109 +21,7 @@ namespace BrinksAPI.Controllers
             _configuration = configuaration;
             _context = context;
         }
-        /// <summary>
-        /// Creates MAWB History.
-        /// </summary>
-        /// <param name="mawb"></param>
-        /// <returns>A newly created MAWB</returns>
-        /// <remarks>
-        /// Sample request:
-        ///
-        ///     POST /api/mawb/history
-        ///     {
-        ///         "requestId": "12345678",
-        ///         "mawbNumber": "176-2222222",
-        ///         "historyDetails": "This is a test event details",
-        ///         "historyDate": "2022-05-21 10:00:00",
-        ///         "serverId": "TRN",
-        ///         "historyCode": "DEP"
-        ///     }
-        /// </remarks>
-        /// <response code="200">Success</response>
-        /// <response code="400">Data not valid</response>
-        /// <response code="401">Unauthorized</response>
-        /// <response code="500">Internal server error</response>
-        [HttpPost]
-        [Route("api/mawb/history/hide")]
-        [ApiExplorerSettings(IgnoreApi = true)]
-        public IActionResult UpdateMawbHistory2([FromBody] Mawb mawb)
-        {
-            Response dataResponse = new Response();
-            try
-            {
-                dataResponse.RequestId = mawb.requestId;
-
-                Events.UniversalEventData universalEvent = new Events.UniversalEventData();
-                #region DataContext
-                Events.Event @event = new Events.Event();
-                Events.DataContext dataContext = new Events.DataContext();
-                List<Events.DataTarget> dataTargets = new List<Events.DataTarget>();
-                Events.DataTarget dataTarget = new Events.DataTarget();
-                dataTarget.Type = "ForwardingConsol";
-                dataTargets.Add(dataTarget);
-                dataContext.DataTargetCollection = dataTargets.ToArray();
-                Events.Company company = new Events.Company();
-                company.Code = "";
-                dataContext.Company = company;
-                dataContext.EnterpriseID = "";
-                dataContext.ServerID = mawb.serverId;
-                @event.DataContext = dataContext;
-                #endregion
-
-                @event.EventTime = mawb.historyDate;
-                @event.EventType = mawb.historyCode;
-                @event.EventReference = mawb.historyDetails;
-
-                #region Contexts
-                List<Events.Context> contexts = new List<Events.Context>();
-                Events.Context context = new Events.Context();
-                Events.ContextType type = new Events.ContextType();
-                type.Value = "MAWBNumber";
-                context.Type = type;
-                context.Value = mawb.mawbNumber;
-                contexts.Add(context);
-                @event.ContextCollection = contexts.ToArray();
-                #endregion
-                
-                universalEvent.Event = @event;
-                string xml = Utilities.Serialize(universalEvent);
-                var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
-                if (documentResponse.Status == "SUCCESS")
-                {
-                    using (var reader = new StringReader(documentResponse.Data.Data.OuterXml))
-                    {
-                        var serializer = new XmlSerializer(typeof(Events.UniversalEventData));
-                        Events.UniversalEventData responseEvent = (Events.UniversalEventData)serializer.Deserialize(reader);
-
-                        bool isError = responseEvent.Event.ContextCollection.Any(c => c.Type.Value.Contains("FailureReason"));
-                        string messageData = isError ? responseEvent.Event.ContextCollection.Where(c => c.Type.Value == "FailureReason").FirstOrDefault().Value.Replace("Error - ", "").Replace("Warning - ", "") : documentResponse.Data.Data.OuterXml;
-                        if (messageData == "No Module found a Business Entity to link this Universal Event to.")
-                        {
-                            dataResponse.Status = "ERROR";
-                            dataResponse.Message = "Not found";
-                            dataResponse.Data = String.Format("{0} - Mawb does not exist", mawb.mawbNumber);
-                            return Ok(dataResponse);
-                        }
-                        dataResponse.Status = isError ? "ERROR" : "SUCCESS";
-                        dataResponse.Message = isError ? "Please fix the errors." : "Mawb History Created Sucessfully";
-                        dataResponse.Data = messageData;
-                        return isError?BadRequest(dataResponse):Ok(dataResponse);
-                    }
-                }
-
-                dataResponse.Status = documentResponse.Status;
-                dataResponse.Message = documentResponse.Message;
-                dataResponse.Data = documentResponse.Data.Data.FirstChild.InnerText.Replace("Error - ","").Replace("Warning - ", "");
-                return BadRequest(dataResponse);
-
-            }
-            catch (Exception ex)
-            {
-                dataResponse.Status = "Internal Error";
-                dataResponse.Message = ex.Message;
-                return BadRequest(ex.Message);
-            }
-        }
+       
 
         /// <summary>
         /// Creates MAWB History.
@@ -232,7 +130,7 @@ namespace BrinksAPI.Controllers
                             {
                                 dataResponse.Status = isError ? "ERROR" : "SUCCESS";
                                 dataResponse.Message = isError ? "Please fix the errors." : "Mawb History Created Sucessfully";
-                                dataResponse.Data = mawb;
+                                //dataResponse.Data = mawb;
                             }
                         }
                     }

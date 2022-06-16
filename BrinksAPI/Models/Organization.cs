@@ -7,7 +7,6 @@ namespace BrinksAPI.Models
 {
     public class Organization
     {
-        [Required]
         public string? requestId { get; set; }
         public RiskCodes? riskCode { get; set; }
         [Required]
