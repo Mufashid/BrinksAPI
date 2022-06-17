@@ -451,6 +451,10 @@ namespace BrinksAPI.Controllers
                     dataResponse.RequestId = history.RequestId;
 
                     Events.UniversalEventData universalEvent = new Events.UniversalEventData();
+
+                    var actionTypeObj = _context.actionTypes.Where(a => a.BrinksCode == history.ActionType).FirstOrDefault();
+                    string actionType = actionTypeObj == null ? "" : actionTypeObj.CWCode;
+                    string eventType = actionTypeObj == null ? "Z00" : actionTypeObj.EventType;
                     #region DataContext
                     Events.Event @event = new Events.Event();
                     Events.DataContext dataContext = new Events.DataContext();
@@ -472,7 +476,6 @@ namespace BrinksAPI.Controllers
 
                     #region Event
                     @event.EventTime = history.HistoryDate;
-                    string eventType = (history.ActionType == Models.Shipment.ActionType.PICK) ? "PCF" : "DCF";
                     @event.EventType = eventType;
                     @event.EventReference = history.HistoryDetails;
                     #endregion
@@ -517,7 +520,6 @@ namespace BrinksAPI.Controllers
                             else
                             {
                                 string message = "Shipment history created.";
-                                string dateType = history.ActionType == Models.Shipment.ActionType.PICK? "Picked up date" : "Delivery Date";
                                 string shipmentId = responseEvent.Event.DataContext.DataSourceCollection.Where(d => d.Type == "ForwardingShipment").FirstOrDefault().Key;
                                 if (history.TrackingNumber!=null && shipmentId != null)
                                 {
@@ -532,7 +534,7 @@ namespace BrinksAPI.Controllers
                                                         .All(pkg => pkg.ReferenceNumber == history.TrackingNumber))
                                                         .FirstOrDefault();
                                             if (packingLineObject is null)
-                                                message += "Tracking Number " + history.TrackingNumber + " can't find. Unable to set the "+dateType+" value.";
+                                                message += "Tracking Number " + history.TrackingNumber + " can't find. Unable to set the "+ actionType + " value.";
                                             else
                                             {
                                                 if (universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection is not null)
@@ -545,7 +547,7 @@ namespace BrinksAPI.Controllers
                                                             {
                                                                 for(int k= 0; k < universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection[i].PackingLineCollection.PackingLine[j].CustomizedFieldCollection.Length; k++)
                                                                 {
-                                                                    if(universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection[i].PackingLineCollection.PackingLine[j].CustomizedFieldCollection[k].Key == dateType)
+                                                                    if(universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection[i].PackingLineCollection.PackingLine[j].CustomizedFieldCollection[k].Key == actionType)
                                                                     {
                                                                         universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection[i].PackingLineCollection.PackingLine[j].CustomizedFieldCollection[k].Value = history.HistoryDate;
                                                                     }
@@ -564,12 +566,12 @@ namespace BrinksAPI.Controllers
                                             .Where(p => p.ReferenceNumber == history.TrackingNumber)
                                             .FirstOrDefault();
                                             if (packingLineObject is null)
-                                                message += "Tracking Number " + history.TrackingNumber + " can't find. Unable to set the " + dateType + " value.";
+                                                message += "Tracking Number " + history.TrackingNumber + " can't find. Unable to set the " + actionType + " value.";
                                             else
                                             {
                                                 packingLineObject
                                                     .CustomizedFieldCollection
-                                                    .Where(c => c.Key == dateType)
+                                                    .Where(c => c.Key == actionType)
                                                     .FirstOrDefault()
                                                     .Value = history.HistoryDate;
                                             }

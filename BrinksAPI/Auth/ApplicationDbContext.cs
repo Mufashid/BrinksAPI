@@ -22,6 +22,7 @@ namespace BrinksAPI.Auth
         #region Mapping tables
         public DbSet<Entities.ServiceLevel> serviceLevels { get; set; }
         public DbSet<Entities.DocumentType> documentTypes { get; set; } 
+        public DbSet<Entities.ActionType> actionTypes { get; set; } 
         #endregion
         public DbSet<BrinksDocument> documents { get; set; }
     }
