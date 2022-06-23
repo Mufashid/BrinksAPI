@@ -71,7 +71,7 @@ namespace BrinksAPI.Controllers
             try
             {
                 if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+                    return Ok(ModelState);
 
                 dataResponse.RequestId = document.RequestId;
                 UniversalShipmentData universalShipmentData = new UniversalShipmentData();
@@ -142,7 +142,7 @@ namespace BrinksAPI.Controllers
                         {
                             dataResponse.Status = "Not Found";
                             dataResponse.Message = String.Format("Housbill {0} Number is invalid.", documentReferenceId);
-                            return NotFound(dataResponse);
+                            return Ok(dataResponse);
                         }
 
 
@@ -179,7 +179,7 @@ namespace BrinksAPI.Controllers
                 {
                     dataResponse.Status = "Not Found";
                     dataResponse.Message = String.Format("Shipment {0} not found in the CW.", documentReferenceId);
-                    return NotFound(dataResponse);
+                    return Ok(dataResponse);
                 }
 
 
@@ -223,7 +223,7 @@ namespace BrinksAPI.Controllers
             {
                 dataResponse.Status = "Internal Error";
                 dataResponse.Message = ex.Message;
-                return BadRequest(ex.Message);
+                return Ok(ex.Message);
             }
             return Ok(dataResponse);
         }

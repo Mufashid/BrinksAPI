@@ -788,6 +788,8 @@ namespace BrinksAPI.Controllers
         /// <response code="404">Not Found</response>
         /// <response code="500">Internal server error</response>
         [HttpPost]
+        [ProducesResponseType(500)]
+        [ProducesResponseType(401)]
         [ProducesResponseType(200)]
         [Route("api/organization")]
         public ActionResult<OrganizationResponse> UpsertOrganization([FromBody] Organization organization)
@@ -797,20 +799,20 @@ namespace BrinksAPI.Controllers
             try
             {
                 if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+                    return Ok(ModelState);
 
                 dataResponse.RequestId = organization.requestId;
                 if (organization.billingAttention != null && organization.accountOwner !=null && organization.billingAttention == organization.accountOwner)
                 {
                     dataResponse.Status = "Error";
                     dataResponse.Message = "Billing Attention and Account Owner field are same. Please check";
-                    return BadRequest(dataResponse);
+                    return Ok(dataResponse);
                 }
                 if (organization.globalCustomerCode == null)
                 {
                     dataResponse.Status = "ERROR";
                     dataResponse.Message = String.Format("{0} Global customer code cannot be empty", organization.globalCustomerCode);
-                    return NotFound(dataResponse);
+                    return Ok(dataResponse);
                 }
                 NativeOrganization.Native native = new NativeOrganization.Native();
                 #region HEADER
@@ -987,12 +989,40 @@ namespace BrinksAPI.Controllers
                     #endregion
 
                     #region RELATED PARTIES
+                    List<NativeOrganizationOrgRelatedParty> relatedParties = new List<NativeOrganizationOrgRelatedParty>();
+                    if (organization.invoiceGlobalCustomerCode != null)
+                    {
+                        OrganizationData brokerOrganizationData = SearchOrgWithCode(organization.invoiceGlobalCustomerCode);
+                        if (brokerOrganizationData.OrgHeader != null)
+                        {
+                            NativeOrganizationOrgRelatedParty relatedParty = new NativeOrganizationOrgRelatedParty();
+                            relatedParty.ActionSpecified = true;
+                            relatedParty.Action = NativeOrganization.Action.INSERT;
+                            relatedParty.PartyType = "LFW";
+                            relatedParty.FreightTransportMode = "ALL";
+                            relatedParty.FreightDirection = "PAD";
+                            NativeOrganizationOrgRelatedPartyRelatedParty relatedPartyCode = new NativeOrganizationOrgRelatedPartyRelatedParty();
+                            relatedPartyCode.PK = brokerOrganizationData.OrgHeader.PK;
+                            relatedPartyCode.Code = organization.invoiceGlobalCustomerCode;
+                            relatedParty.RelatedParty = relatedPartyCode;
+                            relatedParties.Add(relatedParty);
+                            //nativeOrganization.OrgRelatedPartyCollection = relatedParties.ToArray();
+                        }
+                        else
+                        {
+                            dataResponse.Status = "ERROR";
+                            dataResponse.Message = "The Invoice global customer code " + organization.invoiceGlobalCustomerCode + " not found in CW.";
+                            return Ok(dataResponse);
+                        }
+
+
+                    }
                     if (organization.brokerGlobalCustomerCode != null)
                     {
                         OrganizationData brokerOrganizationData = SearchOrgWithCode(organization.brokerGlobalCustomerCode);
                         if (brokerOrganizationData.OrgHeader != null)
                         {
-                            List<NativeOrganizationOrgRelatedParty> relatedParties = new List<NativeOrganizationOrgRelatedParty>();
+                            //List<NativeOrganizationOrgRelatedParty> relatedParties = new List<NativeOrganizationOrgRelatedParty>();
                             NativeOrganizationOrgRelatedParty relatedParty = new NativeOrganizationOrgRelatedParty();
                             relatedParty.ActionSpecified = true;
                             relatedParty.Action = NativeOrganization.Action.INSERT;
@@ -1004,17 +1034,18 @@ namespace BrinksAPI.Controllers
                             relatedPartyCode.Code = organization.brokerGlobalCustomerCode;
                             relatedParty.RelatedParty = relatedPartyCode;
                             relatedParties.Add(relatedParty);
-                            nativeOrganization.OrgRelatedPartyCollection = relatedParties.ToArray();
+                            //nativeOrganization.OrgRelatedPartyCollection = relatedParties.ToArray();
                         }
                         else
                         {
                             dataResponse.Status = "ERROR";
                             dataResponse.Message = "The Broker customer code " + organization.brokerGlobalCustomerCode + " not found in CW.";
-                            return BadRequest(dataResponse);
+                            return Ok(dataResponse);
                         }
 
-
                     }
+                    if(relatedParties.Count > 0)
+                        nativeOrganization.OrgRelatedPartyCollection = relatedParties.ToArray();
                     #endregion
 
                     #region NOTES
@@ -1058,9 +1089,11 @@ namespace BrinksAPI.Controllers
                     nativeOrgAddress.Action = NativeOrganization.Action.INSERT;
                     nativeOrgAddress.IsActiveSpecified = true;
                     nativeOrgAddress.IsActive = true;
-                    nativeOrgAddress.Code = organization.address1;
-                    nativeOrgAddress.Address1 = organization.address1 + " " + organization.address2;
-                    nativeOrgAddress.Address2 = organization.address3 + " " + organization.address4;
+                    nativeOrgAddress.Code = organization.address1.Length>24?organization.address1.Substring(0, 24): organization.address1;
+                    nativeOrgAddress.Address1 = organization.address1;
+                    nativeOrgAddress.Address2 = organization.address2;
+                    nativeOrgAddress.AdditionalAddressInformation = organization.address3 + " " + organization.address4;
+
                     nativeOrgAddress.City = organization.city;
                     nativeOrgAddress.PostCode = organization.postalCode;
                     nativeOrgAddress.State = organization.provinceCode;
@@ -1423,16 +1456,16 @@ namespace BrinksAPI.Controllers
                     #endregion
 
                     #region RELATED PARTIES
+                    List<NativeOrganizationOrgRelatedParty> relatedParties = new List<NativeOrganizationOrgRelatedParty>();
                     if (organization.brokerGlobalCustomerCode != null)
                     {
                         OrganizationData brokerOrganizationData =  SearchOrgWithCode(organization.brokerGlobalCustomerCode);
                         if (brokerOrganizationData.OrgHeader != null)
                         {
-                            List<NativeOrganizationOrgRelatedParty> relatedParties = new List<NativeOrganizationOrgRelatedParty>();
                             NativeOrganizationOrgRelatedParty relatedParty = new NativeOrganizationOrgRelatedParty();
                             if (organizationData.OrgHeader.OrgRelatedPartyCollection is not null)
                             {
-                                var filteredOrganizationRelatedData = organizationData.OrgHeader.OrgRelatedPartyCollection.Where(orp => orp.PartyType == "CAB" && orp.FreightTransportMode == "ALL" && orp.FreightDirection == "PAD").FirstOrDefault();
+                                var filteredOrganizationRelatedData = organizationData.OrgHeader.OrgRelatedPartyCollection.Where(orp => orp.PartyType == "CAB").FirstOrDefault();
                                 if (filteredOrganizationRelatedData != null)
                                 {
                                     filteredOrganizationRelatedData.ActionSpecified = true;
@@ -1441,6 +1474,7 @@ namespace BrinksAPI.Controllers
                                     filteredOrganizationRelatedData.RelatedParty.Action = NativeOrganization.Action.UPDATE;
                                     filteredOrganizationRelatedData.RelatedParty.PK = brokerOrganizationData.OrgHeader.PK;
                                     filteredOrganizationRelatedData.RelatedParty.Code = brokerOrganizationData.OrgHeader.Code;
+                                    relatedParties.Add(filteredOrganizationRelatedData);
 
                                 }
                                 else
@@ -1455,7 +1489,7 @@ namespace BrinksAPI.Controllers
                                     relatedPartyCode.Code = organization.brokerGlobalCustomerCode;
                                     relatedParty.RelatedParty = relatedPartyCode;
                                     relatedParties.Add(relatedParty);
-                                    organizationData.OrgHeader.OrgRelatedPartyCollection = relatedParties.ToArray();
+                                    //organizationData.OrgHeader.OrgRelatedPartyCollection = relatedParties.ToArray();
                                 }
                             }
                             else
@@ -1470,7 +1504,7 @@ namespace BrinksAPI.Controllers
                                 relatedPartyCode.Code = organization.brokerGlobalCustomerCode;
                                 relatedParty.RelatedParty = relatedPartyCode;
                                 relatedParties.Add(relatedParty);
-                                organizationData.OrgHeader.OrgRelatedPartyCollection = relatedParties.ToArray();
+                                //organizationData.OrgHeader.OrgRelatedPartyCollection = relatedParties.ToArray();
                             }
                             
                         }
@@ -1478,9 +1512,69 @@ namespace BrinksAPI.Controllers
                         {
                             dataResponse.Status = "ERROR";
                             dataResponse.Message = "The Broker customer code " + organization.brokerGlobalCustomerCode + " not found in CW.";
-                            return BadRequest(dataResponse);
+                            return Ok(dataResponse);
                         }
                     }
+                    if (organization.invoiceGlobalCustomerCode != null)
+                    {
+                        OrganizationData invoiceOrganizationData = SearchOrgWithCode(organization.invoiceGlobalCustomerCode);
+                        if (invoiceOrganizationData.OrgHeader != null)
+                        {
+                            //List<NativeOrganizationOrgRelatedParty> relatedParties = new List<NativeOrganizationOrgRelatedParty>();
+                            NativeOrganizationOrgRelatedParty relatedParty = new NativeOrganizationOrgRelatedParty();
+                            if (organizationData.OrgHeader.OrgRelatedPartyCollection is not null)
+                            {
+                                var filteredOrganizationRelatedData = organizationData.OrgHeader.OrgRelatedPartyCollection.Where(orp => orp.PartyType == "LFW").FirstOrDefault();
+                                if (filteredOrganizationRelatedData != null)
+                                {
+                                    filteredOrganizationRelatedData.ActionSpecified = true;
+                                    filteredOrganizationRelatedData.Action = NativeOrganization.Action.UPDATE;
+                                    filteredOrganizationRelatedData.RelatedParty.ActionSpecified = true;
+                                    filteredOrganizationRelatedData.RelatedParty.Action = NativeOrganization.Action.UPDATE;
+                                    filteredOrganizationRelatedData.RelatedParty.PK = invoiceOrganizationData.OrgHeader.PK;
+                                    filteredOrganizationRelatedData.RelatedParty.Code = invoiceOrganizationData.OrgHeader.Code;
+                                    relatedParties.Add(filteredOrganizationRelatedData);
+
+                                }
+                                else
+                                {
+                                    relatedParty.ActionSpecified = true;
+                                    relatedParty.Action = NativeOrganization.Action.INSERT;
+                                    relatedParty.PartyType = "LFW";
+                                    relatedParty.FreightTransportMode = "ALL";
+                                    relatedParty.FreightDirection = "PAD";
+                                    NativeOrganizationOrgRelatedPartyRelatedParty relatedPartyCode = new NativeOrganizationOrgRelatedPartyRelatedParty();
+                                    relatedPartyCode.PK = invoiceOrganizationData.OrgHeader.PK;
+                                    relatedPartyCode.Code = organization.invoiceGlobalCustomerCode;
+                                    relatedParty.RelatedParty = relatedPartyCode;
+                                    relatedParties.Add(relatedParty);
+                                    //organizationData.OrgHeader.OrgRelatedPartyCollection = relatedParties.ToArray();
+                                }
+                            }
+                            else
+                            {
+                                relatedParty.ActionSpecified = true;
+                                relatedParty.Action = NativeOrganization.Action.INSERT;
+                                relatedParty.PartyType = "LFW";
+                                relatedParty.FreightTransportMode = "ALL";
+                                relatedParty.FreightDirection = "PAD";
+                                NativeOrganizationOrgRelatedPartyRelatedParty relatedPartyCode = new NativeOrganizationOrgRelatedPartyRelatedParty();
+                                relatedPartyCode.PK = invoiceOrganizationData.OrgHeader.PK;
+                                relatedPartyCode.Code = organization.invoiceGlobalCustomerCode;
+                                relatedParty.RelatedParty = relatedPartyCode;
+                                relatedParties.Add(relatedParty);
+                                //organizationData.OrgHeader.OrgRelatedPartyCollection = relatedParties.ToArray();
+                            }
+
+                        }
+                        else
+                        {
+                            dataResponse.Status = "ERROR";
+                            dataResponse.Message = "The Broker customer code " + organization.invoiceGlobalCustomerCode + " not found in CW.";
+                            return Ok(dataResponse);
+                        }
+                    }
+                    organizationData.OrgHeader.OrgRelatedPartyCollection = relatedParties.ToArray();
                     #endregion
 
                     #region NOTES
@@ -1568,14 +1662,13 @@ namespace BrinksAPI.Controllers
                     #endregion
 
                     #region ORGANIZATION ADDRESS
-                    string address1 = organization.address1 + " " + organization.address2;
-                    string address2 = organization.address3 + " " + organization.address4;
 
                     organizationData.OrgHeader.OrgAddressCollection[0].ActionSpecified = true;
                     organizationData.OrgHeader.OrgAddressCollection[0].Action = NativeOrganization.Action.UPDATE;
-                    organizationData.OrgHeader.OrgAddressCollection[0].Code = organization.address1;
-                    organizationData.OrgHeader.OrgAddressCollection[0].Address1 = address1;
-                    organizationData.OrgHeader.OrgAddressCollection[0].Address2 = address2;
+                    organizationData.OrgHeader.OrgAddressCollection[0].Code = organization.address1.Length > 24 ? organization.address1.Substring(0, 24) : organization.address1;
+                    organizationData.OrgHeader.OrgAddressCollection[0].Address1 = organization.address1;
+                    organizationData.OrgHeader.OrgAddressCollection[0].Address2 = organization.address2;
+                    organizationData.OrgHeader.OrgAddressCollection[0].AdditionalAddressInformation = organization.address3 + " " + organization.address4;
                     organizationData.OrgHeader.OrgAddressCollection[0].City = organization.city;
                     organizationData.OrgHeader.OrgAddressCollection[0].PostCode = organization.postalCode;
                     organizationData.OrgHeader.OrgAddressCollection[0].State = organization.provinceCode;
@@ -1669,7 +1762,7 @@ namespace BrinksAPI.Controllers
                 {
                     dataResponse.Status = documentResponse.Status;
                     dataResponse.Message = documentResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
-                    return BadRequest(dataResponse);
+                    return Ok(dataResponse);
                 }
 
                 dataResponse.Status = "SUCCESS";
@@ -1681,7 +1774,7 @@ namespace BrinksAPI.Controllers
             {
                 dataResponse.Status = "Internal Error";
                 dataResponse.Message = ex.Message;
-                return BadRequest(ex.Message);
+                return Ok(ex.Message);
             }
         }
         #endregion

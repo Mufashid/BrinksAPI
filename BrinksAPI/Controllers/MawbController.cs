@@ -63,7 +63,7 @@ namespace BrinksAPI.Controllers
             try
             {
                 if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
+                    return Ok(ModelState);
 
                 foreach(Mawb mawb in mawbs)
                 {
