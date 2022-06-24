@@ -9,10 +9,10 @@ namespace BrinksAPI.Models
     {
         public string? requestId { get; set; }
         public RiskCodes? riskCode { get; set; }
-        [Required]
+        [Required(ErrorMessage = "Customer Name is required.")]
         [StringLength(40)]
         public string? name { get; set; }
-        [Required]
+        [Required(ErrorMessage = "Customer Address1 is required.")]
         [StringLength(30)]
         public string? address1 { get; set; }
         [StringLength(30)]
@@ -21,7 +21,7 @@ namespace BrinksAPI.Models
         public string? address3 { get; set; }
         [StringLength(30)]
         public string? address4 { get; set; }
-        [Required]
+        [Required(ErrorMessage = "Customer City is required.")]
         [StringLength(25)]
         public string? city { get; set; }
         [RequiredIf("countryCode", "US")]
@@ -56,6 +56,7 @@ namespace BrinksAPI.Models
         [StringLength(4)]
         public string? siteCode { get; set; }
         [StringLength(20)]
+        [Required(ErrorMessage =("Customer Global Code is required."))]
         public string? globalCustomerCode { get; set; }
         [StringLength(20)]
         public string? invoiceGlobalCustomerCode { get; set; }

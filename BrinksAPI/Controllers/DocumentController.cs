@@ -25,7 +25,7 @@ namespace BrinksAPI.Controllers
         [HttpGet]
         [Route("api/document/")]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public IActionResult Get(BrinksDocument document)
+        public IActionResult Get(Document document)
         {
 
             string test = this.Configuration.URI;
@@ -65,15 +65,30 @@ namespace BrinksAPI.Controllers
         [HttpPost]
         [Route("api/document/")]
         [ProducesResponseType(200)]
-        public ActionResult<DocumentResponse> Create([FromBody]BrinksDocument document)
+        public ActionResult<DocumentResponse> Create([FromBody]Document document)
         {
             DocumentResponse dataResponse = new DocumentResponse();
             try
             {
-                if (!ModelState.IsValid)
-                    return Ok(ModelState);
-
                 dataResponse.RequestId = document.RequestId;
+                if (!ModelState.IsValid)
+                {
+                    string errorString = "";
+                    var errors = ModelState.Select(x => x.Value.Errors)
+                         .Where(y => y.Count > 0)
+                         .ToList();
+                    foreach (var error in errors)
+                    {
+                        foreach (var subError in error)
+                        {
+                            errorString += String.Format("{0}", subError.ErrorMessage);
+                        }
+                    }
+                    dataResponse.Status = "Validation Error";
+                    dataResponse.Message = errorString;
+
+                    return Ok(dataResponse);
+                }
                 UniversalShipmentData universalShipmentData = new UniversalShipmentData();
                 Shipment shipment = new Shipment();
 

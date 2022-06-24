@@ -63,9 +63,25 @@ namespace BrinksAPI.Controllers
             try
             {
                 if (!ModelState.IsValid)
-                    return Ok(ModelState);
+                {
+                    MawbResponse errorResponse = new MawbResponse();
+                    string errorString = "";
+                    var errors = ModelState.Select(x => x.Value.Errors)
+                         .Where(y => y.Count > 0)
+                         .ToList();
+                    foreach (var error in errors)
+                    {
+                        foreach (var subError in error)
+                        {
+                            errorString += String.Format("{0}", subError.ErrorMessage);
+                        }
+                    }
+                    errorResponse.Status = "Validation Error";
+                    errorResponse.Message = errorString;
+                    return Ok(errorResponse);
+                }
 
-                foreach(Mawb mawb in mawbs)
+                foreach (Mawb mawb in mawbs)
                 {
                     MawbResponse dataResponse = new MawbResponse();
                     dataResponse.RequestId = mawb.requestId;

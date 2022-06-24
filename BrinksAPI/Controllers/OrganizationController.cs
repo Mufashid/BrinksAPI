@@ -798,10 +798,26 @@ namespace BrinksAPI.Controllers
             string successMessage = "";
             try
             {
-                if (!ModelState.IsValid)
-                    return Ok(ModelState);
-
                 dataResponse.RequestId = organization.requestId;
+                if (!ModelState.IsValid)
+                {
+                    string errorString = "";
+                    var errors = ModelState.Select(x => x.Value.Errors)
+                         .Where(y => y.Count > 0)
+                         .ToList();
+                    foreach(var error in errors)
+                    {
+                        foreach(var subError in error)
+                        {
+                            errorString += String.Format("{0}", subError.ErrorMessage);
+                        }
+                    }
+                    dataResponse.Status = "Validation Error";
+                    dataResponse.Message = errorString;
+
+                    return Ok(dataResponse);
+                }
+
                 if (organization.billingAttention != null && organization.accountOwner !=null && organization.billingAttention == organization.accountOwner)
                 {
                     dataResponse.Status = "Error";
@@ -992,8 +1008,8 @@ namespace BrinksAPI.Controllers
                     List<NativeOrganizationOrgRelatedParty> relatedParties = new List<NativeOrganizationOrgRelatedParty>();
                     if (organization.invoiceGlobalCustomerCode != null)
                     {
-                        OrganizationData brokerOrganizationData = SearchOrgWithCode(organization.invoiceGlobalCustomerCode);
-                        if (brokerOrganizationData.OrgHeader != null)
+                        OrganizationData invoiceOrganizationData = SearchOrgWithRegNo(organization.invoiceGlobalCustomerCode);
+                        if (invoiceOrganizationData.OrgHeader != null)
                         {
                             NativeOrganizationOrgRelatedParty relatedParty = new NativeOrganizationOrgRelatedParty();
                             relatedParty.ActionSpecified = true;
@@ -1002,7 +1018,7 @@ namespace BrinksAPI.Controllers
                             relatedParty.FreightTransportMode = "ALL";
                             relatedParty.FreightDirection = "PAD";
                             NativeOrganizationOrgRelatedPartyRelatedParty relatedPartyCode = new NativeOrganizationOrgRelatedPartyRelatedParty();
-                            relatedPartyCode.PK = brokerOrganizationData.OrgHeader.PK;
+                            relatedPartyCode.PK = invoiceOrganizationData.OrgHeader.PK;
                             relatedPartyCode.Code = organization.invoiceGlobalCustomerCode;
                             relatedParty.RelatedParty = relatedPartyCode;
                             relatedParties.Add(relatedParty);
@@ -1019,7 +1035,7 @@ namespace BrinksAPI.Controllers
                     }
                     if (organization.brokerGlobalCustomerCode != null)
                     {
-                        OrganizationData brokerOrganizationData = SearchOrgWithCode(organization.brokerGlobalCustomerCode);
+                        OrganizationData brokerOrganizationData = SearchOrgWithRegNo(organization.brokerGlobalCustomerCode);
                         if (brokerOrganizationData.OrgHeader != null)
                         {
                             //List<NativeOrganizationOrgRelatedParty> relatedParties = new List<NativeOrganizationOrgRelatedParty>();
@@ -1083,16 +1099,17 @@ namespace BrinksAPI.Controllers
                     #endregion
 
                     #region ORGANIZATION ADDRESS
+                    string additionalAddress = organization.address3 + " " + organization.address4;
                     NativeOrganizationOrgAddress nativeOrgAddress = new NativeOrganizationOrgAddress();
                     List<NativeOrganizationOrgAddress> nativeOrgAddresses = new List<NativeOrganizationOrgAddress>();
                     nativeOrgAddress.ActionSpecified = true;
                     nativeOrgAddress.Action = NativeOrganization.Action.INSERT;
                     nativeOrgAddress.IsActiveSpecified = true;
                     nativeOrgAddress.IsActive = true;
-                    nativeOrgAddress.Code = organization.address1.Length>24?organization.address1.Substring(0, 24): organization.address1;
+                    nativeOrgAddress.Code = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24));
                     nativeOrgAddress.Address1 = organization.address1;
                     nativeOrgAddress.Address2 = organization.address2;
-                    nativeOrgAddress.AdditionalAddressInformation = organization.address3 + " " + organization.address4;
+                    nativeOrgAddress.AdditionalAddressInformation = additionalAddress?.Substring(0, Math.Min(additionalAddress.Length, 50));
 
                     nativeOrgAddress.City = organization.city;
                     nativeOrgAddress.PostCode = organization.postalCode;
@@ -1459,7 +1476,7 @@ namespace BrinksAPI.Controllers
                     List<NativeOrganizationOrgRelatedParty> relatedParties = new List<NativeOrganizationOrgRelatedParty>();
                     if (organization.brokerGlobalCustomerCode != null)
                     {
-                        OrganizationData brokerOrganizationData =  SearchOrgWithCode(organization.brokerGlobalCustomerCode);
+                        OrganizationData brokerOrganizationData = SearchOrgWithRegNo(organization.brokerGlobalCustomerCode);
                         if (brokerOrganizationData.OrgHeader != null)
                         {
                             NativeOrganizationOrgRelatedParty relatedParty = new NativeOrganizationOrgRelatedParty();
@@ -1517,7 +1534,7 @@ namespace BrinksAPI.Controllers
                     }
                     if (organization.invoiceGlobalCustomerCode != null)
                     {
-                        OrganizationData invoiceOrganizationData = SearchOrgWithCode(organization.invoiceGlobalCustomerCode);
+                        OrganizationData invoiceOrganizationData = SearchOrgWithRegNo(organization.invoiceGlobalCustomerCode);
                         if (invoiceOrganizationData.OrgHeader != null)
                         {
                             //List<NativeOrganizationOrgRelatedParty> relatedParties = new List<NativeOrganizationOrgRelatedParty>();
@@ -1662,13 +1679,13 @@ namespace BrinksAPI.Controllers
                     #endregion
 
                     #region ORGANIZATION ADDRESS
-
+                    string additionalAddress = organization.address3 + " " + organization.address4;
                     organizationData.OrgHeader.OrgAddressCollection[0].ActionSpecified = true;
                     organizationData.OrgHeader.OrgAddressCollection[0].Action = NativeOrganization.Action.UPDATE;
-                    organizationData.OrgHeader.OrgAddressCollection[0].Code = organization.address1.Length > 24 ? organization.address1.Substring(0, 24) : organization.address1;
+                    organizationData.OrgHeader.OrgAddressCollection[0].Code = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24));
                     organizationData.OrgHeader.OrgAddressCollection[0].Address1 = organization.address1;
                     organizationData.OrgHeader.OrgAddressCollection[0].Address2 = organization.address2;
-                    organizationData.OrgHeader.OrgAddressCollection[0].AdditionalAddressInformation = organization.address3 + " " + organization.address4;
+                    organizationData.OrgHeader.OrgAddressCollection[0].AdditionalAddressInformation = additionalAddress?.Substring(0, Math.Min(additionalAddress.Length, 50)); 
                     organizationData.OrgHeader.OrgAddressCollection[0].City = organization.city;
                     organizationData.OrgHeader.OrgAddressCollection[0].PostCode = organization.postalCode;
                     organizationData.OrgHeader.OrgAddressCollection[0].State = organization.provinceCode;

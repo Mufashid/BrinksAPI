@@ -443,8 +443,23 @@ namespace BrinksAPI.Controllers
             try
             {
                 if (!ModelState.IsValid)
-                    return BadRequest(ModelState);
-
+                {
+                    ShipemtHistoryResponse errorResponse = new ShipemtHistoryResponse();
+                    string errorString = "";
+                    var errors = ModelState.Select(x => x.Value.Errors)
+                         .Where(y => y.Count > 0)
+                         .ToList();
+                    foreach (var error in errors)
+                    {
+                        foreach (var subError in error)
+                        {
+                            errorString += String.Format("{0}", subError.ErrorMessage);
+                        }
+                    }
+                    errorResponse.Status = "Validation Error";
+                    errorResponse.Message = errorString;
+                    return Ok(errorResponse);
+                }
                 foreach (Models.Shipment.History history in histories)
                 {
                     ShipemtHistoryResponse dataResponse = new ShipemtHistoryResponse();
