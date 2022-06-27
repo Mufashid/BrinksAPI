@@ -5,6 +5,7 @@ using BrinksAPI.Models;
 using eAdaptor;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.ComponentModel.DataAnnotations;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
@@ -430,11 +431,12 @@ namespace BrinksAPI.Controllers
         ///     }]
         /// </remarks>
         /// <response code="200">Success</response>
-        /// <response code="400">Data not valid</response>
         /// <response code="401">Unauthorized</response>
         /// <response code="500">Internal server error</response>
         [HttpPost]
         [ProducesResponseType(200)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(500)]
         [Route("api/shipment/history")]
         public ActionResult<List<ShipemtHistoryResponse>> UpdateShipmentHistory([FromBody] Models.Shipment.History[] histories)
         {
@@ -442,189 +444,199 @@ namespace BrinksAPI.Controllers
 
             try
             {
-                if (!ModelState.IsValid)
-                {
-                    ShipemtHistoryResponse errorResponse = new ShipemtHistoryResponse();
-                    string errorString = "";
-                    var errors = ModelState.Select(x => x.Value.Errors)
-                         .Where(y => y.Count > 0)
-                         .ToList();
-                    foreach (var error in errors)
-                    {
-                        foreach (var subError in error)
-                        {
-                            errorString += String.Format("{0}", subError.ErrorMessage);
-                        }
-                    }
-                    errorResponse.Status = "Validation Error";
-                    errorResponse.Message = errorString;
-                    return Ok(errorResponse);
-                }
+                
                 foreach (Models.Shipment.History history in histories)
                 {
                     ShipemtHistoryResponse dataResponse = new ShipemtHistoryResponse();
                     dataResponse.RequestId = history.RequestId;
-
-                    Events.UniversalEventData universalEvent = new Events.UniversalEventData();
-
-                    var actionTypeObj = _context.actionTypes.Where(a => a.BrinksCode == history.ActionType).FirstOrDefault();
-                    string actionType = actionTypeObj == null ? "" : actionTypeObj.CWCode;
-                    string eventType = actionTypeObj == null ? "Z00" : actionTypeObj.EventType;
-                    #region DataContext
-                    Events.Event @event = new Events.Event();
-                    Events.DataContext dataContext = new Events.DataContext();
-                    List<Events.DataTarget> dataTargets = new List<Events.DataTarget>();
-                    Events.DataTarget dataTarget = new Events.DataTarget();
-                    dataTarget.Type = "ForwardingShipment";
-                    dataTargets.Add(dataTarget);
-                    dataContext.DataTargetCollection = dataTargets.ToArray();
-                    Events.Company company = new Events.Company();
-                    company.Code = history.SiteCode== "3210"?"DXB":"";
-                    dataContext.Company = company;
-                    dataContext.EnterpriseID = _configuration.EnterpriseId;
-                    dataContext.ServerID = history.ServerId;
-                    Events.Staff staff = new Events.Staff();
-                    staff.Code = history.UserId;
-                    dataContext.EventUser = staff;
-                    @event.DataContext = dataContext;
-                    #endregion
-
-                    #region Event
-                    @event.EventTime = history.HistoryDate;
-                    @event.EventType = eventType;
-                    @event.EventReference = history.HistoryDetails;
-                    #endregion
-
-                    #region Contexts
-                    List<Events.Context> contexts = new List<Events.Context>();
-                    Events.Context context = new Events.Context();
-                    Events.ContextType type = new Events.ContextType();
-                    type.Value = "HAWBNumber";
-                    context.Type = type;
-                    context.Value = history.HawbNumber;
-                    contexts.Add(context);
-                    @event.ContextCollection = contexts.ToArray();
-                    #endregion
-
-                    universalEvent.Event = @event;
-
-                    string xml = Utilities.Serialize(universalEvent);
-                    var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
-
-                    if (documentResponse.Status == "SUCCESS")
+                    try
                     {
-                        using (var reader = new StringReader(documentResponse.Data.Data.OuterXml))
-                        {
-                            var serializer = new XmlSerializer(typeof(Events.UniversalEventData));
-                            Events.UniversalEventData responseEvent = (Events.UniversalEventData)serializer.Deserialize(reader);
+                        var validationResults = new List<ValidationResult>();
+                        var validationContext = new ValidationContext(history);
+                        var isValid = Validator.TryValidateObject(history, validationContext, validationResults);
 
-                            bool isError = responseEvent.Event.ContextCollection.Any(c => c.Type.Value.Contains("FailureReason"));
-                            if (isError)
+                        if (isValid)
+                        {
+                            Events.UniversalEventData universalEvent = new Events.UniversalEventData();
+
+                            var actionTypeObj = _context.actionTypes.Where(a => a.BrinksCode == history.ActionType).FirstOrDefault();
+                            string actionType = actionTypeObj == null ? "" : actionTypeObj.CWCode;
+                            string eventType = actionTypeObj == null ? "Z00" : actionTypeObj.EventType;
+                            #region DataContext
+                            Events.Event @event = new Events.Event();
+                            Events.DataContext dataContext = new Events.DataContext();
+                            List<Events.DataTarget> dataTargets = new List<Events.DataTarget>();
+                            Events.DataTarget dataTarget = new Events.DataTarget();
+                            dataTarget.Type = "ForwardingShipment";
+                            dataTargets.Add(dataTarget);
+                            dataContext.DataTargetCollection = dataTargets.ToArray();
+                            Events.Company company = new Events.Company();
+                            company.Code = history.SiteCode == "3210" ? "DXB" : "";
+                            dataContext.Company = company;
+                            dataContext.EnterpriseID = _configuration.EnterpriseId;
+                            dataContext.ServerID = history.ServerId;
+                            Events.Staff staff = new Events.Staff();
+                            staff.Code = history.UserId;
+                            dataContext.EventUser = staff;
+                            @event.DataContext = dataContext;
+                            #endregion
+
+                            #region Event
+                            @event.EventTime = history.HistoryDate;
+                            @event.EventType = eventType;
+                            @event.EventReference = history.HistoryDetails;
+                            #endregion
+
+                            #region Contexts
+                            List<Events.Context> contexts = new List<Events.Context>();
+                            Events.Context context = new Events.Context();
+                            Events.ContextType type = new Events.ContextType();
+                            type.Value = "HAWBNumber";
+                            context.Type = type;
+                            context.Value = history.HawbNumber;
+                            contexts.Add(context);
+                            @event.ContextCollection = contexts.ToArray();
+                            #endregion
+
+                            universalEvent.Event = @event;
+
+                            string xml = Utilities.Serialize(universalEvent);
+                            var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+
+                            if (documentResponse.Status == "SUCCESS")
                             {
-                                string errorMessage = responseEvent.Event.ContextCollection
-                                    .Where(c => c.Type.Value == "FailureReason")
-                                    .FirstOrDefault().Value
-                                    .Replace("Error - ", "")
-                                    .Replace("Warning - ", "");
-                                dataResponse.Status = "ERROR";
-                                if (errorMessage == "No Module found a Business Entity to link this Universal Event to.")
-                                    dataResponse.Message = String.Format("{0} - Hawb does not exist", history.HawbNumber);
-                                else
-                                    dataResponse.Message = errorMessage;
-                            }
-                            else
-                            {
-                                string message = "Shipment history created.";
-                                string shipmentId = responseEvent.Event.DataContext.DataSourceCollection.Where(d => d.Type == "ForwardingShipment").FirstOrDefault().Key;
-                                if (history.TrackingNumber!=null && shipmentId != null)
+                                using (var reader = new StringReader(documentResponse.Data.Data.OuterXml))
                                 {
-                                    UniversalShipmentData universalShipmentData = GetShipmentById(dataContext, shipmentId);
-                                    if(universalShipmentData is not null)
+                                    var serializer = new XmlSerializer(typeof(Events.UniversalEventData));
+                                    Events.UniversalEventData responseEvent = (Events.UniversalEventData)serializer.Deserialize(reader);
+
+                                    bool isError = responseEvent.Event.ContextCollection.Any(c => c.Type.Value.Contains("FailureReason"));
+                                    if (isError)
                                     {
-                                        if (universalShipmentData.Shipment.SubShipmentCollection is not null)
+                                        string errorMessage = responseEvent.Event.ContextCollection
+                                            .Where(c => c.Type.Value == "FailureReason")
+                                            .FirstOrDefault().Value
+                                            .Replace("Error - ", "")
+                                            .Replace("Warning - ", "");
+                                        dataResponse.Status = "ERROR";
+                                        if (errorMessage == "No Module found a Business Entity to link this Universal Event to.")
+                                            dataResponse.Message = String.Format("{0} - Hawb does not exist", history.HawbNumber);
+                                        else
+                                            dataResponse.Message = errorMessage;
+                                    }
+                                    else
+                                    {
+                                        string message = "Shipment history created.";
+                                        string shipmentId = responseEvent.Event.DataContext.DataSourceCollection.Where(d => d.Type == "ForwardingShipment").FirstOrDefault().Key;
+                                        if (history.TrackingNumber != null && shipmentId != null)
                                         {
-                                            var packingLineObject = universalShipmentData.Shipment
-                                                        .SubShipmentCollection
-                                                        .Where(sub => sub.PackingLineCollection.PackingLine
-                                                        .All(pkg => pkg.ReferenceNumber == history.TrackingNumber))
-                                                        .FirstOrDefault();
-                                            if (packingLineObject is null)
-                                                message += "Tracking Number " + history.TrackingNumber + " can't find. Unable to set the "+ actionType + " value.";
-                                            else
+                                            UniversalShipmentData universalShipmentData = GetShipmentById(dataContext, shipmentId);
+                                            if (universalShipmentData is not null)
                                             {
-                                                if (universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection is not null)
+                                                if (universalShipmentData.Shipment.SubShipmentCollection is not null)
                                                 {
-                                                    for(int i=0;i< universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection.Length; i++ )
+                                                    var packingLineObject = universalShipmentData.Shipment
+                                                                .SubShipmentCollection
+                                                                .Where(sub => sub.PackingLineCollection.PackingLine
+                                                                .All(pkg => pkg.ReferenceNumber == history.TrackingNumber))
+                                                                .FirstOrDefault();
+                                                    if (packingLineObject is null)
+                                                        message += "Tracking Number " + history.TrackingNumber + " can't find. Unable to set the " + actionType + " value.";
+                                                    else
                                                     {
-                                                        for(int j= 0; j < universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection[i].PackingLineCollection.PackingLine.Length; j++)
+                                                        if (universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection is not null)
                                                         {
-                                                            if(universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection[i].PackingLineCollection.PackingLine[j].ReferenceNumber == history.TrackingNumber)
+                                                            for (int i = 0; i < universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection.Length; i++)
                                                             {
-                                                                for(int k= 0; k < universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection[i].PackingLineCollection.PackingLine[j].CustomizedFieldCollection.Length; k++)
+                                                                for (int j = 0; j < universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection[i].PackingLineCollection.PackingLine.Length; j++)
                                                                 {
-                                                                    if(universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection[i].PackingLineCollection.PackingLine[j].CustomizedFieldCollection[k].Key == actionType)
+                                                                    if (universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection[i].PackingLineCollection.PackingLine[j].ReferenceNumber == history.TrackingNumber)
                                                                     {
-                                                                        universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection[i].PackingLineCollection.PackingLine[j].CustomizedFieldCollection[k].Value = history.HistoryDate;
+                                                                        for (int k = 0; k < universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection[i].PackingLineCollection.PackingLine[j].CustomizedFieldCollection.Length; k++)
+                                                                        {
+                                                                            if (universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection[i].PackingLineCollection.PackingLine[j].CustomizedFieldCollection[k].Key == actionType)
+                                                                            {
+                                                                                universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection[i].PackingLineCollection.PackingLine[j].CustomizedFieldCollection[k].Value = history.HistoryDate;
+                                                                            }
+                                                                        }
                                                                     }
                                                                 }
                                                             }
                                                         }
                                                     }
+
                                                 }
+                                                else
+                                                {
+                                                    var packingLineObject = universalShipmentData.Shipment
+                                                    .PackingLineCollection.PackingLine
+                                                    .Where(p => p.ReferenceNumber == history.TrackingNumber)
+                                                    .FirstOrDefault();
+                                                    if (packingLineObject is null)
+                                                        message += "Tracking Number " + history.TrackingNumber + " can't find. Unable to set the " + actionType + " value.";
+                                                    else
+                                                    {
+                                                        packingLineObject
+                                                            .CustomizedFieldCollection
+                                                            .Where(c => c.Key == actionType)
+                                                            .FirstOrDefault()
+                                                            .Value = history.HistoryDate;
+                                                    }
+
+                                                }
+
+                                                string universalShipmentDataXml = Utilities.Serialize(universalShipmentData);
+                                                universalShipmentDataXml = universalShipmentDataXml.Replace("DataSource", "DataTarget");
+                                                var universalShipmentDataResponse = eAdaptor.Services.SendToCargowise(universalShipmentDataXml, _configuration.URI, _configuration.Username, _configuration.Password);
+                                                if (universalShipmentDataResponse.Status != "SUCCESS")
+                                                    message += "Unable to update the packing line with the traking number " + history.TrackingNumber;
                                             }
+                                            //else
+                                            //    message = "No matching tracking number("+ history.trackingNumber + ") found.";
 
                                         }
-                                        else
-                                        {
-                                            var packingLineObject = universalShipmentData.Shipment
-                                            .PackingLineCollection.PackingLine
-                                            .Where(p => p.ReferenceNumber == history.TrackingNumber)
-                                            .FirstOrDefault();
-                                            if (packingLineObject is null)
-                                                message += "Tracking Number " + history.TrackingNumber + " can't find. Unable to set the " + actionType + " value.";
-                                            else
-                                            {
-                                                packingLineObject
-                                                    .CustomizedFieldCollection
-                                                    .Where(c => c.Key == actionType)
-                                                    .FirstOrDefault()
-                                                    .Value = history.HistoryDate;
-                                            }
-
-                                        }
-
-                                        string universalShipmentDataXml = Utilities.Serialize(universalShipmentData);
-                                        universalShipmentDataXml = universalShipmentDataXml.Replace("DataSource", "DataTarget");
-                                        var universalShipmentDataResponse = eAdaptor.Services.SendToCargowise(universalShipmentDataXml, _configuration.URI, _configuration.Username, _configuration.Password);
-                                        if (universalShipmentDataResponse.Status != "SUCCESS")
-                                            message += "Unable to update the packing line with the traking number " + history.TrackingNumber;
+                                        dataResponse.Status = "SUCCESS";
+                                        dataResponse.Message = message;
                                     }
-                                    //else
-                                    //    message = "No matching tracking number("+ history.trackingNumber + ") found.";
-
                                 }
-                                dataResponse.Status = "SUCCESS";
-                                dataResponse.Message = message;
-                                //dataResponse.Data = history;
                             }
-                        }
-                    }
-                    else
-                    {
-                        dataResponse.Status = documentResponse.Status;
-                        dataResponse.Message = documentResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
+                            else
+                            {
+                                dataResponse.Status = documentResponse.Status;
+                                dataResponse.Message = documentResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
 
+                            }
+
+                        }
+                        else
+                        {
+                            string validationMessage = "";
+                            dataResponse.Status = "Validation Error.";
+                            foreach (var validationResult in validationResults)
+                            {
+                                validationMessage += validationResult.ErrorMessage;
+                            }
+                            dataResponse.Message = validationMessage;
+                        }
+                        dataResponses.Add(dataResponse);
                     }
-                    dataResponses.Add(dataResponse);
+                    catch(Exception ex)
+                    {
+                        dataResponse.Status = "Internal Error";
+                        dataResponse.Message = ex.Message;
+                        dataResponses.Add(dataResponse);
+                        continue;
+                    }
                 }
                 return Ok(dataResponses);
             }
             catch (Exception ex)
             {
-                Response dataResponse = new Response();
+                ShipemtHistoryResponse dataResponse = new ShipemtHistoryResponse();
                 dataResponse.Status = "Internal Error";
                 dataResponse.Message = ex.Message;
-                return StatusCode(StatusCodes.Status500InternalServerError, dataResponse);
+                dataResponses.Add(dataResponse);
+                return StatusCode(StatusCodes.Status500InternalServerError, dataResponses);
             }
         } 
         #endregion
