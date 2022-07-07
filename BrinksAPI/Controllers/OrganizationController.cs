@@ -1587,7 +1587,7 @@ namespace BrinksAPI.Controllers
                         else
                         {
                             dataResponse.Status = "ERROR";
-                            dataResponse.Message = "The Broker customer code " + organization.invoiceGlobalCustomerCode + " not found in CW.";
+                            dataResponse.Message = "The invoice global customer code " + organization.invoiceGlobalCustomerCode + " not found in CW.";
                             return Ok(dataResponse);
                         }
                     }
