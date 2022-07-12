@@ -64,6 +64,7 @@ namespace BrinksAPI.Models
         PDF,
         PNG,
         JPEG,
+        JPG,
         GIF,
         BMP,
         XML,
