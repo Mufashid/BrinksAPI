@@ -812,7 +812,7 @@ namespace BrinksAPI.Controllers
                             errorString += String.Format("{0}", subError.ErrorMessage);
                         }
                     }
-                    dataResponse.Status = "Validation Error";
+                    dataResponse.Status = "ERROR";
                     dataResponse.Message = errorString;
 
                     return Ok(dataResponse);
@@ -820,7 +820,7 @@ namespace BrinksAPI.Controllers
 
                 if (organization.billingAttention != null && organization.accountOwner !=null && organization.billingAttention == organization.accountOwner)
                 {
-                    dataResponse.Status = "Error";
+                    dataResponse.Status = "ERROR";
                     dataResponse.Message = "Billing Attention and Account Owner field are same. Please check";
                     return Ok(dataResponse);
                 }
@@ -1106,9 +1106,9 @@ namespace BrinksAPI.Controllers
                     nativeOrgAddress.Action = NativeOrganization.Action.INSERT;
                     nativeOrgAddress.IsActiveSpecified = true;
                     nativeOrgAddress.IsActive = true;
-                    nativeOrgAddress.Code = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24));
-                    nativeOrgAddress.Address1 = organization.address1;
-                    nativeOrgAddress.Address2 = organization.address2;
+                    nativeOrgAddress.Code = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24)).Replace("#","");
+                    nativeOrgAddress.Address1 = organization.address1.Replace("#", "");
+                    nativeOrgAddress.Address2 = organization.address2.Replace("#", "");
                     nativeOrgAddress.AdditionalAddressInformation = additionalAddress?.Substring(0, Math.Min(additionalAddress.Length, 50));
 
                     nativeOrgAddress.City = organization.city;
@@ -1148,19 +1148,19 @@ namespace BrinksAPI.Controllers
 
                     #region CUSTOM VALUES
                     Dictionary<string, string> customValues = new Dictionary<string, string>();
-                    customValues.Add("siteCode", organization.siteCode);
-                    customValues.Add("locationVerifiedDate", organization.locationVerifiedDate);
-                    customValues.Add("kycCreatedPrior2018", organization.kycCreatedPrior2018.ToString());
-                    customValues.Add("kycOpenProcCompleted", organization.kycOpenProcCompleted.ToString());
-                    customValues.Add("kycRefNbr", organization.kycRefNbr);
-                    customValues.Add("kycVerifDate", organization.kycVerifDate);
-                    customValues.Add("kycApprovedBy", organization.kycApprovedBy);
-                    customValues.Add("kycOpeningStation", organization.kycOpeningStation);
-                    customValues.Add("Lob", organization.lob);
-                    customValues.Add("adyenPay", organization.adyenPay.ToString());
-                    customValues.Add("adyenPayPreference", organization.adyenPayPreference);
-                    customValues.Add("adyenTokenId", organization.adyenTokenId);
-                    customValues.Add("adyenPayByLinkId", organization.adyenPayByLinkId);
+                    customValues.Add("siteCode", organization?.siteCode);
+                    customValues.Add("locationVerifiedDate", organization?.locationVerifiedDate);
+                    customValues.Add("kycCreatedPrior2018", organization?.kycCreatedPrior2018.ToString());
+                    customValues.Add("kycOpenProcCompleted", organization?.kycOpenProcCompleted.ToString());
+                    customValues.Add("kycRefNbr", organization?.kycRefNbr);
+                    customValues.Add("kycVerifDate", organization?.kycVerifDate);
+                    customValues.Add("kycApprovedBy", organization?.kycApprovedBy);
+                    customValues.Add("kycOpeningStation", organization?.kycOpeningStation);
+                    customValues.Add("Lob", organization?.lob);
+                    customValues.Add("adyenPay", organization?.adyenPay.ToString());
+                    customValues.Add("adyenPayPreference", organization?.adyenPayPreference);
+                    customValues.Add("adyenTokenId", organization?.adyenTokenId);
+                    customValues.Add("adyenPayByLinkId", organization?.adyenPayByLinkId);
                     customValues = customValues.Where(c => c.Value != null && c.Value != "").ToDictionary(x => x.Key, x => x.Value);
                     List<NativeOrganizationJobRequiredDocument> documents = new List<NativeOrganizationJobRequiredDocument>();
                     int count = 0;
@@ -1682,10 +1682,10 @@ namespace BrinksAPI.Controllers
                     string additionalAddress = organization.address3 + " " + organization.address4;
                     organizationData.OrgHeader.OrgAddressCollection[0].ActionSpecified = true;
                     organizationData.OrgHeader.OrgAddressCollection[0].Action = NativeOrganization.Action.UPDATE;
-                    organizationData.OrgHeader.OrgAddressCollection[0].Code = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24));
-                    organizationData.OrgHeader.OrgAddressCollection[0].Address1 = organization.address1;
-                    organizationData.OrgHeader.OrgAddressCollection[0].Address2 = organization.address2;
-                    organizationData.OrgHeader.OrgAddressCollection[0].AdditionalAddressInformation = additionalAddress?.Substring(0, Math.Min(additionalAddress.Length, 50)); 
+                    organizationData.OrgHeader.OrgAddressCollection[0].Code = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24)).Replace("#", "");
+                    organizationData.OrgHeader.OrgAddressCollection[0].Address1 = organization.address1?.Replace("#", "");
+                    organizationData.OrgHeader.OrgAddressCollection[0].Address2 = organization.address2?.Replace("#", "");
+                    organizationData.OrgHeader.OrgAddressCollection[0].AdditionalAddressInformation = additionalAddress?.Substring(0, Math.Min(additionalAddress.Length, 50)).Replace("#", ""); 
                     organizationData.OrgHeader.OrgAddressCollection[0].City = organization.city;
                     organizationData.OrgHeader.OrgAddressCollection[0].PostCode = organization.postalCode;
                     organizationData.OrgHeader.OrgAddressCollection[0].State = organization.provinceCode;
@@ -1789,7 +1789,7 @@ namespace BrinksAPI.Controllers
             }
             catch (Exception ex)
             {
-                dataResponse.Status = "Internal Error";
+                dataResponse.Status = "ERROR";
                 dataResponse.Message = ex.Message;
                 return Ok(ex.Message);
             }

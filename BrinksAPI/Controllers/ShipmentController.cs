@@ -448,7 +448,7 @@ namespace BrinksAPI.Controllers
                 foreach (Models.Shipment.History history in histories)
                 {
                     ShipemtHistoryResponse dataResponse = new ShipemtHistoryResponse();
-                    dataResponse.RequestId = history.RequestId;
+                    dataResponse.RequestId = history?.RequestId;
                     try
                     {
                         var validationResults = new List<ValidationResult>();
@@ -460,8 +460,9 @@ namespace BrinksAPI.Controllers
                             Events.UniversalEventData universalEvent = new Events.UniversalEventData();
 
                             var actionTypeObj = _context.actionTypes.Where(a => a.BrinksCode == history.ActionType).FirstOrDefault();
-                            string actionType = actionTypeObj == null ? "" : actionTypeObj.CWCode;
+                            string actionType = actionTypeObj?.CWCode;
                             string eventType = actionTypeObj == null ? "Z00" : actionTypeObj.EventType;
+
                             #region DataContext
                             Events.Event @event = new Events.Event();
                             Events.DataContext dataContext = new Events.DataContext();
@@ -611,7 +612,7 @@ namespace BrinksAPI.Controllers
                         else
                         {
                             string validationMessage = "";
-                            dataResponse.Status = "Validation Error.";
+                            dataResponse.Status = "ERROR";
                             foreach (var validationResult in validationResults)
                             {
                                 validationMessage += validationResult.ErrorMessage;
@@ -622,7 +623,7 @@ namespace BrinksAPI.Controllers
                     }
                     catch(Exception ex)
                     {
-                        dataResponse.Status = "Internal Error";
+                        dataResponse.Status = "ERROR";
                         dataResponse.Message = ex.Message;
                         dataResponses.Add(dataResponse);
                         continue;
@@ -633,7 +634,7 @@ namespace BrinksAPI.Controllers
             catch (Exception ex)
             {
                 ShipemtHistoryResponse dataResponse = new ShipemtHistoryResponse();
-                dataResponse.Status = "Internal Error";
+                dataResponse.Status = "ERROR";
                 dataResponse.Message = ex.Message;
                 dataResponses.Add(dataResponse);
                 return StatusCode(StatusCodes.Status500InternalServerError, dataResponses);

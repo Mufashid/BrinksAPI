@@ -66,7 +66,7 @@ namespace BrinksAPI.Controllers
                 foreach (Mawb mawb in mawbs)
                 {
                     MawbResponse dataResponse = new MawbResponse();
-                    dataResponse.RequestId = mawb.requestId;
+                    dataResponse.RequestId = mawb?.requestId;
                     try
                     {
                         var validationResults = new List<ValidationResult>();
@@ -150,7 +150,7 @@ namespace BrinksAPI.Controllers
                         else
                         {
                             string validationMessage = "";
-                            dataResponse.Status = "Validation Error.";
+                            dataResponse.Status = "ERROR";
                             foreach (var validationResult in validationResults)
                             {
                                 validationMessage += validationResult.ErrorMessage;
@@ -161,7 +161,7 @@ namespace BrinksAPI.Controllers
                     }
                     catch (Exception ex)
                     {
-                        dataResponse.Status = "Internal Error";
+                        dataResponse.Status = "ERROR";
                         dataResponse.Message = ex.Message;
                         continue;
                     }
@@ -172,7 +172,7 @@ namespace BrinksAPI.Controllers
             catch (Exception ex)
             {
                 MawbResponse dataResponse = new MawbResponse();
-                dataResponse.Status = "Internal Error";
+                dataResponse.Status = "ERROR";
                 dataResponse.Message = ex.Message;
                 dataResponses.Add(dataResponse);
                 return StatusCode(StatusCodes.Status500InternalServerError, dataResponses);

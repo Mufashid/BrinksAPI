@@ -70,7 +70,7 @@ namespace BrinksAPI.Controllers
             DocumentResponse dataResponse = new DocumentResponse();
             try
             {
-                dataResponse.RequestId = document.RequestId;
+                dataResponse.RequestId = document?.RequestId;
                 if (!ModelState.IsValid)
                 {
                     string errorString = "";
@@ -84,7 +84,7 @@ namespace BrinksAPI.Controllers
                             errorString += String.Format("{0}", subError.ErrorMessage);
                         }
                     }
-                    dataResponse.Status = "Validation Error";
+                    dataResponse.Status = "ERROR";
                     dataResponse.Message = errorString;
 
                     return Ok(dataResponse);
