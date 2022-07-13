@@ -70,7 +70,10 @@ namespace BrinksAPI.Models
         XML,
         TXT,
         DOCX,
-        XLSX
+        XLSX,
+        TIFF,
+        TIF,
+        BAK
     }
     public enum DocumentReferenceType
     {

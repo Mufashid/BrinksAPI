@@ -14,7 +14,7 @@ namespace BrinksAPI.Models
         [Required]
         public string? historyDate { get; set; }
         [Required]
-        [StringLength(3)]
+        [StringLength(5)]
         public string? serverId { get; set; }
         [Required]
         [StringLength(3)]

@@ -23,6 +23,7 @@ namespace BrinksAPI.Auth
         public DbSet<Entities.ServiceLevel> serviceLevels { get; set; }
         public DbSet<Entities.DocumentType> documentTypes { get; set; } 
         public DbSet<Entities.ActionType> actionTypes { get; set; } 
+        public DbSet<Entities.Site> sites { get; set; } 
         #endregion
         public DbSet<Document> documents { get; set; }
     }

@@ -718,6 +718,7 @@ namespace BrinksAPI.Controllers
         }
         #endregion
         */
+        
         #region UPSERT ORGANIZATION
         /// <summary>
         /// Creates or Updates an Organization.
@@ -751,7 +752,7 @@ namespace BrinksAPI.Controllers
         ///        "dateCreated": "2022-05-24 06:35:44",
         ///        "notes": "Note 01",
         ///        "invoiceType":"C",
-        ///        "siteCode": "26",
+        ///        "siteCode": "3210",
         ///        "globalCustomerCode": "3737EMIRATES0014",
         ///        "invoiceGlobalCustomerCode": "1234567890",
         ///        "brokerGlobalCustomerCode":"BROKER",
@@ -1106,9 +1107,9 @@ namespace BrinksAPI.Controllers
                     nativeOrgAddress.Action = NativeOrganization.Action.INSERT;
                     nativeOrgAddress.IsActiveSpecified = true;
                     nativeOrgAddress.IsActive = true;
-                    nativeOrgAddress.Code = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24)).Replace("#","");
-                    nativeOrgAddress.Address1 = organization.address1.Replace("#", "");
-                    nativeOrgAddress.Address2 = organization.address2.Replace("#", "");
+                    nativeOrgAddress.Code = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24));
+                    nativeOrgAddress.Address1 = organization.address1;
+                    nativeOrgAddress.Address2 = organization.address2;
                     nativeOrgAddress.AdditionalAddressInformation = additionalAddress?.Substring(0, Math.Min(additionalAddress.Length, 50));
 
                     nativeOrgAddress.City = organization.city;
@@ -1140,27 +1141,53 @@ namespace BrinksAPI.Controllers
                     #endregion
 
                     #region CLOSEST PORT
-                    NativeOrganizationClosestPort nativeOrganizationClosestPort = new NativeOrganizationClosestPort();
-                    nativeOrganizationClosestPort.TableName = "RefUNLOCO";
-                    nativeOrganizationClosestPort.Code = "AUBNE";
-                    nativeOrganization.ClosestPort = nativeOrganizationClosestPort;
+                    if (organization.siteCode != null)
+                    {
+                        var site = _context.sites.Where(s => s.SiteCode == Int32.Parse(organization.siteCode))?.FirstOrDefault();
+                        if (site == null)
+                        {
+                            dataResponse.Status = "ERROR";
+                            dataResponse.Message = "siteCode " + organization.siteCode + " is not a valid mapping in the DB.";
+                            return Ok(dataResponse);
+                        }
+                        string unloco = site.Country + site.Airport;
+                        string pk = SearchUNLOCOCode(unloco);
+                        if (pk == null)
+                        {
+                            dataResponse.Status = "ERROR";
+                            dataResponse.Message = "siteCode = " + organization.siteCode + " UNLOCO = " + unloco + " is not a valid UNLOCO Code";
+                            return Ok(dataResponse);
+                        }
+                        NativeOrganizationClosestPort nativeOrganizationClosestPort = new NativeOrganizationClosestPort();
+                        nativeOrganizationClosestPort.TableName = "RefUNLOCO";
+                        nativeOrganizationClosestPort.Code = unloco;
+                        nativeOrganization.ClosestPort = nativeOrganizationClosestPort;
+                    }
+                    else
+                    {
+                        NativeOrganizationClosestPort nativeOrganizationClosestPort = new NativeOrganizationClosestPort();
+                        nativeOrganizationClosestPort.TableName = "RefUNLOCO";
+                        nativeOrganizationClosestPort.Code = "AEDXB";
+                        nativeOrganization.ClosestPort = nativeOrganizationClosestPort;
+                    }
+
                     #endregion
 
                     #region CUSTOM VALUES
                     Dictionary<string, string> customValues = new Dictionary<string, string>();
-                    customValues.Add("siteCode", organization?.siteCode);
-                    customValues.Add("locationVerifiedDate", organization?.locationVerifiedDate);
-                    customValues.Add("kycCreatedPrior2018", organization?.kycCreatedPrior2018.ToString());
-                    customValues.Add("kycOpenProcCompleted", organization?.kycOpenProcCompleted.ToString());
-                    customValues.Add("kycRefNbr", organization?.kycRefNbr);
-                    customValues.Add("kycVerifDate", organization?.kycVerifDate);
-                    customValues.Add("kycApprovedBy", organization?.kycApprovedBy);
-                    customValues.Add("kycOpeningStation", organization?.kycOpeningStation);
-                    customValues.Add("Lob", organization?.lob);
-                    customValues.Add("adyenPay", organization?.adyenPay.ToString());
-                    customValues.Add("adyenPayPreference", organization?.adyenPayPreference);
-                    customValues.Add("adyenTokenId", organization?.adyenTokenId);
-                    customValues.Add("adyenPayByLinkId", organization?.adyenPayByLinkId);
+                    //customValues.Add("siteCode", organization?.siteCode);
+                    customValues.Add("locationVerifiedDate", organization.locationVerifiedDate);
+                    customValues.Add("kycCreatedPrior2018", organization.kycCreatedPrior2018.ToString());
+                    customValues.Add("kycOpenProcCompleted", organization.kycOpenProcCompleted.ToString());
+                    customValues.Add("kycRefNbr", organization.kycRefNbr);
+                    customValues.Add("kycVerifDate", organization.kycVerifDate);
+                    customValues.Add("kycApprovedBy", organization.kycApprovedBy);
+                    customValues.Add("kycOpeningStation", organization.kycOpeningStation);
+                    customValues.Add("Lob", organization.lob);
+                    customValues.Add("adyenPay", organization.adyenPay?.ToString());
+                    customValues.Add("adyenPayPreference", organization.adyenPayPreference);
+                    customValues.Add("adyenTokenId", organization.adyenTokenId);
+                    customValues.Add("adyenPayByLinkId", organization.adyenPayByLinkId);
                     customValues = customValues.Where(c => c.Value != null && c.Value != "").ToDictionary(x => x.Key, x => x.Value);
                     List<NativeOrganizationJobRequiredDocument> documents = new List<NativeOrganizationJobRequiredDocument>();
                     int count = 0;
@@ -1682,10 +1709,10 @@ namespace BrinksAPI.Controllers
                     string additionalAddress = organization.address3 + " " + organization.address4;
                     organizationData.OrgHeader.OrgAddressCollection[0].ActionSpecified = true;
                     organizationData.OrgHeader.OrgAddressCollection[0].Action = NativeOrganization.Action.UPDATE;
-                    organizationData.OrgHeader.OrgAddressCollection[0].Code = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24)).Replace("#", "");
-                    organizationData.OrgHeader.OrgAddressCollection[0].Address1 = organization.address1?.Replace("#", "");
-                    organizationData.OrgHeader.OrgAddressCollection[0].Address2 = organization.address2?.Replace("#", "");
-                    organizationData.OrgHeader.OrgAddressCollection[0].AdditionalAddressInformation = additionalAddress?.Substring(0, Math.Min(additionalAddress.Length, 50)).Replace("#", ""); 
+                    organizationData.OrgHeader.OrgAddressCollection[0].Code = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24));
+                    organizationData.OrgHeader.OrgAddressCollection[0].Address1 = organization.address1;
+                    organizationData.OrgHeader.OrgAddressCollection[0].Address2 = organization.address2;
+                    organizationData.OrgHeader.OrgAddressCollection[0].AdditionalAddressInformation = additionalAddress?.Substring(0, Math.Min(additionalAddress.Length, 50));
                     organizationData.OrgHeader.OrgAddressCollection[0].City = organization.city;
                     organizationData.OrgHeader.OrgAddressCollection[0].PostCode = organization.postalCode;
                     organizationData.OrgHeader.OrgAddressCollection[0].State = organization.provinceCode;
@@ -1696,9 +1723,35 @@ namespace BrinksAPI.Controllers
                     organizationData.OrgHeader.OrgAddressCollection[0].Email = organization.emailAddress;
                     #endregion
 
+                    #region CLOSEST PORT
+                    if (organization.siteCode != null)
+                    {
+                        var site = _context.sites.Where(s => s.SiteCode == Int32.Parse(organization.siteCode))?.FirstOrDefault();
+                        if (site == null)
+                        {
+                            dataResponse.Status = "ERROR";
+                            dataResponse.Message = "siteCode " + organization.siteCode + " is not a valid mapping in the DB.";
+                            return Ok(dataResponse);
+                        }
+                        string unloco = site.Country + site.Airport;
+                        string pk = SearchUNLOCOCode(unloco);
+                        if (pk == null)
+                        {
+                            dataResponse.Status = "ERROR";
+                            dataResponse.Message = "siteCode = " + organization.siteCode + " UNLOCO = " + unloco + " is not a valid UNLOCO Code";
+                            return Ok(dataResponse);
+                        }
+                        organizationData.OrgHeader.ClosestPort.ActionSpecified = true;
+                        organizationData.OrgHeader.ClosestPort.Action = NativeOrganization.Action.UPDATE;
+                        organizationData.OrgHeader.ClosestPort.PK = pk;
+                        organizationData.OrgHeader.ClosestPort.Code = unloco;
+                    }
+
+                    #endregion
+
                     #region CUSTOM VALUES
                     Dictionary<string, string> customValues = new Dictionary<string, string>();
-                    customValues.Add("siteCode", organization.siteCode);
+                    //customValues.Add("siteCode", organization.siteCode);
                     customValues.Add("locationVerifiedDate", organization.locationVerifiedDate);
                     customValues.Add("kycCreatedPrior2018", organization.kycCreatedPrior2018.ToString());
                     customValues.Add("kycOpenProcCompleted", organization.kycOpenProcCompleted.ToString());
@@ -1784,7 +1837,6 @@ namespace BrinksAPI.Controllers
 
                 dataResponse.Status = "SUCCESS";
                 dataResponse.Message = successMessage;
-                //dataResponse.Data = organization;
                 return Ok(dataResponse);
             }
             catch (Exception ex)
@@ -1900,6 +1952,57 @@ namespace BrinksAPI.Controllers
                 throw ex;
             }
             return organizationData; 
+        }
+
+        public string SearchUNLOCOCode(string unlocoCode)
+        {
+            string pk = null;
+            try 
+            {
+                NativeRequest.Native native = new NativeRequest.Native();
+                NativeRequest.NativeBody body = new NativeRequest.NativeBody();
+                CriteriaData criteria = new CriteriaData();
+
+                CriteriaGroupType criteriaGroupType = new CriteriaGroupType();
+                criteriaGroupType.Type = TypeEnum.Key;
+                List<CriteriaType> criteriaTypes = new List<CriteriaType>();
+
+                CriteriaType criteriaType = new CriteriaType();
+                criteriaType.Entity = "RefUNLOCO";
+                criteriaType.FieldName = "Code";
+                criteriaType.Value = unlocoCode;
+                criteriaTypes.Add(criteriaType);
+
+                criteriaGroupType.Criteria = criteriaTypes.ToArray();
+
+                criteria.CriteriaGroup = criteriaGroupType;
+                body.ItemElementName = ItemChoiceType.UNLOCO;
+                body.Item = criteria;
+                native.Body = body;
+
+                string xml = Utilities.Serialize(native);
+                var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+                if (documentResponse.Status == "SUCCESS" && documentResponse.Data.Status == "PRS" && documentResponse.Data.Data != null)
+                {
+                    using (TextReader reader = new StringReader(documentResponse.Data.Data.OuterXml))
+                    {
+
+                        var serializer = new XmlSerializer(typeof(NativeOrganization.Native));
+                        NativeOrganization.Native result = (NativeOrganization.Native)serializer.Deserialize(reader);
+                        string unloco = result.Body.Any[0].OuterXml;
+
+                        XmlDocument doc = new XmlDocument();
+                        doc.LoadXml(unloco);
+                        pk = doc.GetElementsByTagName("PK")[0]?.InnerText;
+
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            return pk;
         }
     }
 }
