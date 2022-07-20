@@ -24,7 +24,7 @@ namespace BrinksAPI.Controllers
             _context = context;
         }
 
-        
+
         #region UPSERT ORGANIZATION
         /// <summary>
         /// Creates or Updates an Organization.
@@ -37,7 +37,7 @@ namespace BrinksAPI.Controllers
         ///     POST /api/organization/
         ///		{
         ///		   "requestId":"12345678",
-        ///        "riskCode": "CR1",
+        ///        "RiskCodeDescription": "CR1",
         ///        "name": "CENGLOBAL",
         ///        "address1": "Office 15",
         ///        "address2": "15th Floor",
@@ -162,13 +162,19 @@ namespace BrinksAPI.Controllers
 
                     //DEFAULT SITE ID
                     Entities.Site site = new Entities.Site();
-                    site.Airport = "DXB";
-                    site.Country = "AE";
+                    if(organization.countryCode != null)
+                        site = _context.sites.Where(s=>s.Country == organization.countryCode).FirstOrDefault();
+                    if (site == null)
+                    {
+                        site.Airport = "DXB";
+                        site.Country = "AE";
+                    }
 
                     #region CLOSEST PORT
                     if (organization.siteCode != null)
                     {
-                        site = _context.sites.Where(s => s.SiteCode == Int32.Parse(organization.siteCode))?.FirstOrDefault();
+                        int siteCode = Int32.Parse(organization.siteCode);
+                        site = _context.sites.Where(s => s.SiteCode == siteCode)?.FirstOrDefault();
                         if (site == null)
                         {
                             dataResponse.Status = "ERROR";
@@ -245,7 +251,7 @@ namespace BrinksAPI.Controllers
                         orgCompanyData.IsDebtorSpecified = true;
                         orgCompanyData.IsDebtor = true;
                         orgCompanyData.ARExternalDebtorCode = organization.arAccountNumber;
-                        orgCompanyData.ARCreditRating = organization.riskCode.ToString();
+                        orgCompanyData.ARCreditRating = organization.RiskCodeDescription.ToString();
 
                         if (organization.invoiceType != null)
                         {
@@ -543,7 +549,7 @@ namespace BrinksAPI.Controllers
                     organizationData.OrgHeader.Action = NativeOrganization.Action.UPDATE;
                     organizationData.OrgHeader.FullName = organization.name;
 
-                    // DEFAULT VALUES
+                    // DEFAULT UNLOCO VALUES
                     Entities.Site site = new Entities.Site();
                     site.Country = organizationData.OrgHeader.ClosestPort.Code.Substring(0,2);
                     site.Airport = organizationData.OrgHeader.ClosestPort.Code.Substring(2);
@@ -641,7 +647,7 @@ namespace BrinksAPI.Controllers
                                 {
                                     filterOrgCompanyData.IsDebtorSpecified = true;
                                     filterOrgCompanyData.IsDebtor = true;
-                                    filterOrgCompanyData.ARCreditRating = organization.riskCode.ToString();
+                                    filterOrgCompanyData.ARCreditRating = organization.RiskCodeDescription.ToString();
                                     if (organization.invoiceType != null)
                                     {
                                         if (filterOrgCompanyData.OrgInvoiceTypeCollection is not null)
@@ -679,7 +685,7 @@ namespace BrinksAPI.Controllers
                                 orgCompanyData.GlbCompany = company;
                                 if (organization.arAccountNumber != null)
                                 {
-                                    orgCompanyData.ARCreditRating = organization.riskCode.ToString();
+                                    orgCompanyData.ARCreditRating = organization.RiskCodeDescription.ToString();
                                     if (organization.invoiceType != null)
                                     {
                                         List<NativeOrganizationOrgCompanyDataOrgInvoiceType> invoiceTypes = new List<NativeOrganizationOrgCompanyDataOrgInvoiceType>();

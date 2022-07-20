@@ -75,10 +75,12 @@ namespace BrinksAPI.Controllers
 
                         if (isValid)
                         {
-                            var site = _context.sites.Where(s => s.ServerID == Int32.Parse(mawb.serverId)).FirstOrDefault();
+                            int serverId = Int32.Parse(mawb.serverId);
+                            var site = _context.sites.Where(s => s.ServerID == serverId).FirstOrDefault();
                             if (site != null)
                             {
                                 Events.UniversalEventData universalEvent = new Events.UniversalEventData();
+                                
                                 #region DataContext
                                 Events.Event @event = new Events.Event();
                                 Events.DataContext dataContext = new Events.DataContext();
@@ -150,7 +152,13 @@ namespace BrinksAPI.Controllers
                                 else
                                 {
                                     dataResponse.Status = documentResponse.Status;
-                                    dataResponse.Message = documentResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
+                                    string notValidEventCodeMsg = "Cannot import XML Event unless it has a valid code.";
+                                    string responseErrorMsg = documentResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
+                                    if (responseErrorMsg.Contains(notValidEventCodeMsg))
+                                        dataResponse.Message = mawb.historyCode +" Is not a valid history code.";
+                                    else
+                                        dataResponse.Message = responseErrorMsg;
+                                    
 
                                 }
                             }
@@ -177,6 +185,7 @@ namespace BrinksAPI.Controllers
                     {
                         dataResponse.Status = "ERROR";
                         dataResponse.Message = ex.Message;
+                        dataResponses.Add(dataResponse);
                         continue;
                     }
                 }
@@ -191,6 +200,16 @@ namespace BrinksAPI.Controllers
                 dataResponses.Add(dataResponse);
                 return StatusCode(StatusCodes.Status500InternalServerError, dataResponses);
             }
+        }
+
+        private static int TryToParse(string value)
+        {
+            int number;
+            bool result = Int32.TryParse(value, out number);
+            if (result)
+                return number;
+            else
+                return 0;
         }
     }
 }
