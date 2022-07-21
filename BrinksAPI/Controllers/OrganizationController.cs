@@ -251,7 +251,17 @@ namespace BrinksAPI.Controllers
                         orgCompanyData.IsDebtorSpecified = true;
                         orgCompanyData.IsDebtor = true;
                         orgCompanyData.ARExternalDebtorCode = organization.arAccountNumber;
-                        orgCompanyData.ARCreditRating = organization.RiskCodeDescription.ToString();
+                        if (organization.RiskCodeDescription != null)
+                        {
+                            var riskCodeDescription = _context.riskCodeDescriptions.Where(r=>r.BrinksCode == organization.RiskCodeDescription).FirstOrDefault();
+                            if (riskCodeDescription == null)
+                            {
+                                dataResponse.Status = "ERROR";
+                                dataResponse.Message = "Not a valid Risk Code Description " + organization.RiskCodeDescription;
+                                return Ok(dataResponse);
+                            }
+                            orgCompanyData.ARCreditRating = riskCodeDescription.CWCode;
+                        }
 
                         if (organization.invoiceType != null)
                         {
@@ -647,7 +657,20 @@ namespace BrinksAPI.Controllers
                                 {
                                     filterOrgCompanyData.IsDebtorSpecified = true;
                                     filterOrgCompanyData.IsDebtor = true;
-                                    filterOrgCompanyData.ARCreditRating = organization.RiskCodeDescription.ToString();
+
+                                    if (organization.RiskCodeDescription != null)
+                                    {
+                                        var riskCodeDescription = _context.riskCodeDescriptions.Where(r => r.BrinksCode == organization.RiskCodeDescription).FirstOrDefault();
+                                        if (riskCodeDescription == null)
+                                        {
+                                            dataResponse.Status = "ERROR";
+                                            dataResponse.Message = "Not a valid Risk Code Description " + organization.RiskCodeDescription;
+                                            return Ok(dataResponse);
+                                        }
+                                        filterOrgCompanyData.ARCreditRating = riskCodeDescription.CWCode;
+                                    }
+
+                                    
                                     if (organization.invoiceType != null)
                                     {
                                         if (filterOrgCompanyData.OrgInvoiceTypeCollection is not null)
@@ -685,7 +708,17 @@ namespace BrinksAPI.Controllers
                                 orgCompanyData.GlbCompany = company;
                                 if (organization.arAccountNumber != null)
                                 {
-                                    orgCompanyData.ARCreditRating = organization.RiskCodeDescription.ToString();
+                                    if (organization.RiskCodeDescription != null)
+                                    {
+                                        var riskCodeDescription = _context.riskCodeDescriptions.Where(r => r.BrinksCode == organization.RiskCodeDescription).FirstOrDefault();
+                                        if (riskCodeDescription == null)
+                                        {
+                                            dataResponse.Status = "ERROR";
+                                            dataResponse.Message = "Not a valid Risk Code Description " + organization.RiskCodeDescription;
+                                            return Ok(dataResponse);
+                                        }
+                                        orgCompanyData.ARCreditRating = riskCodeDescription.CWCode;
+                                    }
                                     if (organization.invoiceType != null)
                                     {
                                         List<NativeOrganizationOrgCompanyDataOrgInvoiceType> invoiceTypes = new List<NativeOrganizationOrgCompanyDataOrgInvoiceType>();

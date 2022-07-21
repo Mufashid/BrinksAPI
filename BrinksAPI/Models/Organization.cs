@@ -8,7 +8,7 @@ namespace BrinksAPI.Models
     public class Organization
     {
         public string? requestId { get; set; }
-        public RiskCodes? RiskCodeDescription  { get; set; }
+        public string? RiskCodeDescription  { get; set; }
         [Required(ErrorMessage = "Customer Name is required.")]
         [StringLength(40)]
         public string? name { get; set; }
@@ -119,14 +119,6 @@ namespace BrinksAPI.Models
         C
     }
 
-    public enum RiskCodes
-    {
-        CR1,
-        CR2,
-        CR3,
-        CR4,
-        CR5
-    }
 
 
     /// <summary>
