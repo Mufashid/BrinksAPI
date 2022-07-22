@@ -16,8 +16,8 @@ namespace BrinksAPI.Migrations
                 { "Good", "CR1" },
                 { "Poor", "CR2" },
                 { "Cash Only", "CR3" },
-                { "Collections", "CR4" },
-                { "Black Listed", "CR5" },
+                { "Collections", "CR5" },
+                { "Black Listed", "CR4" },
                 { "Suspend A/C", "CR6" },
                 
                 }

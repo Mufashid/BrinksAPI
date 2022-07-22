@@ -90,14 +90,12 @@ namespace BrinksAPI.Controllers
         ///		}
         /// </remarks>
         /// <response code="200">Success</response>
-        /// <response code="400">Data not valid</response>
         /// <response code="401">Unauthorized</response>
-        /// <response code="404">Not Found</response>
         /// <response code="500">Internal server error</response>
         [HttpPost]
-        [ProducesResponseType(500)]
-        [ProducesResponseType(401)]
         [ProducesResponseType(200)]
+        [ProducesResponseType(401)]
+        [ProducesResponseType(500)]
         [Route("api/organization")]
         public ActionResult<OrganizationResponse> UpsertOrganization([FromBody] Organization organization)
         {
@@ -168,6 +166,7 @@ namespace BrinksAPI.Controllers
                     {
                         site.Airport = "DXB";
                         site.Country = "AE";
+                        site.CompanyCode = "DXB";
                     }
 
                     #region CLOSEST PORT
@@ -244,7 +243,7 @@ namespace BrinksAPI.Controllers
                     orgCompanyData.ActionSpecified = true;
                     orgCompanyData.Action = NativeOrganization.Action.INSERT;
                     NativeOrganizationOrgCompanyDataGlbCompany company = new NativeOrganizationOrgCompanyDataGlbCompany();
-                    company.Code = site.Airport;
+                    company.Code = site.CompanyCode;
                     orgCompanyData.GlbCompany = company;
                     if (organization.arAccountNumber != null)
                     {
@@ -563,6 +562,7 @@ namespace BrinksAPI.Controllers
                     Entities.Site site = new Entities.Site();
                     site.Country = organizationData.OrgHeader.ClosestPort.Code.Substring(0,2);
                     site.Airport = organizationData.OrgHeader.ClosestPort.Code.Substring(2);
+                    
                     string ClosestPortPK = organizationData.OrgHeader.ClosestPort.PK;
 
                     #region CLOSEST PORT
@@ -653,6 +653,11 @@ namespace BrinksAPI.Controllers
                             {
                                 filterOrgCompanyData.ActionSpecified = true;
                                 filterOrgCompanyData.Action = NativeOrganization.Action.UPDATE;
+                                if(organization.siteCode != null)
+                                {
+                                    string companyCode = _context.sites.Where(s => s.SiteCode.ToString() == organization.siteCode).FirstOrDefault().CompanyCode;
+                                    filterOrgCompanyData.GlbCompany.Code = companyCode;
+                                }
                                 if (organization.arAccountNumber != null)
                                 {
                                     filterOrgCompanyData.IsDebtorSpecified = true;
@@ -703,8 +708,12 @@ namespace BrinksAPI.Controllers
                                 NativeOrganizationOrgCompanyData orgCompanyData = new NativeOrganizationOrgCompanyData();
                                 orgCompanyData.ActionSpecified = true;
                                 orgCompanyData.Action = NativeOrganization.Action.INSERT;
+                                string companyCode = "";
+                                if (organization.siteCode != null)
+                                     companyCode = _context.sites.Where(s => s.SiteCode.ToString() == organization.siteCode).FirstOrDefault().CompanyCode;
+
                                 NativeOrganizationOrgCompanyDataGlbCompany company = new NativeOrganizationOrgCompanyDataGlbCompany();
-                                company.Code = "DXB";
+                                company.Code = companyCode!=""?companyCode:"DXB";
                                 orgCompanyData.GlbCompany = company;
                                 if (organization.arAccountNumber != null)
                                 {
