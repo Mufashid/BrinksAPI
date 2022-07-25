@@ -15,7 +15,6 @@ namespace BrinksAPI.Models
             public string? TrackingNumber { get; set; }
             [StringLength(50)]
             public string? UserId { get; set; }
-            [Required]
             [StringLength(5)]
             public string? ActionType { get; set; }
             [StringLength(5)]

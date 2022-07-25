@@ -1,4 +1,5 @@
 ﻿using BrinksAPI.Auth;
+using BrinksAPI.Entities;
 using BrinksAPI.Helpers;
 using BrinksAPI.Interfaces;
 using BrinksAPI.Models;
@@ -462,9 +463,19 @@ namespace BrinksAPI.Controllers
                             {
                                 Events.UniversalEventData universalEvent = new Events.UniversalEventData();
 
-                                var actionTypeObj = _context.actionTypes.Where(a => a.BrinksCode == history.ActionType).FirstOrDefault();
-                                string actionType = actionTypeObj?.CWCode;
-                                string eventType = actionTypeObj == null ? "Z00" : actionTypeObj.EventType;
+                                string actionType = "";
+                                string eventType = "";
+                                if (history.ActionType != null)
+                                {
+                                    var actionTypeObj = _context.actionTypes.Where(a => a.BrinksCode == history.ActionType).FirstOrDefault();
+                                    actionType = actionTypeObj?.CWCode;
+                                    eventType = actionTypeObj == null ? "Z00" : actionTypeObj.EventType;
+                                }
+                                else
+                                {
+                                    actionType = "Picked up date";
+                                    eventType = "Z00";
+                                }
 
                                 #region DataContext
                                 Events.Event @event = new Events.Event();
