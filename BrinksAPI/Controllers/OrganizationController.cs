@@ -158,15 +158,27 @@ namespace BrinksAPI.Controllers
                     nativeOrganization.FullName = organization.name;
                     nativeOrganization.Language = "EN";
 
-                    //DEFAULT SITE ID
+
+                        //DEFAULT SITE ID
                     Entities.Site site = new Entities.Site();
                     if(organization.countryCode != null)
                         site = _context.sites.Where(s=>s.Country == organization.countryCode).FirstOrDefault();
                     if (site == null)
                     {
+                        site = new Entities.Site();
                         site.Airport = "DXB";
                         site.Country = "AE";
                         site.CompanyCode = "DXB";
+                    }
+                    if (organization.siteCode != null)
+                    {
+                        site = _context.sites.Where(s => s.SiteCode == Int32.Parse(organization.siteCode))?.FirstOrDefault();
+                        if (site == null)
+                        {
+                            dataResponse.Status = "ERROR";
+                            dataResponse.Message = "siteCode " + organization.siteCode + " is not a valid mapping in the DB.";
+                            return Ok(dataResponse);
+                        }
                     }
 
                     #region CLOSEST PORT

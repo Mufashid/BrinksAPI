@@ -18,7 +18,6 @@ namespace BrinksAPI.Models
             [Required]
             [StringLength(5)]
             public string? ActionType { get; set; }
-            [Required]
             [StringLength(5)]
             public string? AreaType { get; set; }
             [Required]
