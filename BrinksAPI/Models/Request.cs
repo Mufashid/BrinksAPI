@@ -62,7 +62,7 @@ namespace BrinksAPI.Models
         public string? printOption { get; set; }
     }
 
-    public class ShipmentItem
+    public class ShipmentItems
     {
         public string? insuranceLiabilityCurrencyCode { get; set; }
         public double? insuranceLiabilityValue { get; set; }

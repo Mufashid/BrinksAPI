@@ -25,6 +25,7 @@ namespace BrinksAPI.Auth
         public DbSet<Entities.ActionType> actionTypes { get; set; } 
         public DbSet<Entities.Site> sites { get; set; } 
         public DbSet<Entities.RiskCodeDescription> riskCodeDescriptions { get; set; } 
+        public DbSet<Entities.EventCode> eventCodes { get; set; } 
         #endregion
         public DbSet<Document> documents { get; set; }
     }

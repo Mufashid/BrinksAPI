@@ -301,6 +301,7 @@ namespace BrinksAPI.Controllers
         #endregion
 
         #region Create Transport Booking Using Multi-Location Json
+        /***
         [HttpPost]
         [Route("api/shipments/transportbooking")]
         public IActionResult CreateTransportBooking([FromBody]BrinksMultipleShipment brinksShipment)
@@ -627,6 +628,7 @@ namespace BrinksAPI.Controllers
             }
             return Ok(dataResponse);
         }
+        ***/
         #endregion
     }
 }
