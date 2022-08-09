@@ -444,8 +444,6 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                 UniversalShipmentData universalShipmentData = new UniversalShipmentData();
                 Shipment cwShipment = new Shipment();
 
-                
-
                 #region Data Context
                 DataContext dataContext = new DataContext();
                 DataTarget dataTarget = new DataTarget();
@@ -574,9 +572,12 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                 consigneeRegistrationNumber.Value = shipment.consigneeGlobalCustomerCode;
                 consigneeRegistrationNumbers.Add(consigneeRegistrationNumber);
                 consigneeAddress.RegistrationNumberCollection = consigneeRegistrationNumbers.ToArray();
-                organizationAddresses.Add(consigneeAddress); 
+                organizationAddresses.Add(consigneeAddress);
+
+                cwShipment.OrganizationAddressCollection = organizationAddresses.ToArray();
                 #endregion
                 
+                ShipmentPackingLineCollection shipmentPackingLineCollection = new ShipmentPackingLineCollection();
                 List<PackingLine> packings = new List<PackingLine>();
                 foreach(var shipmentItem in shipment.shipmentItems)
                 {
@@ -641,15 +642,22 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                     packings.Add(packingLine);
                 }
 
-                //if(shipmentId == null || shipmentId == "")
-                //{
+                shipmentPackingLineCollection.PackingLine = packings.ToArray();
+                cwShipment.PackingLineCollection = shipmentPackingLineCollection;
 
-                //}
-                //else
-                //{
+                string successMessage = shipmentId == null ? "Shipment Created" : "Shipment Updated";
+                string xml = Utilities.Serialize(universalShipmentData);
+                var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+                if (documentResponse.Status == "ERROR")
+                {
+                    dataResponse.Status = documentResponse.Status;
+                    dataResponse.Message = documentResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
+                    return Ok(dataResponse);
+                }
 
-                //}
-
+                dataResponse.Status = "SUCCESS";
+                dataResponse.Message = successMessage;
+                return Ok(dataResponse);
 
             }
             catch (Exception ex)
@@ -724,7 +732,8 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
 
                         if (isValid)
                         {
-                            Site? site = _context.sites.Where(s => s.ServerID == Int32.Parse(history.ServerId)).FirstOrDefault();
+                            int serverId = Int32.Parse(history.ServerId);
+                            Site? site = _context.sites.Where(s => s.ServerID == serverId).FirstOrDefault();
                             if (site != null)
                             {
                                 Events.UniversalEventData universalEvent = new Events.UniversalEventData();

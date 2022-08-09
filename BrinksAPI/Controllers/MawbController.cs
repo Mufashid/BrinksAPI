@@ -76,11 +76,11 @@ namespace BrinksAPI.Controllers
 
                         if (isValid)
                         {
-                            int serverId = Int32.Parse(mawb.serverId);
-                            var site = _context.sites.Where(s => s.ServerID == serverId).FirstOrDefault();
                             string? historyCode = _context.eventCodes.Where(e => e.BrinksCode == mawb.historyCode).FirstOrDefault()?.CWCode;
                             if (historyCode != null)
                             {
+                                int serverId = Int32.Parse(mawb.serverId);
+                                var site = _context.sites.Where(s => s.ServerID == serverId).FirstOrDefault();
                                 if (site != null)
                                 {
                                     Events.UniversalEventData universalEvent = new Events.UniversalEventData();
@@ -95,7 +95,7 @@ namespace BrinksAPI.Controllers
                                     dataContext.DataTargetCollection = dataTargets.ToArray();
 
                                     Events.Company company = new Events.Company();
-                                    company.Code = _configuration.CompanyCode;
+                                    company.Code = site.CompanyCode;
                                     Events.Country country = new Events.Country();
                                     country.Code = site.Country;
                                     company.Country = country;
