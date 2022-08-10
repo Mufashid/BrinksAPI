@@ -4,6 +4,7 @@ using BrinksAPI.Auth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BrinksAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20220810074935_CreateOrganizationSites")]
+    partial class CreateOrganizationSites
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -171,28 +173,6 @@ namespace BrinksAPI.Migrations
                     b.HasKey("SiteCode");
 
                     b.ToTable("organizationSites");
-                });
-
-            modelBuilder.Entity("BrinksAPI.Entities.OrganizationUnloco", b =>
-                {
-                    b.Property<string>("DefaultUNLOCO")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Alpha2Code")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Alpha3Code")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Country")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Numeric")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("DefaultUNLOCO");
-
-                    b.ToTable("organizationUnloco");
                 });
 
             modelBuilder.Entity("BrinksAPI.Entities.RiskCodeDescription", b =>

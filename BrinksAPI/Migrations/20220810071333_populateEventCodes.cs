@@ -4,7 +4,7 @@
 
 namespace BrinksAPI.Migrations
 {
-    public partial class populateEventCodeData : Migration
+    public partial class populateEventCodes : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -29,7 +29,6 @@ namespace BrinksAPI.Migrations
 
                }
                );
-
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)

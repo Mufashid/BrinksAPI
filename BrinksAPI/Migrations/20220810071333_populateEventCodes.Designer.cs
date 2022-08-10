@@ -4,6 +4,7 @@ using BrinksAPI.Auth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,10 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BrinksAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20220810071333_populateEventCodes")]
+    partial class populateEventCodes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -104,95 +106,6 @@ namespace BrinksAPI.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("eventCodes");
-                });
-
-            modelBuilder.Entity("BrinksAPI.Entities.OrganizationSite", b =>
-                {
-                    b.Property<string>("SiteCode")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Address1")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Address2")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Address3")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Address4")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Bits")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CWBranchCode")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("City")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CityCode")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CountryCode")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("EmailAddress")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ExtendedDescription")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FaxNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("FinancialMgmt")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("OperationalMgmt")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PostalCode")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ProvinceCode")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Unloco")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("SiteCode");
-
-                    b.ToTable("organizationSites");
-                });
-
-            modelBuilder.Entity("BrinksAPI.Entities.OrganizationUnloco", b =>
-                {
-                    b.Property<string>("DefaultUNLOCO")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Alpha2Code")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Alpha3Code")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Country")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Numeric")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("DefaultUNLOCO");
-
-                    b.ToTable("organizationUnloco");
                 });
 
             modelBuilder.Entity("BrinksAPI.Entities.RiskCodeDescription", b =>

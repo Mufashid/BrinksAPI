@@ -23,7 +23,12 @@ namespace BrinksAPI.Auth
         public DbSet<Entities.ServiceLevel> serviceLevels { get; set; }
         public DbSet<Entities.DocumentType> documentTypes { get; set; } 
         public DbSet<Entities.ActionType> actionTypes { get; set; } 
-        public DbSet<Entities.Site> sites { get; set; } 
+        // Sites with server ID needed for shipment history and mawb history (only 65 sites)
+        public DbSet<Entities.Site> sites { get; set; }
+        // Sites without serverID needed for organization (800+ sites)
+        public DbSet<Entities.OrganizationSite> organizationSites { get; set; } 
+        // Default Unloco for Organizations
+        public DbSet<Entities.OrganizationUnloco> organizationUnloco { get; set; } 
         public DbSet<Entities.RiskCodeDescription> riskCodeDescriptions { get; set; } 
         public DbSet<Entities.EventCode> eventCodes { get; set; } 
         #endregion

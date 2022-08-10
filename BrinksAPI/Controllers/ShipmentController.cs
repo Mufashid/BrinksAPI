@@ -746,16 +746,21 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                                     var actionTypeObj = _context.actionTypes.Where(a => a.BrinksCode == history.ActionType).FirstOrDefault();
                                     actionType = actionTypeObj?.CWCode;
                                     eventType = actionTypeObj == null ? "Z00" : actionTypeObj.EventType;
-                                    companyCode = site.CompanyCode;
+                                    companyCode = site?.CompanyCode;
                                 }
                                 else
                                 {
                                     actionType = "Picked up date";
                                     eventType = "Z00";
+                                    companyCode = site?.CompanyCode;
                                 }
-                                if(history.SiteCode != null)
-                                    companyCode = history.SiteCode;
-
+                                if (history.SiteCode != null)
+                                {
+                                    int siteCode = Int32.Parse(history.SiteCode);
+                                    site = _context.sites.Where(s => s.SiteCode == siteCode).FirstOrDefault();
+                                    companyCode = site?.CompanyCode;
+                                }
+                                
                                 #region DataContext
                                 Events.Event @event = new Events.Event();
                                 Events.DataContext dataContext = new Events.DataContext();
@@ -841,7 +846,7 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                                                                     .All(pkg => pkg.ReferenceNumber == history.TrackingNumber))
                                                                     .FirstOrDefault();
                                                         if (packingLineObject is null)
-                                                            message += "Tracking Number " + history.TrackingNumber + " can't find. Unable to set the " + actionType + " value.";
+                                                            message += "Tracking Number " + history.TrackingNumber + " can't find.";
                                                         else
                                                         {
                                                             if (universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection is not null)
@@ -873,7 +878,7 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                                                         .Where(p => p.ReferenceNumber == history.TrackingNumber)
                                                         .FirstOrDefault();
                                                         if (packingLineObject is null)
-                                                            message += "Tracking Number " + history.TrackingNumber + " can't find. Unable to set the " + actionType + " value.";
+                                                            message += "Tracking Number " + history.TrackingNumber + " can't find.";
                                                         else
                                                         {
                                                             packingLineObject

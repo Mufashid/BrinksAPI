@@ -160,58 +160,75 @@ namespace BrinksAPI.Controllers
 
 
                         //DEFAULT SITE ID
-                    Entities.Site site = new Entities.Site();
-                    if(organization.countryCode != null)
-                        site = _context.sites.Where(s=>s.Country == organization.countryCode).FirstOrDefault();
-                    if (site == null)
+                    Entities.OrganizationSite? site = new Entities.OrganizationSite();
+                    if (organization.countryCode != null)
                     {
-                        site = new Entities.Site();
-                        site.Airport = "DXB";
-                        site.Country = "AE";
-                        site.CompanyCode = "DXB";
-                    }
-                    if (organization.siteCode != null)
-                    {
-                        site = _context.sites.Where(s => s.SiteCode == Int32.Parse(organization.siteCode))?.FirstOrDefault();
+                        var unloco = _context.organizationUnloco.Where(s => s.Alpha2Code == organization.countryCode).FirstOrDefault();
+                        site = _context.organizationSites.Where(s => s.CountryCode == organization.countryCode).FirstOrDefault();
+                        if (unloco != null)
+                            site.Unloco = unloco.DefaultUNLOCO;
                         if (site == null)
                         {
                             dataResponse.Status = "ERROR";
-                            dataResponse.Message = "siteCode " + organization.siteCode + " is not a valid mapping in the DB.";
+                            dataResponse.Message = "countryCode " + organization.countryCode + " is not a valid mapping in the DB.";
                             return Ok(dataResponse);
                         }
                     }
 
-                    #region CLOSEST PORT
                     if (organization.siteCode != null)
                     {
-                        int siteCode = Int32.Parse(organization.siteCode);
-                        site = _context.sites.Where(s => s.SiteCode == siteCode)?.FirstOrDefault();
+                        site = new Entities.OrganizationSite();
+                        site = _context.organizationSites.Where(s => s.SiteCode == organization.siteCode)?.FirstOrDefault();
                         if (site == null)
                         {
                             dataResponse.Status = "ERROR";
                             dataResponse.Message = "siteCode " + organization.siteCode + " is not a valid mapping in the DB.";
                             return Ok(dataResponse);
                         }
-                        string unloco = site.Country + site.Airport;
-                        string pk = SearchUNLOCOCode(unloco);
+
+                        string pk = SearchUNLOCOCode(site?.Unloco);
                         if (pk == null)
                         {
                             dataResponse.Status = "ERROR";
-                            dataResponse.Message = "siteCode = " + organization.siteCode + " UNLOCO = " + unloco + " is not a valid UNLOCO Code";
+                            dataResponse.Message = "siteCode = " + organization.siteCode + " UNLOCO = " + site?.Unloco + " is not a valid UNLOCO Code";
                             return Ok(dataResponse);
                         }
                         NativeOrganizationClosestPort nativeOrganizationClosestPort = new NativeOrganizationClosestPort();
                         nativeOrganizationClosestPort.TableName = "RefUNLOCO";
-                        nativeOrganizationClosestPort.Code = unloco;
+                        nativeOrganizationClosestPort.Code = site?.Unloco;
                         nativeOrganization.ClosestPort = nativeOrganizationClosestPort;
                     }
-                    else
-                    {
-                        NativeOrganizationClosestPort nativeOrganizationClosestPort = new NativeOrganizationClosestPort();
-                        nativeOrganizationClosestPort.TableName = "RefUNLOCO";
-                        nativeOrganizationClosestPort.Code = site.Country + site.Airport;
-                        nativeOrganization.ClosestPort = nativeOrganizationClosestPort;
-                    }
+
+                    #region CLOSEST PORT
+                    //if (organization.siteCode != null)
+                    //{
+                    //    int siteCode = Int32.Parse(organization.siteCode);
+                    //    site = _context.sites.Where(s => s.SiteCode == siteCode)?.FirstOrDefault();
+                    //    if (site == null)
+                    //    {
+                    //        dataResponse.Status = "ERROR";
+                    //        dataResponse.Message = "siteCode " + organization.siteCode + " is not a valid mapping in the DB.";
+                    //        return Ok(dataResponse);
+                    //    }
+                    //    string pk = SearchUNLOCOCode(site?.Unloco);
+                    //    if (pk == null)
+                    //    {
+                    //        dataResponse.Status = "ERROR";
+                    //        dataResponse.Message = "siteCode = " + organization.siteCode + " UNLOCO = " + site?.Unloco + " is not a valid UNLOCO Code";
+                    //        return Ok(dataResponse);
+                    //    }
+                    //    NativeOrganizationClosestPort nativeOrganizationClosestPort = new NativeOrganizationClosestPort();
+                    //    nativeOrganizationClosestPort.TableName = "RefUNLOCO";
+                    //    nativeOrganizationClosestPort.Code = site?.Unloco;
+                    //    nativeOrganization.ClosestPort = nativeOrganizationClosestPort;
+                    //}
+                    //else
+                    //{
+                    //    NativeOrganizationClosestPort nativeOrganizationClosestPort = new NativeOrganizationClosestPort();
+                    //    nativeOrganizationClosestPort.TableName = "RefUNLOCO";
+                    //    nativeOrganizationClosestPort.Code = site?.Unloco;
+                    //    nativeOrganization.ClosestPort = nativeOrganizationClosestPort;
+                    //}
 
                     #endregion
                     
@@ -255,8 +272,9 @@ namespace BrinksAPI.Controllers
                     orgCompanyData.ActionSpecified = true;
                     orgCompanyData.Action = NativeOrganization.Action.INSERT;
                     NativeOrganizationOrgCompanyDataGlbCompany company = new NativeOrganizationOrgCompanyDataGlbCompany();
-                    company.Code = site.CompanyCode;
+                    company.Code = site?.CWBranchCode != "" ? site?.CWBranchCode : "DXB";
                     orgCompanyData.GlbCompany = company;
+
                     if (organization.arAccountNumber != null)
                     {
                         orgCompanyData.IsDebtorSpecified = true;
@@ -493,7 +511,7 @@ namespace BrinksAPI.Controllers
                     nativeOrgAddress.CountryCode = nativeOrgCountryCode;
                     NativeOrganizationOrgAddressRelatedPortCode nativeOrgAddressRelatedPortCode = new NativeOrganizationOrgAddressRelatedPortCode();
                     nativeOrgAddressRelatedPortCode.TableName = "RefUNLOCO";
-                    nativeOrgAddressRelatedPortCode.Code = site.Country + site.Airport;
+                    nativeOrgAddressRelatedPortCode.Code = site?.Unloco;
 
                     nativeOrgAddress.Phone = organization.phoneNumber;
                     nativeOrgAddress.Mobile = organization.mobileNumber;
@@ -571,23 +589,20 @@ namespace BrinksAPI.Controllers
                     organizationData.OrgHeader.FullName = organization.name;
 
                     // DEFAULT UNLOCO VALUES
-                    Entities.Site site = new Entities.Site();
-                    site.Country = organizationData.OrgHeader.ClosestPort.Code.Substring(0,2);
-                    site.Airport = organizationData.OrgHeader.ClosestPort.Code.Substring(2);
-                    
+                    Entities.OrganizationSite? site = new Entities.OrganizationSite();                    
                     string ClosestPortPK = organizationData.OrgHeader.ClosestPort.PK;
 
                     #region CLOSEST PORT
                     if (organization.siteCode != null)
                     {
-                        site = _context.sites.Where(s => s.SiteCode == Int32.Parse(organization.siteCode))?.FirstOrDefault();
+                        site = _context.organizationSites.Where(s => s.SiteCode == organization.siteCode)?.FirstOrDefault();
                         if (site == null)
                         {
                             dataResponse.Status = "ERROR";
                             dataResponse.Message = "siteCode " + organization.siteCode + " is not a valid mapping in the DB.";
                             return Ok(dataResponse);
                         }
-                        string unloco = site.Country + site.Airport;
+                        string? unloco = site?.Unloco;
                         ClosestPortPK = SearchUNLOCOCode(unloco);
                         if (ClosestPortPK == null)
                         {
@@ -667,8 +682,9 @@ namespace BrinksAPI.Controllers
                                 filterOrgCompanyData.Action = NativeOrganization.Action.UPDATE;
                                 if(organization.siteCode != null)
                                 {
-                                    string companyCode = _context.sites.Where(s => s.SiteCode.ToString() == organization.siteCode).FirstOrDefault().CompanyCode;
-                                    filterOrgCompanyData.GlbCompany.Code = companyCode;
+                                    string? companyCode = _context.organizationSites.Where(s => s.SiteCode == organization.siteCode).FirstOrDefault().CWBranchCode;
+                                    filterOrgCompanyData.GlbCompany.Code = companyCode != "" ? companyCode : "DXB"; 
+
                                 }
                                 if (organization.arAccountNumber != null)
                                 {
@@ -720,9 +736,9 @@ namespace BrinksAPI.Controllers
                                 NativeOrganizationOrgCompanyData orgCompanyData = new NativeOrganizationOrgCompanyData();
                                 orgCompanyData.ActionSpecified = true;
                                 orgCompanyData.Action = NativeOrganization.Action.INSERT;
-                                string companyCode = "";
+                                string? companyCode = "";
                                 if (organization.siteCode != null)
-                                     companyCode = _context.sites.Where(s => s.SiteCode.ToString() == organization.siteCode).FirstOrDefault().CompanyCode;
+                                     companyCode = _context.organizationSites.Where(s => s.SiteCode == organization.siteCode).FirstOrDefault().CWBranchCode;
 
                                 NativeOrganizationOrgCompanyDataGlbCompany company = new NativeOrganizationOrgCompanyDataGlbCompany();
                                 company.Code = companyCode!=""?companyCode:"DXB";
@@ -1125,7 +1141,7 @@ namespace BrinksAPI.Controllers
                     organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.ActionSpecified = true;
                     organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.Action = NativeOrganization.Action.UPDATE;
                     organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.PK = ClosestPortPK;
-                    organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.Code = site.Country+site.Airport;
+                    organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.Code = site?.Unloco;
 
                     organizationData.OrgHeader.OrgAddressCollection[0].City = organization.city;
                     organizationData.OrgHeader.OrgAddressCollection[0].PostCode = organization.postalCode;
