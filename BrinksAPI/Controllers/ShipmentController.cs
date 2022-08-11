@@ -577,6 +577,8 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                 cwShipment.OrganizationAddressCollection = organizationAddresses.ToArray();
                 #endregion
                 
+                ShipmentTransportLegCollection shipmentTransportLegCollection = new ShipmentTransportLegCollection();
+                List<TransportLeg> transportLegs = new List<TransportLeg>();
                 ShipmentPackingLineCollection shipmentPackingLineCollection = new ShipmentPackingLineCollection();
                 List<PackingLine> packings = new List<PackingLine>();
                 foreach(var shipmentItem in shipment.shipmentItems)
@@ -605,7 +607,7 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                     packingLine.Width = Convert.ToDecimal(shipmentItem.dimWidth);
                     packingLine.Height = Convert.ToDecimal(shipmentItem.dimLength);
 
-                    packingLine.Barcode = shipmentItem.barcode;
+                    packingLine.ReferenceNumber = shipmentItem.barcode;
                     packingLine.PackQty = Convert.ToInt64(shipmentItem.numberOfItems);
 
                     Country countryOforigin = new Country();
@@ -620,7 +622,6 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                     unitOfWeight.Code = shipmentItem.dimUOM;
                     packingLine.WeightUnit = unitOfWeight;
 
-                    
                     #region CUSTOMIZED FIELDS COLLECTION
                     List<CustomizedField> customizedFields = new List<CustomizedField>();
 
@@ -640,7 +641,12 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                     #endregion
 
                     packings.Add(packingLine);
+
+                    // Transport Booking
+                    TransportLeg transportLeg = new TransportLeg();
+                    transportLegs.Add(transportLeg);
                 }
+                shipmentTransportLegCollection.TransportLeg = transportLegs.ToArray();
 
                 shipmentPackingLineCollection.PackingLine = packings.ToArray();
                 cwShipment.PackingLineCollection = shipmentPackingLineCollection;

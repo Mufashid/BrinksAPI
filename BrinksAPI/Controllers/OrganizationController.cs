@@ -37,7 +37,7 @@ namespace BrinksAPI.Controllers
         ///     POST /api/organization/
         ///		{
         ///		   "requestId":"12345678",
-        ///        "RiskCodeDescription": "CR1",
+        ///        "RiskCodeDescription": "Good",
         ///        "name": "CENGLOBAL",
         ///        "address1": "Office 15",
         ///        "address2": "15th Floor",
@@ -257,10 +257,10 @@ namespace BrinksAPI.Controllers
                         orgCountryData.EXApprovalNumber = organization.tsaValidationId;
                         orgCountryData.EXExportPermissionDetails = organization.tsaType;
                         orgCountryData.EXApprovalExpiryDate = DateTime.ParseExact(organization.tsaDate, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy-MM-ddTmm:ss:ff");
-                        NativeOrganizationOrgCountryDataApprovedLocation location = new NativeOrganizationOrgCountryDataApprovedLocation();
-                        location.TableName = "OrgAddress";
-                        location.Code = organization.address1;
-                        orgCountryData.ApprovedLocation = location;
+                        //NativeOrganizationOrgCountryDataApprovedLocation location = new NativeOrganizationOrgCountryDataApprovedLocation();
+                        //location.TableName = "OrgAddress";
+                        //location.Code = organization.address1?.Substring(0,25);
+                        //orgCountryData.ApprovedLocation = location;
                         orgCountryDatas.Add(orgCountryData);
                         nativeOrganization.OrgCountryDataCollection = orgCountryDatas.ToArray();
                     }
@@ -272,7 +272,7 @@ namespace BrinksAPI.Controllers
                     orgCompanyData.ActionSpecified = true;
                     orgCompanyData.Action = NativeOrganization.Action.INSERT;
                     NativeOrganizationOrgCompanyDataGlbCompany company = new NativeOrganizationOrgCompanyDataGlbCompany();
-                    company.Code = site?.CWBranchCode != "" ? site?.CWBranchCode : "DXB";
+                    company.Code = site?.CWBranchCode is not null ? site?.CWBranchCode : "DXB";
                     orgCompanyData.GlbCompany = company;
 
                     if (organization.arAccountNumber != null)
@@ -645,8 +645,8 @@ namespace BrinksAPI.Controllers
                                 organizationData.OrgHeader.OrgCountryDataCollection[0].EXApprovalNumber = organization.tsaValidationId;
                                 organizationData.OrgHeader.OrgCountryDataCollection[0].EXExportPermissionDetails = organization.tsaType;
                                 organizationData.OrgHeader.OrgCountryDataCollection[0].EXApprovalExpiryDate = DateTime.ParseExact(organization.tsaDate, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy-MM-ddTmm:ss:ff");
-                                organizationData.OrgHeader.OrgCountryDataCollection[0].ApprovedLocation.TableName = "OrgAddress";
-                                organizationData.OrgHeader.OrgCountryDataCollection[0].ApprovedLocation.Code = organization.address1;
+                                //organizationData.OrgHeader.OrgCountryDataCollection[0].ApprovedLocation.TableName = "OrgAddress";
+                                //organizationData.OrgHeader.OrgCountryDataCollection[0].ApprovedLocation.Code = organization.address1?.Substring(0, 25);
                             }
                         }
                         else
@@ -659,10 +659,10 @@ namespace BrinksAPI.Controllers
                             orgCountryData.EXApprovalNumber = organization.tsaValidationId;
                             orgCountryData.EXExportPermissionDetails = organization.tsaType;
                             orgCountryData.EXApprovalExpiryDate = DateTime.ParseExact(organization.tsaDate, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy-MM-ddTmm:ss:ff");
-                            NativeOrganizationOrgCountryDataApprovedLocation location = new NativeOrganizationOrgCountryDataApprovedLocation();
-                            location.TableName = "OrgAddress";
-                            location.Code = organization.address1;
-                            orgCountryData.ApprovedLocation = location;
+                            //NativeOrganizationOrgCountryDataApprovedLocation location = new NativeOrganizationOrgCountryDataApprovedLocation();
+                            //location.TableName = "OrgAddress";
+                            //location.Code = organization.address1?.Substring(0, 25);
+                            //orgCountryData.ApprovedLocation = location;
                             orgCountryDatas.Add(orgCountryData);
                             organizationData.OrgHeader.OrgCountryDataCollection = orgCountryDatas.ToArray();
                         }
@@ -683,7 +683,7 @@ namespace BrinksAPI.Controllers
                                 if(organization.siteCode != null)
                                 {
                                     string? companyCode = _context.organizationSites.Where(s => s.SiteCode == organization.siteCode).FirstOrDefault().CWBranchCode;
-                                    filterOrgCompanyData.GlbCompany.Code = companyCode != "" ? companyCode : "DXB"; 
+                                    filterOrgCompanyData.GlbCompany.Code = companyCode is not null ? companyCode : "DXB"; 
 
                                 }
                                 if (organization.arAccountNumber != null)
@@ -1359,7 +1359,6 @@ namespace BrinksAPI.Controllers
             }
             return organizationData; 
         }
-
         public string SearchUNLOCOCode(string unlocoCode)
         {
             string pk = null;
