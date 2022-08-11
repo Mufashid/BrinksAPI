@@ -31,6 +31,7 @@ namespace BrinksAPI.Auth
         public DbSet<Entities.OrganizationUnloco> organizationUnloco { get; set; } 
         public DbSet<Entities.RiskCodeDescription> riskCodeDescriptions { get; set; } 
         public DbSet<Entities.EventCode> eventCodes { get; set; } 
+        public DbSet<Entities.TransportMode> transportModes { get; set; } 
         #endregion
         public DbSet<Document> documents { get; set; }
     }

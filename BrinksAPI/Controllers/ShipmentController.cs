@@ -468,15 +468,14 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                 string shipmentId = GetShipmentNumberByHawb(dataContext, shipment.hawbNum);
                 dataContext.DataTargetCollection[0].Key = shipmentId;
 
-                //cwShipment.BookingConfirmationReference = shipment.shippersReference;
-
                 ServiceLevel serviceLevel = new ServiceLevel();
                 serviceLevel.Code = shipment.serviceType;
                 cwShipment.ServiceLevel = serviceLevel;
 
                 //Mapping
+                string? transportModeCWCode = _context.transportModes.Where(t => t.BrinksCode == shipment.modeOfTransport).FirstOrDefault()?.CWCode;
                 CodeDescriptionPair transportMode = new CodeDescriptionPair();
-                transportMode.Code = shipment.modeOfTransport;
+                transportMode.Code = transportModeCWCode;
                 cwShipment.TransportMode = transportMode;
 
                 //Mapping
@@ -576,7 +575,19 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
 
                 cwShipment.OrganizationAddressCollection = organizationAddresses.ToArray();
                 #endregion
-                
+
+                #region CUSTOMIZED FIELDS
+                List<CustomizedField> shipmentCustomizedFields = new List<CustomizedField>();
+
+                CustomizedField shipperReferenceCF = new CustomizedField();
+                shipperReferenceCF.DataType = CustomizedFieldDataType.String;
+                shipperReferenceCF.Key = "Shipper Reference";
+                shipperReferenceCF.Value = shipment.shippersReference;
+                shipmentCustomizedFields.Add(shipperReferenceCF);
+
+                cwShipment.CustomizedFieldCollection = shipmentCustomizedFields.ToArray(); 
+                #endregion
+
                 ShipmentTransportLegCollection shipmentTransportLegCollection = new ShipmentTransportLegCollection();
                 List<TransportLeg> transportLegs = new List<TransportLeg>();
                 ShipmentPackingLineCollection shipmentPackingLineCollection = new ShipmentPackingLineCollection();
@@ -623,21 +634,21 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                     packingLine.WeightUnit = unitOfWeight;
 
                     #region CUSTOMIZED FIELDS COLLECTION
-                    List<CustomizedField> customizedFields = new List<CustomizedField>();
+                    List<CustomizedField> shipmentItemCustomizedFields = new List<CustomizedField>();
 
                     CustomizedField pickupDateCF = new CustomizedField();
                     pickupDateCF.DataType = CustomizedFieldDataType.DateTime;
                     pickupDateCF.Key = "Picked up date";
                     pickupDateCF.Value = shipmentItem.puDate;
-                    customizedFields.Add(pickupDateCF);
+                    shipmentItemCustomizedFields.Add(pickupDateCF);
 
                     CustomizedField deliveryDateCF = new CustomizedField();
                     deliveryDateCF.DataType = CustomizedFieldDataType.DateTime;
                     deliveryDateCF.Key = "Delivery Date";
                     deliveryDateCF.Value = shipmentItem.dlvDate;
-                    customizedFields.Add(deliveryDateCF);
+                    shipmentItemCustomizedFields.Add(deliveryDateCF);
 
-                    packingLine.CustomizedFieldCollection = customizedFields.ToArray(); 
+                    packingLine.CustomizedFieldCollection = shipmentItemCustomizedFields.ToArray(); 
                     #endregion
 
                     packings.Add(packingLine);
