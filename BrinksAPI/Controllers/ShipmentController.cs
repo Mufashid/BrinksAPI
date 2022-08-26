@@ -6,10 +6,14 @@ using BrinksAPI.Models;
 using eAdaptor;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using NativeOrganization;
+using NativeRequest;
 using System.ComponentModel.DataAnnotations;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
+using WindowsServiceTemplate.Classes.Cargowise.UniversalTransaction;
+using WinSCP;
 
 namespace BrinksAPI.Controllers
 {
@@ -433,14 +437,16 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                 }
                 #endregion
 
+
                 int serverId = Convert.ToInt32(shipment.originServerId);
                 var site = _context.sites.Where(s => s.ServerID == serverId).FirstOrDefault();
                 if (site == null)
                 {
                     dataResponse.Status = "ERROR";
-                    dataResponse.Message = String.Format("Server ID '{0}' was not found in the database.",serverId.ToString());
+                    dataResponse.Message = String.Format("Server ID '{0}' was not found in the database.", serverId.ToString());
                     return Ok(dataResponse);
                 }
+                
                 UniversalShipmentData universalShipmentData = new UniversalShipmentData();
                 Shipment cwShipment = new Shipment();
 
@@ -468,11 +474,13 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                 string shipmentId = GetShipmentNumberByHawb(dataContext, shipment.hawbNum);
                 dataContext.DataTargetCollection[0].Key = shipmentId;
 
+                cwShipment.WayBillNumber = shipment.hawbNum;
+                cwShipment.ContainerMode = new ContainerMode() { Code = "LSE" };
+
                 ServiceLevel serviceLevel = new ServiceLevel();
                 serviceLevel.Code = shipment.serviceType;
                 cwShipment.ServiceLevel = serviceLevel;
 
-                //Mapping
                 string? transportModeCWCode = _context.transportModes.Where(t => t.BrinksCode == shipment.modeOfTransport).FirstOrDefault()?.CWCode;
                 CodeDescriptionPair transportMode = new CodeDescriptionPair();
                 transportMode.Code = transportModeCWCode;
@@ -487,11 +495,13 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                 var loadingPort = _context.sites.Where(s => s.Airport == shipment.pickupAirportCode).FirstOrDefault();
                 UNLOCO portOfLoading = new UNLOCO();
                 portOfLoading.Code = loadingPort?.Country + loadingPort?.Airport;
+                cwShipment.PortOfOrigin = portOfLoading;
                 cwShipment.PortOfLoading = portOfLoading;
 
                 var dischargePort = _context.sites.Where(s => s.Airport == shipment.deliveryAirportCode).FirstOrDefault();
                 UNLOCO portOfDischarge = new UNLOCO();
                 portOfDischarge.Code = dischargePort?.Country + dischargePort?.Airport;
+                cwShipment.PortOfDestination = portOfDischarge;
                 cwShipment.PortOfDischarge = portOfDischarge;
                 #endregion
 
@@ -505,13 +515,13 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                 notes.Add(note);
 
                 Note pickUpNote = new Note();
-                note.Description = "Pickup Note";
-                note.NoteText = shipment.puNotes;
+                pickUpNote.Description = "Pickup Note";
+                pickUpNote.NoteText = shipment.puNotes;
                 notes.Add(pickUpNote);
 
                 Note deliveryNote = new Note();
-                note.Description = "Devlivery Note";
-                note.NoteText = shipment.dlvNotes;
+                deliveryNote.Description = "Devlivery Note";
+                deliveryNote.NoteText = shipment.dlvNotes;
                 notes.Add(deliveryNote);
 
                 shipmentNoteCollection.Note = notes.ToArray();
@@ -521,63 +531,89 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                 #region ORGANIZATION ADDRESS
                 List<OrganizationAddress> organizationAddresses = new List<OrganizationAddress>();
 
+                #region SHIPPER ADDRESS
+                OrganizationData shipperOrganizationData = SearchOrgWithRegNo(shipment.shipperGlobalCustomerCode);
                 OrganizationAddress shipperAddress = new OrganizationAddress();
                 shipperAddress.AddressType = "ConsignorDocumentaryAddress";
-                shipperAddress.CompanyName = shipment.shipperName;
-                shipperAddress.Address1 = shipment.shipperAddress1 + "," + shipment.shipperAddress2;
-                shipperAddress.Address2 = shipment.shipperAddress3 + "," + shipment.shipperAddress4;
-                shipperAddress.City = shipment.shipperCity;
-                OrganizationAddressState shipperState = new OrganizationAddressState();
-                shipperState.Value = shipment.shipperProvinceCode;
-                shipperAddress.State = shipperState;
-                Country shipperCountry = new Country();
-                shipperCountry.Code = shipment.shipperCountryCode;
-                shipperAddress.Country = shipperCountry;
-                shipperAddress.Postcode = shipment.shipperPostalCode;
-                shipperAddress.Contact = shipment.shipperContactName;
-                shipperAddress.Phone = shipment.shipperPhoneNumber;
-                shipperAddress.Mobile = shipment.shipperMobileNumber;
-                List<RegistrationNumber> shipperRegistrationNumbers = new List<RegistrationNumber>();
-                RegistrationNumber shipperRegistrationNumber = new RegistrationNumber();
-                RegistrationNumberType shipperRegistrationNumberType = new RegistrationNumberType();
-                shipperRegistrationNumberType.Code = "LSC";
-                shipperRegistrationNumber.Type = shipperRegistrationNumberType;
-                shipperRegistrationNumber.Value = shipment.shipperGlobalCustomerCode;
-                shipperRegistrationNumbers.Add(shipperRegistrationNumber);
-                shipperAddress.RegistrationNumberCollection = shipperRegistrationNumbers.ToArray();
-                organizationAddresses.Add(shipperAddress);
+                if (shipperOrganizationData.OrgHeader == null)
+                {
+                    shipperAddress.CompanyName = shipment.shipperName;
+                    shipperAddress.Address1 = shipment.shipperAddress1 + "," + shipment.shipperAddress2;
+                    shipperAddress.Address2 = shipment.shipperAddress3 + "," + shipment.shipperAddress4;
+                    shipperAddress.City = shipment.shipperCity;
+                    OrganizationAddressState shipperState = new OrganizationAddressState();
+                    shipperState.Value = shipment.shipperProvinceCode;
+                    shipperAddress.State = shipperState;
+                    Country shipperCountry = new Country();
+                    shipperCountry.Code = shipment.shipperCountryCode;
+                    shipperAddress.Country = shipperCountry;
+                    shipperAddress.Postcode = shipment.shipperPostalCode;
+                    shipperAddress.Contact = shipment.shipperContactName;
+                    shipperAddress.Phone = shipment.shipperPhoneNumber;
+                    shipperAddress.Mobile = shipment.shipperMobileNumber;
+                    List<RegistrationNumber> shipperRegistrationNumbers = new List<RegistrationNumber>();
+                    RegistrationNumber shipperRegistrationNumber = new RegistrationNumber();
+                    RegistrationNumberType shipperRegistrationNumberType = new RegistrationNumberType();
+                    shipperRegistrationNumberType.Code = "LSC";
+                    shipperRegistrationNumber.Type = shipperRegistrationNumberType;
+                    shipperRegistrationNumber.Value = shipment.shipperGlobalCustomerCode;
+                    shipperRegistrationNumbers.Add(shipperRegistrationNumber);
+                    shipperAddress.RegistrationNumberCollection = shipperRegistrationNumbers.ToArray();
 
+                }
+                else
+                {
+                    shipperAddress.OrganizationCode = shipperOrganizationData.OrgHeader.Code;
+                }
+                organizationAddresses.Add(shipperAddress);
+                #endregion
+
+                OrganizationData consigneeOrganizationData = SearchOrgWithRegNo(shipment.consigneeGlobalCustomerCode);
                 OrganizationAddress consigneeAddress = new OrganizationAddress();
                 consigneeAddress.AddressType = "ConsigneeDocumentaryAddress";
-                consigneeAddress.CompanyName = shipment.consigneeName;
-                consigneeAddress.Address1 = shipment.consigneeAddress1 + "," + shipment.consigneeAddress2;
-                consigneeAddress.Address2 = shipment.consigneeAddress3 + "," + shipment.consigneeAddress4;
-                consigneeAddress.City = shipment.consigneeCity;
-                OrganizationAddressState consigneeState = new OrganizationAddressState();
-                consigneeState.Value = shipment.consigneeProvinceCode;
-                consigneeAddress.State = consigneeState;
-                Country consigneeCountry = new Country();
-                consigneeCountry.Code = shipment.consigneeCountryCode;
-                consigneeAddress.Country = consigneeCountry;
-                consigneeAddress.Postcode = shipment.consigneePostalCode;
-                consigneeAddress.Contact = shipment.consigneeContactName;
-                consigneeAddress.Phone = shipment.consigneePhoneNumber;
-                consigneeAddress.Mobile = shipment.consigneeMobileNumber;
-                List<RegistrationNumber> consigneeRegistrationNumbers = new List<RegistrationNumber>();
-                RegistrationNumber consigneeRegistrationNumber = new RegistrationNumber();
-                RegistrationNumberType consigneeRegistrationNumberType = new RegistrationNumberType();
-                consigneeRegistrationNumberType.Code = "LSC";
-                consigneeRegistrationNumber.Type = consigneeRegistrationNumberType;
-                consigneeRegistrationNumber.Value = shipment.consigneeGlobalCustomerCode;
-                consigneeRegistrationNumbers.Add(consigneeRegistrationNumber);
-                consigneeAddress.RegistrationNumberCollection = consigneeRegistrationNumbers.ToArray();
+                if (consigneeOrganizationData.OrgHeader == null)
+                {
+                    consigneeAddress.CompanyName = shipment.consigneeName;
+                    consigneeAddress.Address1 = shipment.consigneeAddress1 + "," + shipment.consigneeAddress2;
+                    consigneeAddress.Address2 = shipment.consigneeAddress3 + "," + shipment.consigneeAddress4;
+                    consigneeAddress.City = shipment.consigneeCity;
+                    OrganizationAddressState consigneeState = new OrganizationAddressState();
+                    consigneeState.Value = shipment.consigneeProvinceCode;
+                    consigneeAddress.State = consigneeState;
+                    Country consigneeCountry = new Country();
+                    consigneeCountry.Code = shipment.consigneeCountryCode;
+                    consigneeAddress.Country = consigneeCountry;
+                    consigneeAddress.Postcode = shipment.consigneePostalCode;
+                    consigneeAddress.Contact = shipment.consigneeContactName;
+                    consigneeAddress.Phone = shipment.consigneePhoneNumber;
+                    consigneeAddress.Mobile = shipment.consigneeMobileNumber;
+                    List<RegistrationNumber> consigneeRegistrationNumbers = new List<RegistrationNumber>();
+                    RegistrationNumber consigneeRegistrationNumber = new RegistrationNumber();
+                    RegistrationNumberType consigneeRegistrationNumberType = new RegistrationNumberType();
+                    consigneeRegistrationNumberType.Code = "LSC";
+                    consigneeRegistrationNumber.Type = consigneeRegistrationNumberType;
+                    consigneeRegistrationNumber.Value = shipment.consigneeGlobalCustomerCode;
+                    consigneeRegistrationNumbers.Add(consigneeRegistrationNumber);
+                    consigneeAddress.RegistrationNumberCollection = consigneeRegistrationNumbers.ToArray();
+                    
+                }
+                else
+                {
+                    consigneeAddress.OrganizationCode = consigneeOrganizationData.OrgHeader.Code;
+                }
                 organizationAddresses.Add(consigneeAddress);
-
+                
                 cwShipment.OrganizationAddressCollection = organizationAddresses.ToArray();
                 #endregion
 
                 #region CUSTOMIZED FIELDS
                 List<CustomizedField> shipmentCustomizedFields = new List<CustomizedField>();
+
+                CustomizedField shipmentIdCF = new CustomizedField();
+                shipmentIdCF.DataType = CustomizedFieldDataType.String;
+                shipmentIdCF.Key = "Shipment Origin ID";
+                shipmentIdCF.Value = shipment.originShipmentId;
+                shipmentCustomizedFields.Add(shipmentIdCF);
 
                 CustomizedField shipperReferenceCF = new CustomizedField();
                 shipperReferenceCF.DataType = CustomizedFieldDataType.String;
@@ -585,23 +621,30 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                 shipperReferenceCF.Value = shipment.shippersReference;
                 shipmentCustomizedFields.Add(shipperReferenceCF);
 
-                cwShipment.CustomizedFieldCollection = shipmentCustomizedFields.ToArray(); 
+                cwShipment.CustomizedFieldCollection = shipmentCustomizedFields.ToArray();
                 #endregion
 
-                ShipmentTransportLegCollection shipmentTransportLegCollection = new ShipmentTransportLegCollection();
-                List<TransportLeg> transportLegs = new List<TransportLeg>();
+                decimal totalWeight = 0;
+                int totalQunatity = 0;
+                decimal totalVolume = 0;
+                #region PACKING LINE
+                int shipmentPacklineCount = 0;
                 ShipmentPackingLineCollection shipmentPackingLineCollection = new ShipmentPackingLineCollection();
                 List<PackingLine> packings = new List<PackingLine>();
-                foreach(var shipmentItem in shipment.shipmentItems)
+                foreach (var shipmentItem in shipment.shipmentItems)
                 {
                     PackingLine packingLine = new PackingLine();
+
+                    packingLine.LinkSpecified = true;
+                    packingLine.Link = shipmentPacklineCount;
+                    shipmentPacklineCount++;
 
                     Commodity commodity = new Commodity();
                     commodity.Code = shipmentItem.globalCommodityCode;
                     packingLine.Commodity = commodity;
 
                     packingLine.GoodsDescription = shipmentItem.commodityDescription;
-                    
+
                     PackageType packageType = new PackageType();
                     packageType.Code = shipmentItem.packageTypeCd;
                     packingLine.PackType = packageType;
@@ -611,26 +654,34 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                     packingLine.WidthSpecified = true;
                     packingLine.HeightSpecified = true;
                     packingLine.PackQtySpecified = true;
-                    packingLine.PackQtySpecified = true;
 
                     packingLine.Length = Convert.ToDecimal(shipmentItem.dimLength);
                     packingLine.Weight = Convert.ToDecimal(shipmentItem.dimWeight);
                     packingLine.Width = Convert.ToDecimal(shipmentItem.dimWidth);
                     packingLine.Height = Convert.ToDecimal(shipmentItem.dimLength);
+                    totalWeight += Convert.ToDecimal(shipmentItem.dimWeight);
 
                     packingLine.ReferenceNumber = shipmentItem.barcode;
                     packingLine.PackQty = Convert.ToInt64(shipmentItem.numberOfItems);
+                    totalQunatity += shipmentItem.numberOfItems;
 
                     Country countryOforigin = new Country();
                     countryOforigin.Code = shipmentItem.originCountry;
                     packingLine.CountryOfOrigin = countryOforigin;
 
+                    string? unitOfLengthBitsCode = shipmentItem.dimUOM == "in" ? "IN" : "CM";
                     UnitOfLength unitOfLength = new UnitOfLength();
-                    unitOfLength.Code = shipmentItem.dimUOM;
+                    unitOfLength.Code = unitOfLengthBitsCode;
                     packingLine.LengthUnit = unitOfLength;
 
+                    string? unitOfVolumeBitsCode = shipmentItem.dimUOM == "in" ? "CI" : "CC";
+                    UnitOfVolume unitOfVolume = new UnitOfVolume();
+                    unitOfVolume.Code = unitOfVolumeBitsCode;
+                    packingLine.VolumeUnit = unitOfVolume;
+
+                    // Mapping
                     UnitOfWeight unitOfWeight = new UnitOfWeight();
-                    unitOfWeight.Code = shipmentItem.dimUOM;
+                    unitOfWeight.Code = shipmentItem.uomCode;
                     packingLine.WeightUnit = unitOfWeight;
 
                     #region CUSTOMIZED FIELDS COLLECTION
@@ -648,20 +699,38 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                     deliveryDateCF.Value = shipmentItem.dlvDate;
                     shipmentItemCustomizedFields.Add(deliveryDateCF);
 
-                    packingLine.CustomizedFieldCollection = shipmentItemCustomizedFields.ToArray(); 
+                    CustomizedField originServerIdCF = new CustomizedField();
+                    originServerIdCF.DataType = CustomizedFieldDataType.String;
+                    originServerIdCF.Key = "Origin Server Id";
+                    originServerIdCF.Value = shipmentItem.originServerId;
+                    shipmentItemCustomizedFields.Add(originServerIdCF);
+
+                    CustomizedField originShipmentItemIdCF = new CustomizedField();
+                    originShipmentItemIdCF.DataType = CustomizedFieldDataType.String;
+                    originShipmentItemIdCF.Key = "Origin Shipment Item Id";
+                    originShipmentItemIdCF.Value = shipmentItem.originShipmentItemId;
+                    shipmentItemCustomizedFields.Add(originShipmentItemIdCF);
+
+                    packingLine.CustomizedFieldCollection = shipmentItemCustomizedFields.ToArray();
                     #endregion
 
                     packings.Add(packingLine);
-
-                    // Transport Booking
-                    TransportLeg transportLeg = new TransportLeg();
-                    transportLegs.Add(transportLeg);
                 }
-                shipmentTransportLegCollection.TransportLeg = transportLegs.ToArray();
 
                 shipmentPackingLineCollection.PackingLine = packings.ToArray();
                 cwShipment.PackingLineCollection = shipmentPackingLineCollection;
+                #endregion
 
+                cwShipment.TotalWeightSpecified = true;
+                cwShipment.TotalNoOfPacksSpecified = true;
+                cwShipment.TotalNoOfPiecesSpecified = true;
+                cwShipment.TotalVolumeSpecified = true;
+                cwShipment.TotalWeight = totalWeight;
+                cwShipment.TotalNoOfPacks = totalQunatity;
+                cwShipment.TotalNoOfPieces = totalQunatity;
+                cwShipment.TotalVolume   = totalVolume;
+
+                universalShipmentData.Shipment = cwShipment;
                 string successMessage = shipmentId == null ? "Shipment Created" : "Shipment Updated";
                 string xml = Utilities.Serialize(universalShipmentData);
                 var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
@@ -670,11 +739,274 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                     dataResponse.Status = documentResponse.Status;
                     dataResponse.Message = documentResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
                     return Ok(dataResponse);
+                }                
+                else
+                {
+                    #region TRANSPORT BOOKING
+                    string responseShipmentId = Utilities.ReadUniversalEvent(documentResponse.Data.Data.OuterXml).Event.DataContext.DataSourceCollection.Where(s => s.Type == "ForwardingShipment").FirstOrDefault().Key;
+                    var tranportBookingObj = _context.transportBookings.Where(t => t.HawbNumber == shipment.hawbNum).FirstOrDefault();
+                    string? transportBooking = "";
+                    
+                    #region TRANPORTBOOKIN INSERT OR UPDATE
+                    if (tranportBookingObj != null)
+                    {
+                        //Update
+                        transportBooking = tranportBookingObj.TBNumber;
+                    }
+                    else
+                    {
+                        //Insert
+                        // Wait 15 sec for cw trigger to generate tranportbooking XML in the SFTP outbound service.
+                        Thread.Sleep(15000);
+                        string localDirectory = Path.Join(AppDomain.CurrentDomain.BaseDirectory, "tbProcessingFiles");
+                        if (!Directory.Exists(localDirectory))
+                            Directory.CreateDirectory(localDirectory);
+                        GetFilesFromSFTP(_configuration.SftpUri, _configuration.SftpUsername, _configuration.SftpPassword, _configuration.SftpOutboundFolder, localDirectory);
+                        string[] filePaths = Directory.GetFiles(localDirectory, "*.xml", SearchOption.TopDirectoryOnly);
+                        foreach (var file in filePaths)
+                        {
+                            try
+                            {
+                                var trasportBookingXML = System.IO.File.ReadAllText(file);
+                                UniversalShipmentData transportBookingData = Utilities.ReadUniversalShipment(Utilities.getElementFromXML(trasportBookingXML, "Body"));
+
+                                if (transportBookingData.Shipment.DataContext.ActionPurpose.Code == "TRB")
+                                {
+                                    if (transportBookingData.Shipment.SubShipmentCollection[0].DataContext.DataSourceCollection.Any(d => d.Key.Contains(responseShipmentId)))
+                                    {
+                                        transportBooking = transportBookingData.Shipment.DataContext.DataSourceCollection.Where(d => d.Type == "TransportBooking")?.FirstOrDefault().Key;
+                                        TransportBooking dbTransportBooking = new TransportBooking
+                                        {
+                                            TBNumber = transportBooking,
+                                            ShipmentNumber = responseShipmentId,
+                                            HawbNumber = shipment.hawbNum
+                                        };
+                                        _context.Add(dbTransportBooking);
+                                        _context.SaveChanges();
+
+                                        // Backup to server
+                                        string sourcePath = Path.Join(_configuration.SftpOutboundFolder, Path.GetFileName(file));
+                                        //string destinationPath = Path.Join(_configuration.SftpBackupFolder, Path.GetFileName(file));
+                                        MoveFileFTP(_configuration.SftpUri, _configuration.SftpUsername, _configuration.SftpPassword, sourcePath, _configuration.SftpBackupFolder);
+                                    }
+                                }
+
+                            }
+                            catch (Exception ex)
+                            {
+                                continue;
+                            }
+                            finally
+                            {
+                                System.IO.File.Delete(file);
+                            }
+
+                        }
+                    } 
+                    #endregion
+
+                    #region TRANPORT BOOKING SHIPMENT
+                    UniversalShipmentData universalTransportData = new UniversalShipmentData();
+                    Shipment tbShipment = new Shipment();
+
+                    #region Data Context
+                    DataContext tbDataContext = new DataContext();
+                    DataTarget tbDataTarget = new DataTarget();
+                    tbDataTarget.Type = "TransportBooking";
+                    tbDataTarget.Key = transportBooking;
+
+                    List<DataTarget> tbDataTargets = new List<DataTarget>();
+                    tbDataTargets.Add(tbDataTarget);
+                    tbDataContext.DataTargetCollection = tbDataTargets.ToArray();
+
+                    tbDataContext.Company = company;
+                    tbDataContext.DataProvider = _configuration.ServiceDataProvider;
+                    tbDataContext.EnterpriseID = _configuration.EnterpriseId;
+                    tbDataContext.ServerID = _configuration.ServerId;
+                    #endregion
+
+                    tbShipment.DataContext = tbDataContext;
+                    tbShipment.ShipmentType = new CodeDescriptionPair { Code = "BKG" };
+
+                    ShipmentPackingLineCollection transportPackingLineCollection = new ShipmentPackingLineCollection();
+                    List<PackingLine> transportPackings = new List<PackingLine>();
+                    List<ShipmentInstruction> shipmentInstructions = new List<ShipmentInstruction>();
+
+                    #region SHIPMENT ITEMS
+                    int packlineCount = 0;
+                    int instructionCount = 1;
+                    foreach (var shipmentItem in shipment.shipmentItems)
+                    {
+                        #region PACKING LINE
+
+                        PackingLine packingLine = new PackingLine();
+
+                        packingLine.LinkSpecified = true;
+                        packingLine.Link = packlineCount;
+
+                        Commodity commodity = new Commodity();
+                        commodity.Code = shipmentItem.globalCommodityCode;
+                        packingLine.Commodity = commodity;
+
+                        packingLine.GoodsDescription = shipmentItem.commodityDescription;
+
+                        PackageType packageType = new PackageType();
+                        packageType.Code = shipmentItem.packageTypeCd;
+                        packingLine.PackType = packageType;
+
+                        packingLine.LengthSpecified = true;
+                        packingLine.WeightSpecified = true;
+                        packingLine.WidthSpecified = true;
+                        packingLine.HeightSpecified = true;
+                        packingLine.PackQtySpecified = true;
+
+                        packingLine.Length = Convert.ToDecimal(shipmentItem.dimLength);
+                        packingLine.Weight = Convert.ToDecimal(shipmentItem.dimWeight);
+                        packingLine.Width = Convert.ToDecimal(shipmentItem.dimWidth);
+                        packingLine.Height = Convert.ToDecimal(shipmentItem.dimLength);
+
+                        packingLine.ReferenceNumber = shipmentItem.barcode;
+                        packingLine.PackQty = Convert.ToInt64(shipmentItem.numberOfItems);
+
+                        Country countryOforigin = new Country();
+                        countryOforigin.Code = shipmentItem.originCountry;
+                        packingLine.CountryOfOrigin = countryOforigin;
+
+                        string? unitOfLengthBitsCode = shipmentItem.dimUOM == "in" ? "IN" : "CM";
+                        UnitOfLength unitOfLength = new UnitOfLength();
+                        unitOfLength.Code = unitOfLengthBitsCode;
+                        packingLine.LengthUnit = unitOfLength;
+
+                        string? unitOfVolumeBitsCode = shipmentItem.dimUOM == "in" ? "CI" : "CC";
+                        UnitOfVolume unitOfVolume = new UnitOfVolume();
+                        unitOfVolume.Code = unitOfVolumeBitsCode;
+                        packingLine.VolumeUnit = unitOfVolume;
+
+                        // Mapping
+                        UnitOfWeight unitOfWeight = new UnitOfWeight();
+                        unitOfWeight.Code = shipmentItem.uomCode;
+                        packingLine.WeightUnit = unitOfWeight;
+
+                        transportPackings.Add(packingLine);
+                        #endregion
+
+                        #region INSTRUCTIONS
+                        ShipmentInstruction tbPickUpShipmentInstruction = new ShipmentInstruction();
+
+                        tbPickUpShipmentInstruction.SequenceSpecified = true;
+                        tbPickUpShipmentInstruction.Sequence = instructionCount;
+                        tbPickUpShipmentInstruction.Type = new CodeDescriptionPair() { Code = "PIC" };
+
+                        OrganizationAddress pickupAddress = new OrganizationAddress();
+                        pickupAddress.AddressType = "LocalCartageExporter";
+                        pickupAddress.Address1 = shipmentItem.puAddress1;
+                        pickupAddress.Address2 = shipmentItem.puAddress2;
+                        pickupAddress.City = shipmentItem.puCity;
+                        pickupAddress.CompanyName = shipmentItem.puName;
+                        pickupAddress.Contact = shipmentItem.puContactName;
+                        pickupAddress.Country = new Country() { Code = shipmentItem.puCountryCode };
+                        pickupAddress.Mobile = shipmentItem.puMobileNumber;
+                        pickupAddress.Postcode = shipmentItem.puPostalCode;
+
+                        List<RegistrationNumber> pickupRegistrations = new List<RegistrationNumber>();
+                        RegistrationNumber pickupRegistration = new RegistrationNumber();
+                        pickupRegistration.Type = new RegistrationNumberType() { Code = "LSC" };
+                        pickupRegistration.CountryOfIssue = new Country() { Code = shipmentItem.puCountryCode };
+                        pickupRegistration.Value = shipmentItem.puGlobalCustomerCode;
+                        pickupRegistrations.Add(pickupRegistration);
+                        pickupAddress.RegistrationNumberCollection = pickupRegistrations.ToArray();
+                        tbPickUpShipmentInstruction.Address = pickupAddress;
+
+                        List<ShipmentInstructionInstructionPackingLineLink> pickupPackinglineLinks = new List<ShipmentInstructionInstructionPackingLineLink>();
+                        ShipmentInstructionInstructionPackingLineLink pickupPackinglineLink = new ShipmentInstructionInstructionPackingLineLink();
+                        pickupPackinglineLink.PackingLineLinkSpecified = true;
+                        pickupPackinglineLink.PackingLineLink = packlineCount;
+                        pickupPackinglineLink.QuantitySpecified = true;
+                        pickupPackinglineLink.Quantity = packlineCount + 1;
+                        
+                        pickupPackinglineLinks.Add(pickupPackinglineLink);
+                        tbPickUpShipmentInstruction.InstructionPackingLineLinkCollection = pickupPackinglineLinks.ToArray();
+
+                        shipmentInstructions.Add(tbPickUpShipmentInstruction);
+                        instructionCount++;
+
+                        ShipmentInstruction tbDeliveryShipmentInstruction = new ShipmentInstruction();
+
+                        tbDeliveryShipmentInstruction.SequenceSpecified = true;
+                        tbDeliveryShipmentInstruction.Sequence = instructionCount;
+                        tbDeliveryShipmentInstruction.Type = new CodeDescriptionPair() { Code = "DLV" };
+
+                        OrganizationAddress deliveryAddress = new OrganizationAddress();
+                        deliveryAddress.AddressType = "LocalCartageImporter";
+                        deliveryAddress.Address1 = shipmentItem.dlvAddress1;
+                        deliveryAddress.Address2 = shipmentItem.dlvAddress2;
+                        deliveryAddress.City = shipmentItem.dlvCity;
+                        deliveryAddress.CompanyName = shipmentItem.dlvName;
+                        deliveryAddress.Contact = shipmentItem.dlvContactName;
+                        deliveryAddress.Country = new Country() { Code = shipmentItem.dlvCountryCode };
+                        deliveryAddress.Mobile = shipmentItem.dlvMobileNumber;
+                        deliveryAddress.Postcode = shipmentItem.dlvPostalCode;
+
+                        List<RegistrationNumber> deliveryRegistrations = new List<RegistrationNumber>();
+                        RegistrationNumber deliveryRegistration = new RegistrationNumber();
+                        deliveryRegistration.Type = new RegistrationNumberType() { Code = "LSC" };
+                        deliveryRegistration.CountryOfIssue = new Country() { Code = shipmentItem.dlvCountryCode };
+                        deliveryRegistration.Value = shipmentItem.dlvGlobalCustomerCode;
+                        deliveryRegistrations.Add(deliveryRegistration);
+                        deliveryAddress.RegistrationNumberCollection = deliveryRegistrations.ToArray();
+                        tbDeliveryShipmentInstruction.Address = deliveryAddress;
+
+                        List<ShipmentInstructionInstructionPackingLineLink> deliveryPackinglineLinks = new List<ShipmentInstructionInstructionPackingLineLink>();
+                        ShipmentInstructionInstructionPackingLineLink deliveryPackinglineLink = new ShipmentInstructionInstructionPackingLineLink();
+                        deliveryPackinglineLink.PackingLineLinkSpecified = true;
+                        deliveryPackinglineLink.PackingLineLink = packlineCount;
+                        deliveryPackinglineLink.QuantitySpecified = true;
+                        deliveryPackinglineLink.Quantity = packlineCount + 1;
+                        deliveryPackinglineLinks.Add(deliveryPackinglineLink);
+                        tbDeliveryShipmentInstruction.InstructionPackingLineLinkCollection = deliveryPackinglineLinks.ToArray();
+                        shipmentInstructions.Add(tbDeliveryShipmentInstruction);
+                        instructionCount++;
+                        #endregion
+                        packlineCount++;
+                    }
+                    #endregion
+
+                    transportPackingLineCollection.PackingLine = transportPackings.ToArray();
+                    tbShipment.PackingLineCollection = transportPackingLineCollection;
+
+                    #region TRANPORT BOOKING SUBSHIPMENT
+                    List<Shipment> tbSubshipments = new List<Shipment>();
+                    Shipment tbSubshipment = new Shipment();
+                    tbSubshipment.DataContext = tbDataContext;
+                    tbSubshipment.ContainerMode = new ContainerMode() { Code = "LSE" };
+                    tbSubshipment.InstructionCollection = shipmentInstructions.ToArray();
+                    tbSubshipments.Add(tbSubshipment);
+                    tbShipment.SubShipmentCollection = tbSubshipments.ToArray(); 
+                    #endregion
+
+                    universalTransportData.Shipment = tbShipment; 
+                    #endregion
+
+                    string updatedTransportXML = Utilities.Serialize(universalTransportData);
+                    var transportResponse = eAdaptor.Services.SendToCargowise(updatedTransportXML, _configuration.URI, _configuration.Username, _configuration.Password);
+                    if (transportResponse.Status == "ERROR")
+                    {
+                        dataResponse.Status = transportResponse.Status;
+                        dataResponse.Message = transportResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
+                        return Ok(dataResponse);
+                    }
+                    else
+                    {
+                        dataResponse.Status = "SUCCESS";
+                        dataResponse.Message = successMessage;
+                        return Ok(dataResponse);
+                    }
+
+                    #endregion
+
                 }
 
-                dataResponse.Status = "SUCCESS";
-                dataResponse.Message = successMessage;
-                return Ok(dataResponse);
+
 
             }
             catch (Exception ex)
@@ -1008,7 +1340,6 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                 throw ex;
             }
         }
-
         public string GetShipmentNumberByHawb(DataContext dataContext, string hawb)
         {
             string? shipmentNumber = null;
@@ -1052,13 +1383,13 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                 universalEvent.Event = @event;
 
                 string xml = Utilities.Serialize(universalEvent);
-                var shipmentRequestResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+                eAdaptor.Entities.XMLDataResponse? shipmentRequestResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
                 if (shipmentRequestResponse.Status == "SUCCESS")
                 {
                     using (var reader = new StringReader(shipmentRequestResponse.Data.Data.OuterXml))
                     {
                         var serializer = new XmlSerializer(typeof(Events.UniversalEventData));
-                        Events.UniversalEventData eventResponse = (Events.UniversalEventData)serializer.Deserialize(reader);
+                        Events.UniversalEventData? eventResponse = (Events.UniversalEventData)serializer.Deserialize(reader);
                         shipmentNumber = eventResponse?.Event?.DataContext?.DataSourceCollection?.Where(d => d.Type == "ForwardingShipment")?.FirstOrDefault()?.Key;
                     }
                 }
@@ -1068,6 +1399,118 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                 throw ex;
             }
             return shipmentNumber;
+        }
+
+        public static void GetFilesFromSFTP(string hostname,string username,string password,string remoteFolder,string localFolder)
+        {
+            try
+            {
+                WinSCP.SessionOptions sessionOptions = new WinSCP.SessionOptions
+                {
+                    Protocol = Protocol.Sftp,
+                    HostName = hostname,
+                    UserName = username,
+                    Password = password,
+                    SshHostKeyFingerprint = "ssh-ed25519 255 faw0PNQCsw3K8cO5TdV7F8MgCOPLXNgmTLvvBl+lbYw"
+
+                };
+                using (Session session = new Session())
+                {
+                    // Connect
+                    session.Open(sessionOptions);
+                    session.GetFilesToDirectory(remoteFolder, localFolder, "*.xml>=180S").Check();
+                }
+            }
+            catch(Exception ex)
+            {
+                throw ex;
+            }
+
+        }
+
+        public static void MoveFileFTP(string hostname, string username, string password,string sourcePath,string destinationPath)
+        {
+            try
+            {
+                WinSCP.SessionOptions sessionOptions = new WinSCP.SessionOptions
+                {
+                    Protocol = Protocol.Sftp,
+                    HostName = hostname,
+                    UserName = username,
+                    Password = password,
+                    SshHostKeyFingerprint = "ssh-ed25519 255 faw0PNQCsw3K8cO5TdV7F8MgCOPLXNgmTLvvBl+lbYw"
+
+                };
+                using (Session session = new Session())
+                {
+                    // Connect
+                    session.Open(sessionOptions);
+                    session.MoveFile(sourcePath, destinationPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+
+        }
+
+        public OrganizationData SearchOrgWithRegNo(string regNo)
+        {
+            OrganizationData organizationData = new OrganizationData();
+            try
+            {
+                NativeRequest.Native native = new NativeRequest.Native();
+                NativeRequest.NativeBody body = new NativeRequest.NativeBody();
+                CriteriaData criteria = new CriteriaData();
+
+                CriteriaGroupType criteriaGroupType = new CriteriaGroupType();
+                criteriaGroupType.Type = TypeEnum.Partial;
+
+                List<CriteriaType> criteriaTypes = new List<CriteriaType>();
+
+                CriteriaType criteriaType1 = new CriteriaType();
+                criteriaType1.Entity = "OrgHeader.OrgCusCode";
+                criteriaType1.FieldName = "CodeType";
+                criteriaType1.Value = "LSC";
+                criteriaTypes.Add(criteriaType1);
+
+                CriteriaType criteriaType2 = new CriteriaType();
+                criteriaType2.Entity = "OrgHeader.OrgCusCode";
+                criteriaType2.FieldName = "CustomsRegNo";
+                criteriaType2.Value = regNo;
+                criteriaTypes.Add(criteriaType2);
+
+                criteriaGroupType.Criteria = criteriaTypes.ToArray();
+
+                criteria.CriteriaGroup = criteriaGroupType;
+                body.ItemElementName = ItemChoiceType.Organization;
+                body.Item = criteria;
+                native.Body = body;
+
+                string xml = Utilities.Serialize(native);
+                var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+                if (documentResponse.Status == "SUCCESS" && documentResponse.Data.Status == "PRS" && documentResponse.Data.ProcessingLog != null)
+                {
+                    using (TextReader reader = new StringReader(documentResponse.Data.Data.OuterXml))
+                    {
+                        var serializer = new XmlSerializer(typeof(NativeOrganization.Native));
+                        NativeOrganization.Native result = (NativeOrganization.Native)serializer.Deserialize(reader);
+                        string organization = result.Body.Any[0].OuterXml;
+                        using (TextReader reader2 = new StringReader(organization))
+                        {
+                            var serializer2 = new XmlSerializer(typeof(OrganizationData));
+                            organizationData = (OrganizationData)serializer2.Deserialize(reader2);
+                        }
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            return organizationData;
         }
     }
 }

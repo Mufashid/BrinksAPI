@@ -550,7 +550,7 @@ namespace BrinksAPI.Controllers
                     #endregion
 
                     organizationData.OrgHeader = nativeOrganization;
-                    successMessage = "Organization Created Successfully."; 
+                    successMessage = "Organization Created Successfully.";
                     #endregion
                 }
                 else 
@@ -588,7 +588,7 @@ namespace BrinksAPI.Controllers
                         if (closestPortPK == null)
                         {
                             dataResponse.Status = "ERROR";
-                            dataResponse.Message = "siteCode = " + organization.siteCode + " UNLOCO = " + site?.Unloco + " is not a valid UNLOCO Code";
+                            dataResponse.Message = "countryCode = " + organization.countryCode + " UNLOCO = " + site?.Unloco + " is not a valid UNLOCO Code";
                             return Ok(dataResponse);
                         }
                     }
@@ -1155,9 +1155,8 @@ namespace BrinksAPI.Controllers
                     organizationData.OrgHeader.OrgAddressCollection[0].Mobile = organization.mobileNumber;
                     organizationData.OrgHeader.OrgAddressCollection[0].Fax = organization.faxNumber;
                     organizationData.OrgHeader.OrgAddressCollection[0].Email = organization.emailAddress;
-                    #endregion
 
-                    
+                    #endregion
 
                     #region CUSTOM VALUES
                     Dictionary<string, string> customValues = new Dictionary<string, string>();
@@ -1412,6 +1411,11 @@ namespace BrinksAPI.Controllers
                 throw ex;
             }
             return pk;
+        }
+
+        public static bool HasPropertyOne(Type obj, string propertyName)
+        {
+            return obj.GetProperty(propertyName) != null;
         }
     }
 }

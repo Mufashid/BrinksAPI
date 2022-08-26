@@ -78,6 +78,7 @@ namespace BrinksAPI.Models
     public enum DocumentReferenceType
     {
         SHIPMENT,
-        MAWB
+        MAWB,
+        CUSTOMER
     }
 }

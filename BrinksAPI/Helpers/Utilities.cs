@@ -28,7 +28,6 @@ namespace BrinksAPI.Helpers
         public static XmlElement SerializeToXmlElement(object o)
         {
             XmlDocument doc = new XmlDocument();
-            XDocument doc2 = new XDocument();
             using (XmlWriter writer = doc.CreateNavigator().AppendChild())
             {
                 new XmlSerializer(o.GetType()).Serialize(writer, o);
@@ -38,6 +37,34 @@ namespace BrinksAPI.Helpers
         }
         #endregion
 
+        public static string getElementFromXML(string xml,string elementName)
+        {
+            XmlDocument xDoc = new XmlDocument();
+            xDoc.LoadXml(xml);
+            XmlNodeList elemlist = xDoc.GetElementsByTagName(elementName);
+            return elemlist[0].InnerXml;
+        }
 
+        public static UniversalShipmentData ReadUniversalShipment(string xml)
+        {
+            XmlSerializer ser = new XmlSerializer(typeof(UniversalShipmentData));
+            UniversalShipmentData? s = new UniversalShipmentData();
+            using (TextReader reader = new StringReader(xml))
+            {
+                s = (UniversalShipmentData)ser.Deserialize(reader);
+            }
+            return s;
+        }
+
+        public static Events.UniversalEventData ReadUniversalEvent(string xml)
+        {
+            XmlSerializer ser = new XmlSerializer(typeof(Events.UniversalEventData));
+            Events.UniversalEventData? s = new Events.UniversalEventData();
+            using (TextReader reader = new StringReader(xml))
+            {
+                s = (Events.UniversalEventData)ser.Deserialize(reader);
+            }
+            return s;
+        }
     }
 }

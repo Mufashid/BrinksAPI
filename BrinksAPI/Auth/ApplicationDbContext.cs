@@ -34,5 +34,6 @@ namespace BrinksAPI.Auth
         public DbSet<Entities.TransportMode> transportModes { get; set; } 
         #endregion
         public DbSet<Document> documents { get; set; }
+        public DbSet<TransportBooking> transportBookings { get; set; }
     }
 }

@@ -208,13 +208,13 @@ namespace BrinksAPI.Controllers
 
                 var documentTypeInDB = _context.documentTypes
                     .Where(d => d.BrinksCode == document.DocumentTypeCode.Value.ToString()).FirstOrDefault();
-                
+
 
                 DocumentType documentType = new DocumentType();
-                documentType.Code = documentTypeInDB != null? documentTypeInDB.CWCode: "OTH";
+                documentType.Code = documentTypeInDB != null ? documentTypeInDB.CWCode : "OTH";
                 documentType.Description = document.DocumentDescription;
                 attachedDocument.Type = documentType;
-                
+
                 attachedDocument.IsPublishedSpecified = true;
                 attachedDocument.IsPublished = true;
                  attachedDocument.SaveDateUTC = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss.f");

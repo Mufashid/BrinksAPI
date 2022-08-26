@@ -2,7 +2,7 @@
 
 namespace BrinksAPI.Services
 {
-    public class Config: IConfigManager
+    public class Config : IConfigManager
     {
         private readonly IConfiguration Configuration;
 
@@ -57,6 +57,46 @@ namespace BrinksAPI.Services
             get
             {
                 return Configuration["DataContext:CompanyCode"];
+            }
+        }
+
+        public string SftpUri
+        {
+            get
+            {
+                return Configuration["TransportBookingModule:Sftp:URI"];
+            }
+        }
+
+        public string SftpUsername
+        {
+            get
+            {
+                return Configuration["TransportBookingModule:Sftp:Username"];
+            }
+        }
+
+        public string SftpPassword
+        {
+            get
+            {
+                return Configuration["TransportBookingModule:Sftp:Password"];
+            }
+        }
+
+        public string SftpOutboundFolder
+        {
+            get
+            {
+                return Configuration["TransportBookingModule:Sftp:OutboundFolder"];
+            }
+        }
+
+        public string SftpBackupFolder
+        {
+            get
+            {
+                return Configuration["TransportBookingModule:Sftp:BackupFolder"];
             }
         }
     }
