@@ -404,6 +404,15 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
 
 
         #region UPSERT SHIPMENT
+        /// <summary>
+        /// Creates Shipment and Transport Booking.
+        /// </summary>
+        /// <param name="shipment"></param>
+        /// <returns>A newly created Shipment </returns>
+        
+        /// <response code="200">Success</response>
+        /// <response code="401">Unauthorized</response>
+        /// <response code="500">Internal server error</response>
         [HttpPost]
         [ProducesResponseType(200)]
         [ProducesResponseType(401)]
