@@ -621,7 +621,7 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                 CustomizedField shipmentIdCF = new CustomizedField();
                 shipmentIdCF.DataType = CustomizedFieldDataType.String;
                 shipmentIdCF.Key = "Shipment Origin ID";
-                shipmentIdCF.Value = shipment.originShipmentId;
+                shipmentIdCF.Value = Convert.ToInt16(shipment.originShipmentId).ToString();
                 shipmentCustomizedFields.Add(shipmentIdCF);
 
                 CustomizedField shipperReferenceCF = new CustomizedField();
@@ -662,12 +662,16 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                     packingLine.WeightSpecified = true;
                     packingLine.WidthSpecified = true;
                     packingLine.HeightSpecified = true;
+                    packingLine.ManifestedWeightSpecified = true;
+                    packingLine.OutturnedWeightSpecified = true;
                     packingLine.PackQtySpecified = true;
 
                     packingLine.Length = Convert.ToDecimal(shipmentItem.dimLength);
                     packingLine.Weight = Convert.ToDecimal(shipmentItem.dimWeight);
                     packingLine.Width = Convert.ToDecimal(shipmentItem.dimWidth);
                     packingLine.Height = Convert.ToDecimal(shipmentItem.dimLength);
+                    packingLine.ManifestedWeight = Convert.ToDecimal(shipmentItem.netWeight);
+                    packingLine.OutturnedWeight = Convert.ToDecimal(shipmentItem.chargableWeight);
                     totalWeight += Convert.ToDecimal(shipmentItem.dimWeight);
 
                     packingLine.ReferenceNumber = shipmentItem.barcode;
@@ -717,7 +721,7 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                     CustomizedField originShipmentItemIdCF = new CustomizedField();
                     originShipmentItemIdCF.DataType = CustomizedFieldDataType.String;
                     originShipmentItemIdCF.Key = "Origin Shipment Item Id";
-                    originShipmentItemIdCF.Value = shipmentItem.originShipmentItemId;
+                    originShipmentItemIdCF.Value =Convert.ToInt16(shipmentItem.originShipmentItemId).ToString();
                     shipmentItemCustomizedFields.Add(originShipmentItemIdCF);
 
                     packingLine.CustomizedFieldCollection = shipmentItemCustomizedFields.ToArray();

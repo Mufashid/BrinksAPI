@@ -41,10 +41,9 @@ namespace BrinksAPI.Models
         public string? originServerId { get; set; }
 
         [Required]
-        [StringLength(18)]
-        public string? originShipmentId { get; set; }
+        [Range(1, 18)]
+        public long? originShipmentId { get; set; }
 
-        [Required]
         [StringLength(8)]
         public string? userId { get; set; }
         [Required]
@@ -74,7 +73,7 @@ namespace BrinksAPI.Models
         [Required]
         [StringLength(25)]
         public string? shipperCity { get; set; }
-        [Required]
+
         [StringLength(5)]
         public string? shipperProvinceCode { get; set; }
         [Required]
@@ -107,7 +106,7 @@ namespace BrinksAPI.Models
         [Required]
         [StringLength(25)]
         public string? consigneeCity { get; set; }
-        [Required]
+
         [StringLength(5)]
         public string? consigneeProvinceCode { get; set; }
         [Required]
@@ -185,8 +184,8 @@ namespace BrinksAPI.Models
         [StringLength(5)]
         public string? originServerId { get; set; }
         [Required]
-        [StringLength(18)]
-        public string? originShipmentItemId { get; set; }
+        [Range(1, 18)]
+        public long? originShipmentItemId { get; set; }
         [Required]
         [StringLength(16)]
         public string? barcode { get; set; }
@@ -265,7 +264,7 @@ namespace BrinksAPI.Models
         [Required]
         [StringLength(25)]
         public string? puCity { get; set; }
-        [Required]
+
         [StringLength(5)]
         public string? puProvinceCode { get; set; }
         [Required]
@@ -278,7 +277,6 @@ namespace BrinksAPI.Models
         [StringLength(22)]
         public string? puPhoneNumber { get; set; }
         public string? puMobileNumber { get; set; }
-        [Required]
         [StringLength(255)]
         public string? puEmailAddress { get; set; }
         public string? puGcc { get; set; }
@@ -303,7 +301,7 @@ namespace BrinksAPI.Models
         [Required]
         [StringLength(25)]
         public string? dlvCity { get; set; }
-        [Required]
+
         [StringLength(5)]
         public string? dlvProvinceCode { get; set; }
         [Required]
@@ -317,21 +315,20 @@ namespace BrinksAPI.Models
         [StringLength(22)]
         public string? dlvPhoneNumber { get; set; }
         public string? dlvFaxNumber { get; set; }
-        [Required]
         [StringLength(255)]
         public string? dlvEmailAddress { get; set; }
         public string? dlvGcc { get; set; }
         [Required]
         public int numberOfItems { get; set; }
         public string? uscsDlvCustomerType { get; set; }
-        public string? netWeight { get; set; }
+        public decimal? netWeight { get; set; }
         [Required]
         [StringLength(3)]
         public string? termCode { get; set; }
         public float transportExpense { get; set; }
         public float insuranceExpense { get; set; }
         public string? puInvoiceDate { get; set; }
-        public float chargeableWeight { get; set; }
+        public double chargeableWeight { get; set; }
         [Required]
         public float insuranceLiabilityUsd { get; set; }
         [StringLength(3)]
