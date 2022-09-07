@@ -41,7 +41,7 @@ namespace BrinksAPI.Models
         public string? originServerId { get; set; }
 
         [Required]
-        [Range(1, 18)]
+        [RegularExpression(@"^(0|-?\d{0,18}(\.\d{0,2})?)$")]
         public long? originShipmentId { get; set; }
 
         [StringLength(8)]
@@ -184,7 +184,7 @@ namespace BrinksAPI.Models
         [StringLength(5)]
         public string? originServerId { get; set; }
         [Required]
-        [Range(1, 18)]
+        [RegularExpression(@"^(0|-?\d{0,18}(\.\d{0,2})?)$")]
         public long? originShipmentItemId { get; set; }
         [Required]
         [StringLength(16)]
@@ -214,7 +214,7 @@ namespace BrinksAPI.Models
         public float dimWidth { get; set; }
         public float dimHeight { get; set; }
         public float dimWeight { get; set; }
-        public string? chargableWeight { get; set; }
+        public float? chargableWeight { get; set; }
         public string? dimUOM { get; set; }
         public double customerWeight { get; set; }
         public string? codAmount { get; set; }
@@ -311,7 +311,7 @@ namespace BrinksAPI.Models
         [StringLength(3)]
         public string? dlvCountryCode { get; set; }
         public string? dlvMobileNumber { get; set; }
-        [Required]
+        //[Required]
         [StringLength(22)]
         public string? dlvPhoneNumber { get; set; }
         public string? dlvFaxNumber { get; set; }
@@ -328,7 +328,6 @@ namespace BrinksAPI.Models
         public float transportExpense { get; set; }
         public float insuranceExpense { get; set; }
         public string? puInvoiceDate { get; set; }
-        public double chargeableWeight { get; set; }
         [Required]
         public float insuranceLiabilityUsd { get; set; }
         [StringLength(3)]

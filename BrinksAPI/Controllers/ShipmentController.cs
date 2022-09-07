@@ -468,13 +468,16 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                 dataTargets.Add(dataTarget);
                 dataContext.DataTargetCollection = dataTargets.ToArray();
 
+                Staff staff = new Staff();
+                staff.Code = shipment.userId;
+                dataContext.EventUser = staff;
+
                 Company company = new Company();
                 company.Code = site.CompanyCode;
                 dataContext.Company = company;
 
                 dataContext.DataProvider = _configuration.ServiceDataProvider;
                 dataContext.EnterpriseID = _configuration.EnterpriseId;
-
                 dataContext.ServerID = _configuration.ServerId;
 
                 cwShipment.DataContext = dataContext;
@@ -499,7 +502,8 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                 CodeDescriptionPair paymentMethod = new CodeDescriptionPair();
                 paymentMethod.Code = shipment.chargesType; 
                 cwShipment.PaymentMethod = paymentMethod;
-                
+
+
                 #region PORT
                 var loadingPort = _context.sites.Where(s => s.Airport == shipment.pickupAirportCode).FirstOrDefault();
                 UNLOCO portOfLoading = new UNLOCO();
@@ -615,27 +619,18 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                 cwShipment.OrganizationAddressCollection = organizationAddresses.ToArray();
                 #endregion
 
-                #region CUSTOMIZED FIELDS
-                List<CustomizedField> shipmentCustomizedFields = new List<CustomizedField>();
-
-                CustomizedField shipmentIdCF = new CustomizedField();
-                shipmentIdCF.DataType = CustomizedFieldDataType.String;
-                shipmentIdCF.Key = "Shipment Origin ID";
-                shipmentIdCF.Value = Convert.ToInt16(shipment.originShipmentId).ToString();
-                shipmentCustomizedFields.Add(shipmentIdCF);
-
-                CustomizedField shipperReferenceCF = new CustomizedField();
-                shipperReferenceCF.DataType = CustomizedFieldDataType.String;
-                shipperReferenceCF.Key = "Shipper Reference";
-                shipperReferenceCF.Value = shipment.shippersReference;
-                shipmentCustomizedFields.Add(shipperReferenceCF);
-
-                cwShipment.CustomizedFieldCollection = shipmentCustomizedFields.ToArray();
-                #endregion
-
-                decimal totalWeight = 0;
+                string totalNetWeightUnit = "";
+                decimal totalNetWeight = 0;
+                decimal totalGrossWeight = 0;
+                decimal totalChargableWeight = 0;
+                decimal totalDimWeight = 0;
                 int totalQunatity = 0;
-                decimal totalVolume = 0;
+
+                string totalInsurenceLiabilityCurrencyCode = "";
+                string totalCustomsLiabilityCurrencyCode = "";
+                decimal totalInsurenceLiability = 0;
+                decimal totalCustomsLiability = 0;
+
                 #region PACKING LINE
                 int shipmentPacklineCount = 0;
                 ShipmentPackingLineCollection shipmentPackingLineCollection = new ShipmentPackingLineCollection();
@@ -658,25 +653,43 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                     packageType.Code = shipmentItem.packageTypeCd;
                     packingLine.PackType = packageType;
 
-                    packingLine.LengthSpecified = true;
-                    packingLine.WeightSpecified = true;
-                    packingLine.WidthSpecified = true;
-                    packingLine.HeightSpecified = true;
-                    packingLine.ManifestedWeightSpecified = true;
-                    packingLine.OutturnedWeightSpecified = true;
                     packingLine.PackQtySpecified = true;
+                    packingLine.WeightSpecified = true;
+                    packingLine.PackQty = Convert.ToInt64(shipmentItem.numberOfItems);
+                    packingLine.Weight = Convert.ToDecimal(shipmentItem.uomNetWeight);
 
-                    packingLine.Length = Convert.ToDecimal(shipmentItem.dimLength);
-                    packingLine.Weight = Convert.ToDecimal(shipmentItem.dimWeight);
-                    packingLine.Width = Convert.ToDecimal(shipmentItem.dimWidth);
-                    packingLine.Height = Convert.ToDecimal(shipmentItem.dimLength);
-                    packingLine.ManifestedWeight = Convert.ToDecimal(shipmentItem.netWeight);
-                    packingLine.OutturnedWeight = Convert.ToDecimal(shipmentItem.chargableWeight);
-                    totalWeight += Convert.ToDecimal(shipmentItem.dimWeight);
+                    //packingLine.WeightSpecified = true;
+                    //packingLine.LengthSpecified = true;
+                    //packingLine.WidthSpecified = true;
+                    //packingLine.HeightSpecified = true;
+                    //packingLine.Weight = Convert.ToDecimal(shipmentItem.dimWeight);
+                    //packingLine.Length = Convert.ToDecimal(shipmentItem.dimLength);
+                    //packingLine.Width = Convert.ToDecimal(shipmentItem.dimWidth);
+                    //packingLine.Height = Convert.ToDecimal(shipmentItem.dimHeight);
+
+                    packingLine.OutturnedWeightSpecified = true;
+                    packingLine.OutturnedLengthSpecified = true;
+                    packingLine.OutturnedWidthSpecified = true;
+                    packingLine.OutturnedHeightSpecified = true;
+                    packingLine.OutturnedWeight = Convert.ToDecimal(shipmentItem.dimWeight);
+                    packingLine.OutturnedLength = Convert.ToDecimal(shipmentItem.dimLength);
+                    packingLine.OutturnedWidth = Convert.ToDecimal(shipmentItem.dimWidth);
+                    packingLine.OutturnedHeight = Convert.ToDecimal(shipmentItem.dimHeight);
+
+
+                    totalNetWeightUnit = shipmentItem.uomCode;
+                    totalNetWeight += Convert.ToDecimal(shipmentItem.uomNetWeight);
+                    totalGrossWeight += Convert.ToDecimal(shipmentItem.grossWeight);
+                    totalChargableWeight += Convert.ToDecimal(shipmentItem.chargableWeight);
+                    totalDimWeight += Convert.ToDecimal(shipmentItem.dimWeight);
+                    totalQunatity += shipmentItem.numberOfItems;
+
+                    totalInsurenceLiabilityCurrencyCode = shipmentItem.insurCurrencyCode;
+                    totalCustomsLiabilityCurrencyCode = shipmentItem.customsCurrencyCode;
+                    totalInsurenceLiability += Convert.ToDecimal(shipmentItem.insuranceLiability);
+                    totalCustomsLiability += Convert.ToDecimal(shipmentItem.customsLiability);
 
                     packingLine.ReferenceNumber = shipmentItem.barcode;
-                    packingLine.PackQty = Convert.ToInt64(shipmentItem.numberOfItems);
-                    totalQunatity += shipmentItem.numberOfItems;
 
                     Country countryOforigin = new Country();
                     countryOforigin.Code = shipmentItem.originCountry;
@@ -721,7 +734,7 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                     CustomizedField originShipmentItemIdCF = new CustomizedField();
                     originShipmentItemIdCF.DataType = CustomizedFieldDataType.String;
                     originShipmentItemIdCF.Key = "Origin Shipment Item Id";
-                    originShipmentItemIdCF.Value =Convert.ToInt16(shipmentItem.originShipmentItemId).ToString();
+                    originShipmentItemIdCF.Value =shipmentItem.originShipmentItemId.ToString();
                     shipmentItemCustomizedFields.Add(originShipmentItemIdCF);
 
                     packingLine.CustomizedFieldCollection = shipmentItemCustomizedFields.ToArray();
@@ -734,14 +747,85 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                 cwShipment.PackingLineCollection = shipmentPackingLineCollection;
                 #endregion
 
+                #region CUSTOMIZED FIELDS
+                List<CustomizedField> shipmentCustomizedFields = new List<CustomizedField>();
+
+                CustomizedField shipmentIdCF = new CustomizedField();
+                shipmentIdCF.DataType = CustomizedFieldDataType.String;
+                shipmentIdCF.Key = "Shipment Origin ID";
+                shipmentIdCF.Value = shipment.originShipmentId.ToString();
+                shipmentCustomizedFields.Add(shipmentIdCF);
+
+                CustomizedField shipperReferenceCF = new CustomizedField();
+                shipperReferenceCF.DataType = CustomizedFieldDataType.String;
+                shipperReferenceCF.Key = "Shipper Reference";
+                shipperReferenceCF.Value = shipment.shippersReference;
+                shipmentCustomizedFields.Add(shipperReferenceCF);
+
+                string chargeType = shipment.chargesType == "P" ? "PRE" : "COL";
+                CustomizedField chargesTypeCF = new CustomizedField();
+                chargesTypeCF.DataType = CustomizedFieldDataType.String;
+                chargesTypeCF.Key = "Brinks Charges";
+                chargesTypeCF.Value = chargeType;
+                shipmentCustomizedFields.Add(chargesTypeCF);
+
+                CustomizedField chargesAmountCF = new CustomizedField();
+                chargesAmountCF.DataType = CustomizedFieldDataType.String;
+                chargesAmountCF.Key = "Charges Amount";
+                chargesAmountCF.Value = shipment.chargesAmount.ToString();
+                shipmentCustomizedFields.Add(chargesAmountCF);
+
+                string userChargeType = shipment.userChargesType == "P" ? "PRE" : "COL";
+                CustomizedField userChargesTypeCF = new CustomizedField();
+                userChargesTypeCF.DataType = CustomizedFieldDataType.String;
+                userChargesTypeCF.Key = "User/Clearance Fees";
+                userChargesTypeCF.Value = userChargeType;
+                shipmentCustomizedFields.Add(userChargesTypeCF);
+
+                CustomizedField userAmountCF = new CustomizedField();
+                userAmountCF.DataType = CustomizedFieldDataType.String;
+                userAmountCF.Key = "User Amount";
+                userAmountCF.Value = shipment.userAmount.ToString();
+                shipmentCustomizedFields.Add(userAmountCF);
+
+                string showFlag = shipment.showFlag == "N" ? "No" : "S1";
+                CustomizedField showFlagCF = new CustomizedField();
+                showFlagCF.DataType = CustomizedFieldDataType.String;
+                showFlagCF.Key = "Show";
+                showFlagCF.Value = showFlag;
+                shipmentCustomizedFields.Add(showFlagCF);
+
+                CustomizedField netWeightUnitCF = new CustomizedField();
+                netWeightUnitCF.DataType = CustomizedFieldDataType.String;
+                netWeightUnitCF.Key = "Net Weight UOM";
+                netWeightUnitCF.Value = totalNetWeightUnit;
+                shipmentCustomizedFields.Add(netWeightUnitCF);
+
+                CustomizedField netWeightCF = new CustomizedField();
+                showFlagCF.DataType = CustomizedFieldDataType.Decimal;
+                showFlagCF.Key = "Net weight";
+                showFlagCF.Value = totalNetWeight.ToString();
+                shipmentCustomizedFields.Add(showFlagCF);
+
+                cwShipment.CustomizedFieldCollection = shipmentCustomizedFields.ToArray();
+                #endregion
+
                 cwShipment.TotalWeightSpecified = true;
                 cwShipment.TotalNoOfPacksSpecified = true;
                 cwShipment.TotalNoOfPiecesSpecified = true;
-                cwShipment.TotalVolumeSpecified = true;
-                cwShipment.TotalWeight = totalWeight;
+                cwShipment.ActualChargeableSpecified = true;
+                cwShipment.TotalWeight = totalNetWeight;
+                cwShipment.ActualChargeable = totalChargableWeight;
                 cwShipment.TotalNoOfPacks = totalQunatity;
                 cwShipment.TotalNoOfPieces = totalQunatity;
-                cwShipment.TotalVolume   = totalVolume;
+
+                Currency insurenceLiabilityCurrency = new Currency();
+                insurenceLiabilityCurrency.Code = totalInsurenceLiabilityCurrencyCode;
+                cwShipment.InsuranceValueCurrency = insurenceLiabilityCurrency;
+                cwShipment.InsuranceValueSpecified = true;
+                cwShipment.InsuranceValue = totalInsurenceLiability;
+
+
 
                 universalShipmentData.Shipment = cwShipment;
                 string successMessage = shipmentId == null ? "Shipment Created" : "Shipment Updated";
@@ -867,19 +951,31 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                         packageType.Code = shipmentItem.packageTypeCd;
                         packingLine.PackType = packageType;
 
-                        packingLine.LengthSpecified = true;
-                        packingLine.WeightSpecified = true;
-                        packingLine.WidthSpecified = true;
-                        packingLine.HeightSpecified = true;
-                        packingLine.PackQtySpecified = true;
 
-                        packingLine.Length = Convert.ToDecimal(shipmentItem.dimLength);
-                        packingLine.Weight = Convert.ToDecimal(shipmentItem.dimWeight);
-                        packingLine.Width = Convert.ToDecimal(shipmentItem.dimWidth);
-                        packingLine.Height = Convert.ToDecimal(shipmentItem.dimLength);
+                        packingLine.PackQtySpecified = true;
+                        packingLine.WeightSpecified = true;
+                        packingLine.PackQty = Convert.ToInt64(shipmentItem.numberOfItems);
+                        packingLine.Weight = Convert.ToDecimal(shipmentItem.uomNetWeight);
+
+                        //packingLine.LengthSpecified = true;
+                        //packingLine.WeightSpecified = true;
+                        //packingLine.WidthSpecified = true;
+                        //packingLine.HeightSpecified = true;
+                        //packingLine.Length = Convert.ToDecimal(shipmentItem.dimLength);
+                        //packingLine.Weight = Convert.ToDecimal(shipmentItem.dimWeight);
+                        //packingLine.Width = Convert.ToDecimal(shipmentItem.dimWidth);
+                        //packingLine.Height = Convert.ToDecimal(shipmentItem.dimLength);
+                        
+                        packingLine.OutturnedWeightSpecified = true;
+                        packingLine.OutturnedLengthSpecified = true;
+                        packingLine.OutturnedWidthSpecified = true;
+                        packingLine.OutturnedHeightSpecified = true;
+                        packingLine.OutturnedWeight = Convert.ToDecimal(shipmentItem.dimWeight);
+                        packingLine.OutturnedLength = Convert.ToDecimal(shipmentItem.dimLength);
+                        packingLine.OutturnedWidth = Convert.ToDecimal(shipmentItem.dimWidth);
+                        packingLine.OutturnedHeight = Convert.ToDecimal(shipmentItem.dimHeight);
 
                         packingLine.ReferenceNumber = shipmentItem.barcode;
-                        packingLine.PackQty = Convert.ToInt64(shipmentItem.numberOfItems);
 
                         Country countryOforigin = new Country();
                         countryOforigin.Code = shipmentItem.originCountry;
@@ -980,6 +1076,7 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                         shipmentInstructions.Add(tbDeliveryShipmentInstruction);
                         instructionCount++;
                         #endregion
+                        
                         packlineCount++;
                     }
                     #endregion
@@ -1018,9 +1115,6 @@ public IActionResult CreateMultipleShipments([FromBody]BrinksMultipleShipment br
                     #endregion
 
                 }
-
-
-
             }
             catch (Exception ex)
             {

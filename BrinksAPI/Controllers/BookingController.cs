@@ -300,56 +300,6 @@ namespace BrinksAPI.Controllers
         }
         #endregion
 
-        #region Create Transport Booking Using Multi-Location Json
-        [HttpPost]
-        [ProducesResponseType(200)]
-        [ProducesResponseType(401)]
-        [ProducesResponseType(500)]
-        [Route("api/booking/transport")]
-        public ActionResult<ShipemtResponse> TransportBooking([FromBody] Models.Shipment shipment)
-        {
-            ShipemtResponse dataResponse = new ShipemtResponse();
-            try
-            {
-                dataResponse.HawbNum = shipment?.hawbNum;
-
-                #region MODEL VALIDATION
-                if (!ModelState.IsValid)
-                {
-                    string errorString = "";
-                    var errors = ModelState.Select(x => x.Value.Errors)
-                         .Where(y => y.Count > 0)
-                         .ToList();
-                    foreach (var error in errors)
-                    {
-                        foreach (var subError in error)
-                        {
-                            errorString += String.Format("{0}", subError.ErrorMessage);
-                        }
-                    }
-                    dataResponse.Status = "ERROR";
-                    dataResponse.Message = errorString;
-
-                    return Ok(dataResponse);
-                }
-                #endregion
-                
-                int serverId = Convert.ToInt32(shipment.originServerId);
-                var site = _context.sites.Where(s => s.ServerID == serverId).FirstOrDefault();
-                if (site == null)
-                {
-                    dataResponse.Status = "ERROR";
-                    dataResponse.Message = String.Format("Server ID '{0}' was not found in the database.", serverId.ToString());
-                    return Ok(dataResponse);
-                }
-
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-            return dataResponse;
-        }
-        #endregion
+       
         }
 }
