@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NativeOrganization;
 using NativeRequest;
+using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 using System.Xml;
 using System.Xml.Linq;
@@ -52,8 +53,11 @@ namespace BrinksAPI.Controllers
         public ActionResult<ShipemtResponse> UpsertShipment([FromBody] Models.Shipment shipment)
         {
             ShipemtResponse dataResponse = new ShipemtResponse();
+            string successMessage = "";
+            string atlsSuccessMessage = "";
             try
             {
+     
                 dataResponse.HawbNum = shipment?.hawbNum;
 
                 #region MODEL VALIDATION
@@ -78,14 +82,14 @@ namespace BrinksAPI.Controllers
                 #endregion
 
 
-                int serverId = Convert.ToInt32(shipment.originServerId);
-                var site = _context.sites.Where(s => s.ServerID == serverId).FirstOrDefault();
-                if (site == null)
-                {
-                    dataResponse.Status = "ERROR";
-                    dataResponse.Message = String.Format("Server ID '{0}' was not found in the database.", serverId.ToString());
-                    return Ok(dataResponse);
-                }
+                //int serverId = Convert.ToInt32(shipment.originServerId);
+                //var site = _context.sites.Where(s => s.ServerID == serverId).FirstOrDefault();
+                //if (site == null)
+                //{
+                //    dataResponse.Status = "ERROR";
+                //    dataResponse.Message = String.Format("Server ID '{0}' was not found in the database.", serverId.ToString());
+                //    return Ok(dataResponse);
+                //}
                 
                 UniversalShipmentData universalShipmentData = new UniversalShipmentData();
                 Shipment cwShipment = new Shipment();
@@ -104,7 +108,7 @@ namespace BrinksAPI.Controllers
                 dataContext.EventUser = staff;
 
                 Company company = new Company();
-                company.Code = site.CompanyCode;
+                company.Code = _configuration.CompanyCode;
                 dataContext.Company = company;
 
                 dataContext.DataProvider = _configuration.ServiceDataProvider;
@@ -278,16 +282,8 @@ namespace BrinksAPI.Controllers
                     packingLine.PackQtySpecified = true;
                     packingLine.WeightSpecified = true;
                     packingLine.PackQty = Convert.ToInt64(shipmentItem.numberOfItems);
-                    packingLine.Weight = Convert.ToDecimal(shipmentItem.uomNetWeight);
+                    packingLine.Weight = Convert.ToDecimal(shipmentItem.grossWeight);
 
-                    //packingLine.WeightSpecified = true;
-                    //packingLine.LengthSpecified = true;
-                    //packingLine.WidthSpecified = true;
-                    //packingLine.HeightSpecified = true;
-                    //packingLine.Weight = Convert.ToDecimal(shipmentItem.dimWeight);
-                    //packingLine.Length = Convert.ToDecimal(shipmentItem.dimLength);
-                    //packingLine.Width = Convert.ToDecimal(shipmentItem.dimWidth);
-                    //packingLine.Height = Convert.ToDecimal(shipmentItem.dimHeight);
 
                     packingLine.OutturnedWeightSpecified = true;
                     packingLine.OutturnedLengthSpecified = true;
@@ -298,19 +294,6 @@ namespace BrinksAPI.Controllers
                     packingLine.OutturnedWidth = Convert.ToDecimal(shipmentItem.dimWidth);
                     packingLine.OutturnedHeight = Convert.ToDecimal(shipmentItem.dimHeight);
 
-                    //
-                    //totalNetWeightUnit = shipmentItem.uomCode;
-                    //totalNetWeight += Convert.ToDecimal(shipmentItem.uomNetWeight);
-                    //totalGrossWeight += Convert.ToDecimal(shipmentItem.grossWeight);
-                    //totalChargableWeight += Convert.ToDecimal(shipmentItem.chargableWeight);
-                    //totalDimWeight += Convert.ToDecimal(shipmentItem.dimWeight);
-                    //totalQunatity += shipmentItem.numberOfItems;
-
-                    //totalInsurenceLiabilityCurrencyCode = shipmentItem.insurCurrencyCode;
-                    //totalCustomsLiabilityCurrencyCode = shipmentItem.customsCurrencyCode;
-                    //totalInsurenceLiability += Convert.ToDecimal(shipmentItem.insuranceLiability);
-                    //totalCustomsLiability += Convert.ToDecimal(shipmentItem.customsLiability);
-                    //
                     packingLine.ReferenceNumber = shipmentItem.barcode;
 
                     Country countryOforigin = new Country();
@@ -347,17 +330,17 @@ namespace BrinksAPI.Controllers
                     deliveryDateCF.Value = shipmentItem.dlvDate;
                     shipmentItemCustomizedFields.Add(deliveryDateCF);
 
-                    CustomizedField originServerIdCF = new CustomizedField();
-                    originServerIdCF.DataType = CustomizedFieldDataType.String;
-                    originServerIdCF.Key = "Origin Server Id";
-                    originServerIdCF.Value = shipmentItem.originServerId;
-                    shipmentItemCustomizedFields.Add(originServerIdCF);
+                    //CustomizedField originServerIdCF = new CustomizedField();
+                    //originServerIdCF.DataType = CustomizedFieldDataType.String;
+                    //originServerIdCF.Key = "Origin Server Id";
+                    //originServerIdCF.Value = shipmentItem.originServerId;
+                    //shipmentItemCustomizedFields.Add(originServerIdCF);
 
-                    CustomizedField originShipmentItemIdCF = new CustomizedField();
-                    originShipmentItemIdCF.DataType = CustomizedFieldDataType.String;
-                    originShipmentItemIdCF.Key = "Origin Shipment Item Id";
-                    originShipmentItemIdCF.Value =shipmentItem.originShipmentItemId.ToString();
-                    shipmentItemCustomizedFields.Add(originShipmentItemIdCF);
+                    //CustomizedField originShipmentItemIdCF = new CustomizedField();
+                    //originShipmentItemIdCF.DataType = CustomizedFieldDataType.String;
+                    //originShipmentItemIdCF.Key = "Origin Shipment Item Id";
+                    //originShipmentItemIdCF.Value =shipmentItem.originShipmentItemId.ToString();
+                    //shipmentItemCustomizedFields.Add(originShipmentItemIdCF);
 
                     packingLine.CustomizedFieldCollection = shipmentItemCustomizedFields.ToArray();
                     #endregion
@@ -384,11 +367,11 @@ namespace BrinksAPI.Controllers
                 #region CUSTOMIZED FIELDS
                 List<CustomizedField> shipmentCustomizedFields = new List<CustomizedField>();
 
-                CustomizedField shipmentIdCF = new CustomizedField();
-                shipmentIdCF.DataType = CustomizedFieldDataType.String;
-                shipmentIdCF.Key = "Shipment Origin ID";
-                shipmentIdCF.Value = shipment.originShipmentId.ToString();
-                shipmentCustomizedFields.Add(shipmentIdCF);
+                //CustomizedField shipmentIdCF = new CustomizedField();
+                //shipmentIdCF.DataType = CustomizedFieldDataType.String;
+                //shipmentIdCF.Key = "Shipment Origin ID";
+                //shipmentIdCF.Value = shipment.originShipmentId.ToString();
+                //shipmentCustomizedFields.Add(shipmentIdCF);
 
                 CustomizedField shipperReferenceCF = new CustomizedField();
                 shipperReferenceCF.DataType = CustomizedFieldDataType.String;
@@ -453,7 +436,7 @@ namespace BrinksAPI.Controllers
                 UnitOfWeight totalWeightUnit = new UnitOfWeight();
                 totalWeightUnit.Code = totalNetWeightUnit;
                 cwShipment.TotalWeightUnit = totalWeightUnit;
-                cwShipment.TotalWeight = totalNetWeight;
+                cwShipment.TotalWeight = totalGrossWeight;
                 cwShipment.ActualChargeable = totalChargableWeight;
                 cwShipment.TotalNoOfPacks = totalQunatity;
                 cwShipment.TotalNoOfPieces = totalQunatity;
@@ -470,7 +453,7 @@ namespace BrinksAPI.Controllers
                 cwShipment.InsuranceValue = totalInsurenceLiability;
 
                 universalShipmentData.Shipment = cwShipment;
-                string successMessage = shipmentId == null ? "Shipment Created" : "Shipment Updated";
+                successMessage = shipmentId == null ? "Shipment Created in CW. " : "Shipment Updated in CW. ";
                 string xml = Utilities.Serialize(universalShipmentData);
                 var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
                 if (documentResponse.Status == "ERROR")
@@ -748,7 +731,7 @@ namespace BrinksAPI.Controllers
                         {
                             string message = "Shipment created/updated with Id " + shipmentId + ". Unable to update the transport booking. Below are the reason.";
                             //transportResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
-                            dataResponse.Status = "SUCCESS";
+                            dataResponse.Status = "ERROR";
                             dataResponse.Message = message;
                             return Ok(dataResponse);
                         }
@@ -756,13 +739,62 @@ namespace BrinksAPI.Controllers
                         {
                             dataResponse.Status = "SUCCESS";
                             dataResponse.Message = successMessage;
+
+                            atlsSuccessMessage = "Error creating/updating the shipment in the Atlas. ";
+                            // Serilialize
+                            Events.UniversalEventData cwEventXML = Utilities.ReadUniversalEvent(documentResponse.Data.Data.OuterXml);
+                            string originShipementId = cwEventXML.Event.DataContext.DataSourceCollection.Where(d => d.Type == "ForwardingShipment").FirstOrDefault().Key;
+
+                            Events.DataContext eventDataContext = new Events.DataContext();
+
+                            List<Events.DataTarget> eventDataTargets= new List<Events.DataTarget>();
+                            Events.DataTarget eventDataTarget= new Events.DataTarget();
+                            eventDataTarget.Type = "ForwardingShipment";
+                            eventDataTargets.Add(eventDataTarget);
+                            eventDataContext.DataTargetCollection = eventDataTargets.ToArray();
+
+                            //Events.Company eventCompany = new Events.Company();
+                            //eventCompany.Code = dataContext.Company.Code;
+                            //eventDataContext.Company = eventCompany;
+                            eventDataContext.ServerID = dataContext.ServerID;
+                            eventDataContext.EnterpriseID = dataContext.EnterpriseID;
+
+                            UniversalShipmentData cwShipmentData = GetShipmentById(eventDataContext, originShipementId);
+
+                            int serverId = _context.sites.Where(s => s.CompanyCode == cwShipmentData.Shipment.DataContext.Company.Code).First().ServerID;
+                            serverId = serverId == 0 ? 35 : serverId;// Default LATAM
+                            string originServerId = serverId.ToString();
+                            if (shipmentId == null)
+                                shipment.dateCreated = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                            else
+                                shipment.lastUpdated = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"); ;
+
+                            shipment.originServerId = originServerId;
+                            shipment.originShipmentId = GetNumbers(originShipementId);
+                            for (int i = 0; i < shipment.shipmentItems.Count; i++)
+                            {
+                                shipment.shipmentItems[i].originServerId = originServerId;
+                                shipment.shipmentItems[i].originShipmentItemId = GetNumbers(cwShipmentData.Shipment.PackingLineCollection.PackingLine[i].PackingLineID);
+                                shipment.shipmentItems[i].customsCode = "SALE";
+                            }
+
+                            string atlasRequest = JsonConvert.SerializeObject(shipment);
+                            string atlasLoginURI = _configuration.AtlasURI + "/verification/login";
+                            string atlasPostShipmentURL = _configuration.AtlasURI + "/shipment/create";
+                            string atlasToken = Utilities.GetToken(atlasLoginURI, _configuration.AtlasUsername, _configuration.AtlasPassword);
+                            string atlsResponse = Utilities.PostRequest(atlasPostShipmentURL, atlasToken, atlasRequest);
+                            atlsSuccessMessage = "Successfully created/updated the shipment in Atlas.";
+                            
+                            dataResponse.Message += successMessage + atlsSuccessMessage;
+
+
                             return Ok(dataResponse);
                         }
                     }
                     else
                     {
                         dataResponse.Status = "SUCCESS";
-                        dataResponse.Message = successMessage;
+                        dataResponse.Message = successMessage + atlsSuccessMessage;
                     }
                     #endregion
 
@@ -771,7 +803,7 @@ namespace BrinksAPI.Controllers
             catch (Exception ex)
             {
                 dataResponse.Status = "ERROR";
-                dataResponse.Message = ex.Message;
+                dataResponse.Message = successMessage + atlsSuccessMessage +   ex.Message;
                 return StatusCode(StatusCodes.Status500InternalServerError, dataResponse);
             }
             return Ok(dataResponse);
@@ -1073,9 +1105,9 @@ namespace BrinksAPI.Controllers
                 dataTarget.Key = shipmentId;
                 dataTargets.Add(dataTarget);
                 requestDataContext.DataTargetCollection = dataTargets.ToArray();
-                ShipmentRequest.Company company = new ShipmentRequest.Company();
-                company.Code = dataContext.Company.Code;
-                requestDataContext.Company = company;
+                //ShipmentRequest.Company company = new ShipmentRequest.Company();
+                //company.Code = dataContext.Company.Code;
+                //requestDataContext.Company = company;
                 requestDataContext.EnterpriseID = dataContext.EnterpriseID;
                 requestDataContext.ServerID = dataContext.ServerID;
                 shipmentRequest.DataContext = requestDataContext;
@@ -1270,6 +1302,20 @@ namespace BrinksAPI.Controllers
                 throw ex;
             }
             return organizationData;
+        }
+        private static string GetNumbers(string input)
+        {
+            string numberString = "";
+            if (input != null)
+            {
+                numberString = new string(input.Where(c => char.IsDigit(c)).ToArray());
+            }
+            return numberString;
+        }
+        private string GetToken()
+        {
+            string loginURI = _configuration.AtlasURI + "/verification/login";
+            return Utilities.GetToken(loginURI,_configuration.AtlasUsername, _configuration.AtlasPassword);
         }
     }
 }

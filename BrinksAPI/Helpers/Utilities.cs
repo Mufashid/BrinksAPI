@@ -1,4 +1,7 @@
-﻿using System.Runtime.Serialization;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Net;
+using System.Runtime.Serialization;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
@@ -65,6 +68,39 @@ namespace BrinksAPI.Helpers
                 s = (Events.UniversalEventData)ser.Deserialize(reader);
             }
             return s;
+        }
+
+        public static string GetToken(string url,string username,string password)
+        {
+            var credential = new
+            {
+                username = username,
+                password = password,
+            };
+            string jsonData = JsonConvert.SerializeObject(credential);
+            dynamic response = JObject.Parse(PostRequest(url, "", jsonData));
+            return response.token;
+        }
+        public static string PostRequest(string url,string token,string data)
+        {
+            string result = null;
+            var httpRequest = (HttpWebRequest)WebRequest.Create(url);
+            httpRequest.Method = "POST";
+            httpRequest.Accept = "application/json";
+            httpRequest.ContentType = "application/json";
+            httpRequest.Headers["Authorization"] = "Bearer " + token;
+            
+            using (var streamWriter = new StreamWriter(httpRequest.GetRequestStream()))
+            {
+                streamWriter.Write(data);
+            }
+
+            var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+            using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+            {
+                result = streamReader.ReadToEnd();
+            }
+            return result;
         }
     }
 }

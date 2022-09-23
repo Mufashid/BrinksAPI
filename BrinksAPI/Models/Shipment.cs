@@ -36,13 +36,12 @@ namespace BrinksAPI.Models
     #region SHIPMENT
     public class Shipment
     {
-        [Required]
+    
         [StringLength(5)]
         public string? originServerId { get; set; }
 
-        [Required]
         [RegularExpression(@"^(0|-?\d{0,18}(\.\d{0,2})?)$")]
-        public long? originShipmentId { get; set; }
+        public string? originShipmentId { get; set; }
 
         [StringLength(8)]
         public string? userId { get; set; }
@@ -180,12 +179,11 @@ namespace BrinksAPI.Models
 
     public class ShipmentItem
     {
-        [Required]
         [StringLength(5)]
         public string? originServerId { get; set; }
-        [Required]
+
         [RegularExpression(@"^(0|-?\d{0,18}(\.\d{0,2})?)$")]
-        public long? originShipmentItemId { get; set; }
+        public string? originShipmentItemId { get; set; }
         [Required]
         [StringLength(16)]
         public string? barcode { get; set; }
@@ -240,7 +238,7 @@ namespace BrinksAPI.Models
         public string? exportLicenseValue { get; set; }
         public string? licenseCode { get; set; }
         public string? destinationCustomsCode { get; set; }
-        [Required]
+
         [StringLength(4)]
         public string? customsCode { get; set; }
         [Required]

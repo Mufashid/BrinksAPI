@@ -15,6 +15,10 @@
         string SftpPassword { get; }
         string SftpOutboundFolder { get; }
         string SftpBackupFolder { get; }
+
+        string AtlasURI { get; }
+        string AtlasUsername { get; }
+        string AtlasPassword { get; }
     }
 
 

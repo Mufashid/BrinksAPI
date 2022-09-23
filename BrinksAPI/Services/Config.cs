@@ -99,6 +99,27 @@ namespace BrinksAPI.Services
                 return Configuration["TransportBookingModule:Sftp:BackupFolder"];
             }
         }
+        public string AtlasURI
+        {
+            get
+            {
+                return Configuration["AtlasAPI:URI"];
+            }
+        }
+        public string AtlasUsername
+        {
+            get
+            {
+                return Configuration["AtlasAPI:Username"];
+            }
+        }
+        public string AtlasPassword
+        {
+            get
+            {
+                return Configuration["AtlasAPI:Password"];
+            }
+        }
     }
 }
 
