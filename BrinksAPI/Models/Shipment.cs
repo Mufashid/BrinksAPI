@@ -75,7 +75,7 @@ namespace BrinksAPI.Models
 
         [StringLength(5)]
         public string? shipperProvinceCode { get; set; }
-        [Required]
+
         [StringLength(15)]
         public string? shipperPostalCode { get; set; }
         [Required]
@@ -108,7 +108,7 @@ namespace BrinksAPI.Models
 
         [StringLength(5)]
         public string? consigneeProvinceCode { get; set; }
-        [Required]
+
         [StringLength(15)]
         public string? consigneePostalCode { get; set; }
         [Required]
@@ -219,7 +219,7 @@ namespace BrinksAPI.Models
         public string? codTypeCode { get; set; }
         [StringLength(15)]
         public string? showSealNumber { get; set; }
-        [Required]
+
         [StringLength(6)]
         public string? packageTypeCd { get; set; }
         [Required]
@@ -265,7 +265,7 @@ namespace BrinksAPI.Models
 
         [StringLength(5)]
         public string? puProvinceCode { get; set; }
-        [Required]
+ 
         [StringLength(15)]
         public string? puPostalCode { get; set; }
         [Required]
@@ -284,7 +284,7 @@ namespace BrinksAPI.Models
         [Required]
         [StringLength(40)]
         public string? dlvName { get; set; }
-        [Required]
+ 
         [StringLength(40)]
         public string? dlvContactName { get; set; }
         [Required]
@@ -302,14 +302,14 @@ namespace BrinksAPI.Models
 
         [StringLength(5)]
         public string? dlvProvinceCode { get; set; }
-        [Required]
+   
         [StringLength(15)]
         public string? dlvPostalCode { get; set; }
         [Required]
         [StringLength(3)]
         public string? dlvCountryCode { get; set; }
         public string? dlvMobileNumber { get; set; }
-        //[Required]
+     
         [StringLength(22)]
         public string? dlvPhoneNumber { get; set; }
         public string? dlvFaxNumber { get; set; }
