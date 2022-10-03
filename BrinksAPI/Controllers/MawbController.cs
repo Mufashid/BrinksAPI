@@ -141,7 +141,7 @@ namespace BrinksAPI.Controllers
                                             {
                                                 string errorMessage = responseEvent.Event.ContextCollection.Where(c => c.Type.Value == "FailureReason").FirstOrDefault().Value.Replace("Error - ", "").Replace("Warning - ", "");
                                                 dataResponse.Status = "ERROR";
-                                                if (errorMessage == "No Module found a Business Entity to link this Universal Event to.")
+                                                if (errorMessage.Contains("No Module found a Business Entity to link this Universal Event to."))
                                                     dataResponse.Message = String.Format("{0} - Mawb does not exist", mawb.mawbNumber);
                                                 else
                                                     dataResponse.Message = errorMessage;

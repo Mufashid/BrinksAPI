@@ -1021,11 +1021,25 @@ namespace BrinksAPI.Controllers
                                                             message += "Tracking Number " + history.TrackingNumber + " can't find.";
                                                         else
                                                         {
-                                                            packingLineObject
-                                                                .CustomizedFieldCollection
-                                                                .Where(c => c.Key == actionType)
-                                                                .FirstOrDefault()
-                                                                .Value = history.HistoryDate;
+                                                            if (packingLineObject.CustomizedFieldCollection is null)
+                                                            {
+                                                                
+                                                                List<CustomizedField> customizedFields = new List<CustomizedField>();
+                                                                CustomizedField customizedField = new CustomizedField();
+                                                                customizedField.DataType = CustomizedFieldDataType.String;
+                                                                customizedField.Key = actionType;
+                                                                customizedField.Value = history.HistoryDate.ToString();
+                                                                customizedFields.Add(customizedField);
+                                                                packingLineObject.CustomizedFieldCollection = customizedFields.ToArray();
+                                                            }
+                                                            else
+                                                            {
+                                                                packingLineObject
+                                                                    .CustomizedFieldCollection
+                                                                    .Where(c => c.Key == actionType)
+                                                                    .FirstOrDefault()
+                                                                    .Value = history.HistoryDate;
+                                                            }
                                                         }
 
                                                     }
