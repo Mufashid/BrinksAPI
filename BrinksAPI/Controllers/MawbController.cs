@@ -79,10 +79,7 @@ namespace BrinksAPI.Controllers
                             string? historyCode = _context.eventCodes.Where(e => e.BrinksCode == mawb.historyCode).FirstOrDefault()?.CWCode;
                             if (historyCode != null)
                             {
-                                int serverId = Int32.Parse(mawb.serverId);
-                                var site = _context.sites.Where(s => s.ServerID == serverId).FirstOrDefault();
-                                if (site != null)
-                                {
+
                                     Events.UniversalEventData universalEvent = new Events.UniversalEventData();
 
                                     #region DataContext
@@ -94,12 +91,12 @@ namespace BrinksAPI.Controllers
                                     dataTargets.Add(dataTarget);
                                     dataContext.DataTargetCollection = dataTargets.ToArray();
 
-                                    Events.Company company = new Events.Company();
-                                    company.Code = site.CompanyCode;
-                                    Events.Country country = new Events.Country();
-                                    country.Code = site.Country;
-                                    company.Country = country;
-                                    dataContext.Company = company;
+                                    //Events.Company company = new Events.Company();
+                                    //company.Code = site.CompanyCode;
+                                    //Events.Country country = new Events.Country();
+                                    //country.Code = site.Country;
+                                    //company.Country = country;
+                                    //dataContext.Company = company;
 
                                     dataContext.EnterpriseID = _configuration.EnterpriseId;
                                     dataContext.ServerID = _configuration.ServerId;
@@ -165,12 +162,7 @@ namespace BrinksAPI.Controllers
 
 
                                     }
-                                }
-                                else
-                                {
-                                    dataResponse.Status = "ERROR";
-                                    dataResponse.Message = "Server ID " + mawb.serverId + " is not found in mapping DB.";
-                                }
+                
                             }
                             else
                             {
