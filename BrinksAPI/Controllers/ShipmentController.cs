@@ -81,18 +81,11 @@ namespace BrinksAPI.Controllers
                 }
                 #endregion
 
-
-                //int serverId = Convert.ToInt32(shipment.originServerId);
-                //var site = _context.sites.Where(s => s.ServerID == serverId).FirstOrDefault();
-                //if (site == null)
-                //{
-                //    dataResponse.Status = "ERROR";
-                //    dataResponse.Message = String.Format("Server ID '{0}' was not found in the database.", serverId.ToString());
-                //    return Ok(dataResponse);
-                //}
                 
                 UniversalShipmentData universalShipmentData = new UniversalShipmentData();
                 Shipment cwShipment = new Shipment();
+
+                ShipmentItem? firstShipmentItem = shipment.shipmentItems?.FirstOrDefault();
 
                 #region Data Context
                 DataContext dataContext = new DataContext();
@@ -117,9 +110,11 @@ namespace BrinksAPI.Controllers
 
                 cwShipment.DataContext = dataContext;
                 #endregion
-                
+
                 string shipmentId = GetShipmentNumberByHawb(dataContext, shipment.hawbNum);
                 dataContext.DataTargetCollection[0].Key = shipmentId;
+
+
 
                 cwShipment.WayBillNumber = shipment.hawbNum;
                 cwShipment.ContainerMode = new ContainerMode() { Code = "LSE" };
@@ -138,6 +133,10 @@ namespace BrinksAPI.Controllers
                 paymentMethod.Code = shipment.chargesType; 
                 cwShipment.PaymentMethod = paymentMethod;
 
+                cwShipment.GoodsDescription = firstShipmentItem.commodityDescription;
+                IncoTerm incoTerm = new IncoTerm();
+                incoTerm.Code = firstShipmentItem.termCode;
+                cwShipment.ShipmentIncoTerm = incoTerm;
 
                 #region PORT
                 var loadingPort = _context.sites.Where(s => s.Airport == shipment.pickupAirportCode).FirstOrDefault();
@@ -161,6 +160,13 @@ namespace BrinksAPI.Controllers
                 note.Description = "Special Instructions";
                 note.NoteText = shipment.notes;
                 notes.Add(note);
+
+                Note markAndNumberNote = new Note();
+                markAndNumberNote.Description = "Marks & Numbers";
+                markAndNumberNote.NoteText = firstShipmentItem.showSealNumber;
+                markAndNumberNote.NoteContext = new NoteContext() { Code = "AAA" };
+                markAndNumberNote.Visibility = new CodeDescriptionPair() { Code = "PUB" };
+                notes.Add(markAndNumberNote);
 
                 Note pickUpNote = new Note();
                 pickUpNote.Description = "Pickup Note";
@@ -217,6 +223,7 @@ namespace BrinksAPI.Controllers
                 organizationAddresses.Add(shipperAddress);
                 #endregion
 
+                #region CONSIGNEE ADDRESS
                 OrganizationData consigneeOrganizationData = SearchOrgWithRegNo(shipment.consigneeGlobalCustomerCode);
                 OrganizationAddress consigneeAddress = new OrganizationAddress();
                 consigneeAddress.AddressType = "ConsigneeDocumentaryAddress";
@@ -245,14 +252,15 @@ namespace BrinksAPI.Controllers
                     consigneeRegistrationNumber.Value = shipment.consigneeGlobalCustomerCode;
                     consigneeRegistrationNumbers.Add(consigneeRegistrationNumber);
                     consigneeAddress.RegistrationNumberCollection = consigneeRegistrationNumbers.ToArray();
-                    
+
                 }
                 else
                 {
                     consigneeAddress.OrganizationCode = consigneeOrganizationData.OrgHeader.Code;
                 }
-                organizationAddresses.Add(consigneeAddress);
-                
+                organizationAddresses.Add(consigneeAddress); 
+                #endregion
+
                 cwShipment.OrganizationAddressCollection = organizationAddresses.ToArray();
                 #endregion
 
@@ -295,6 +303,7 @@ namespace BrinksAPI.Controllers
                     packingLine.OutturnedHeight = Convert.ToDecimal(shipmentItem.dimHeight);
 
                     packingLine.ReferenceNumber = shipmentItem.barcode;
+                    packingLine.MarksAndNos = shipmentItem.showSealNumber;
 
                     Country countryOforigin = new Country();
                     countryOforigin.Code = shipmentItem.originCountry;
@@ -319,14 +328,14 @@ namespace BrinksAPI.Controllers
                     List<CustomizedField> shipmentItemCustomizedFields = new List<CustomizedField>();
 
                     CustomizedField pickupDateCF = new CustomizedField();
-                    pickupDateCF.DataType = CustomizedFieldDataType.DateTime;
-                    pickupDateCF.Key = "Picked up date";
+                    pickupDateCF.DataType = CustomizedFieldDataType.String;
+                    pickupDateCF.Key = "pickup_date";
                     pickupDateCF.Value = shipmentItem.puDate;
                     shipmentItemCustomizedFields.Add(pickupDateCF);
 
                     CustomizedField deliveryDateCF = new CustomizedField();
-                    deliveryDateCF.DataType = CustomizedFieldDataType.DateTime;
-                    deliveryDateCF.Key = "Delivery Date";
+                    deliveryDateCF.DataType = CustomizedFieldDataType.String;
+                    deliveryDateCF.Key = "delivery_date";
                     deliveryDateCF.Value = shipmentItem.dlvDate;
                     shipmentItemCustomizedFields.Add(deliveryDateCF);
 
@@ -419,10 +428,16 @@ namespace BrinksAPI.Controllers
                 shipmentCustomizedFields.Add(netWeightUnitCF);
 
                 CustomizedField netWeightCF = new CustomizedField();
-                showFlagCF.DataType = CustomizedFieldDataType.Decimal;
-                showFlagCF.Key = "Net weight";
-                showFlagCF.Value = totalNetWeight.ToString();
-                shipmentCustomizedFields.Add(showFlagCF);
+                netWeightCF.DataType = CustomizedFieldDataType.Decimal;
+                netWeightCF.Key = "Net weight";
+                netWeightCF.Value = totalNetWeight.ToString();
+                shipmentCustomizedFields.Add(netWeightCF);
+
+                CustomizedField waiver = new CustomizedField();
+                waiver.DataType = CustomizedFieldDataType.String;
+                waiver.Key = "Waiver";
+                waiver.Value = shipment.waiverNumber;
+                shipmentCustomizedFields.Add(waiver);
 
                 cwShipment.CustomizedFieldCollection = shipmentCustomizedFields.ToArray();
                 #endregion
@@ -767,7 +782,7 @@ namespace BrinksAPI.Controllers
                             if (shipmentId == null)
                                 shipment.dateCreated = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                             else
-                                shipment.lastUpdated = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"); ;
+                                shipment.lastUpdated = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
                             shipment.originServerId = originServerId;
                             shipment.originShipmentId = GetNumbers(originShipementId);
@@ -841,7 +856,7 @@ namespace BrinksAPI.Controllers
         ///         "historyDetails": "This is a test event details new for delivery",
         ///         "historyDate": "2022-05-21 10:00:00",
         ///         "siteCode": "3210",
-        ///         "serverId": "TRN",
+        ///         "serverId": "42",
         ///         "hawbNumber": "HAWB1234"
         ///     }]
         /// </remarks>
