@@ -114,8 +114,6 @@ namespace BrinksAPI.Controllers
                 string shipmentId = GetShipmentNumberByHawb(dataContext, shipment.hawbNum);
                 dataContext.DataTargetCollection[0].Key = shipmentId;
 
-
-
                 cwShipment.WayBillNumber = shipment.hawbNum;
                 cwShipment.ContainerMode = new ContainerMode() { Code = "LSE" };
 
@@ -133,9 +131,9 @@ namespace BrinksAPI.Controllers
                 paymentMethod.Code = shipment.chargesType; 
                 cwShipment.PaymentMethod = paymentMethod;
 
-                cwShipment.GoodsDescription = firstShipmentItem.commodityDescription;
+                
                 IncoTerm incoTerm = new IncoTerm();
-                incoTerm.Code = firstShipmentItem.termCode;
+                incoTerm.Code = firstShipmentItem?.termCode;
                 cwShipment.ShipmentIncoTerm = incoTerm;
 
                 #region PORT
@@ -163,7 +161,7 @@ namespace BrinksAPI.Controllers
 
                 Note markAndNumberNote = new Note();
                 markAndNumberNote.Description = "Marks & Numbers";
-                markAndNumberNote.NoteText = firstShipmentItem.showSealNumber;
+                markAndNumberNote.NoteText = firstShipmentItem?.showSealNumber;
                 markAndNumberNote.NoteContext = new NoteContext() { Code = "AAA" };
                 markAndNumberNote.Visibility = new CodeDescriptionPair() { Code = "PUB" };
                 notes.Add(markAndNumberNote);
@@ -361,10 +359,6 @@ namespace BrinksAPI.Controllers
                 cwShipment.PackingLineCollection = shipmentPackingLineCollection;
                 #endregion
 
-                string? totalNetWeightUnit = shipment?.shipmentItems?.GroupBy(i => i.uomCode)?.OrderByDescending(i => i.Count())?.First()?.Key;
-                string? totalPackType = shipment?.shipmentItems?.GroupBy(i => i.packageTypeCd)?.OrderByDescending(i => i.Count())?.First()?.Key;
-                string? totalInsurenceLiabilityCurrencyCode = shipment?.shipmentItems?.GroupBy(i => i.insurCurrencyCode)?.OrderByDescending(i => i.Count())?.First()?.Key;
-                string? totalCustomsLiabilityCurrencyCode = shipment?.shipmentItems?.GroupBy(i => i.customsCurrencyCode)?.OrderByDescending(i => i.Count())?.First()?.Key;
                 int totalQunatity = shipment.shipmentItems.Sum(i => i.numberOfItems);
                 decimal totalNetWeight = Convert.ToDecimal(shipment?.shipmentItems?.Sum(i => i.uomNetWeight));
                 decimal totalGrossWeight = Convert.ToDecimal(shipment?.shipmentItems?.Sum(i => i.grossWeight));
@@ -375,12 +369,6 @@ namespace BrinksAPI.Controllers
 
                 #region CUSTOMIZED FIELDS
                 List<CustomizedField> shipmentCustomizedFields = new List<CustomizedField>();
-
-                //CustomizedField shipmentIdCF = new CustomizedField();
-                //shipmentIdCF.DataType = CustomizedFieldDataType.String;
-                //shipmentIdCF.Key = "Shipment Origin ID";
-                //shipmentIdCF.Value = shipment.originShipmentId.ToString();
-                //shipmentCustomizedFields.Add(shipmentIdCF);
 
                 CustomizedField shipperReferenceCF = new CustomizedField();
                 shipperReferenceCF.DataType = CustomizedFieldDataType.String;
@@ -396,10 +384,16 @@ namespace BrinksAPI.Controllers
                 shipmentCustomizedFields.Add(chargesTypeCF);
 
                 CustomizedField chargesAmountCF = new CustomizedField();
-                chargesAmountCF.DataType = CustomizedFieldDataType.String;
+                chargesAmountCF.DataType = CustomizedFieldDataType.Decimal;
                 chargesAmountCF.Key = "Charges Amount";
                 chargesAmountCF.Value = shipment.chargesAmount.ToString();
                 shipmentCustomizedFields.Add(chargesAmountCF);
+
+                CustomizedField chargeCurrencyCF = new CustomizedField();
+                chargeCurrencyCF.DataType = CustomizedFieldDataType.String;
+                chargeCurrencyCF.Key = "Charges Currency";
+                chargeCurrencyCF.Value = firstShipmentItem?.insurCurrencyCode;
+                shipmentCustomizedFields.Add(chargeCurrencyCF);
 
                 string userChargeType = shipment.userChargesType == "P" ? "PRE" : "COL";
                 CustomizedField userChargesTypeCF = new CustomizedField();
@@ -424,7 +418,7 @@ namespace BrinksAPI.Controllers
                 CustomizedField netWeightUnitCF = new CustomizedField();
                 netWeightUnitCF.DataType = CustomizedFieldDataType.String;
                 netWeightUnitCF.Key = "Net Weight UOM";
-                netWeightUnitCF.Value = totalNetWeightUnit;
+                netWeightUnitCF.Value = firstShipmentItem?.uomCode;
                 shipmentCustomizedFields.Add(netWeightUnitCF);
 
                 CustomizedField netWeightCF = new CustomizedField();
@@ -449,7 +443,7 @@ namespace BrinksAPI.Controllers
                 cwShipment.OuterPacksSpecified = true;
 
                 UnitOfWeight totalWeightUnit = new UnitOfWeight();
-                totalWeightUnit.Code = totalNetWeightUnit;
+                totalWeightUnit.Code = firstShipmentItem?.uomCode;
                 cwShipment.TotalWeightUnit = totalWeightUnit;
                 cwShipment.TotalWeight = totalGrossWeight;
                 cwShipment.ActualChargeable = totalChargableWeight;
@@ -457,15 +451,22 @@ namespace BrinksAPI.Controllers
                 cwShipment.TotalNoOfPieces = totalQunatity;
                 cwShipment.OuterPacks = totalQunatity;
                 PackageType outerPackageType = new PackageType();
-                outerPackageType.Code = totalPackType;
+                outerPackageType.Code = firstShipmentItem?.packageTypeCd;
                 cwShipment.OuterPacksPackageType  = outerPackageType;
                 cwShipment.TotalNoOfPacksPackageType  = outerPackageType;
 
                 Currency insurenceLiabilityCurrency = new Currency();
-                insurenceLiabilityCurrency.Code = totalInsurenceLiabilityCurrencyCode;
+                insurenceLiabilityCurrency.Code = firstShipmentItem?.insurCurrencyCode;
                 cwShipment.InsuranceValueCurrency = insurenceLiabilityCurrency;
                 cwShipment.InsuranceValueSpecified = true;
                 cwShipment.InsuranceValue = totalInsurenceLiability;
+
+                cwShipment.GoodsValueSpecified = true;
+                cwShipment.GoodsValue = totalCustomsLiability;
+                cwShipment.GoodsDescription = firstShipmentItem?.commodityDescription;
+                Currency goodsCurrency = new Currency();
+                goodsCurrency.Code = firstShipmentItem?.customsCurrencyCode;
+                cwShipment.GoodsValueCurrency = goodsCurrency;
 
                 universalShipmentData.Shipment = cwShipment;
                 successMessage = shipmentId == null ? "Shipment Created in CW. " : "Shipment Updated in CW. ";
@@ -768,9 +769,6 @@ namespace BrinksAPI.Controllers
                             eventDataTargets.Add(eventDataTarget);
                             eventDataContext.DataTargetCollection = eventDataTargets.ToArray();
 
-                            //Events.Company eventCompany = new Events.Company();
-                            //eventCompany.Code = dataContext.Company.Code;
-                            //eventDataContext.Company = eventCompany;
                             eventDataContext.ServerID = dataContext.ServerID;
                             eventDataContext.EnterpriseID = dataContext.EnterpriseID;
 

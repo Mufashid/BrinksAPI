@@ -189,14 +189,6 @@ namespace BrinksAPI.Controllers
             }
         }
 
-        private static int TryToParse(string value)
-        {
-            int number;
-            bool result = Int32.TryParse(value, out number);
-            if (result)
-                return number;
-            else
-                return 0;
-        }
+  
     }
 }
