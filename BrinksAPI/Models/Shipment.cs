@@ -162,8 +162,7 @@ namespace BrinksAPI.Models
         public string? holdFlag { get; set; }
         [StringLength(1)]
         public string? lowValueFlag { get; set; }
-        [StringLength(1)]
-        public string? windowFlag { get; set; }
+
         [StringLength(20)]
         public string? waiverNumber { get; set; }
         [StringLength(1)]
@@ -333,8 +332,7 @@ namespace BrinksAPI.Models
         [StringLength(2)]
         public string? amsStatusCode { get; set; }
         public string? amsStatusDate { get; set; }
-        [StringLength(6)]
-        public string? globalCondoCode { get; set; }
+   
     }
     #endregion
 }

@@ -10,6 +10,7 @@ using NativeOrganization;
 using NativeRequest;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
+using System.Net;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
@@ -54,10 +55,8 @@ namespace BrinksAPI.Controllers
         {
             ShipemtResponse dataResponse = new ShipemtResponse();
             string successMessage = "";
-            string atlsSuccessMessage = "";
             try
             {
-     
                 dataResponse.HawbNum = shipment?.hawbNum;
 
                 #region MODEL VALIDATION
@@ -81,16 +80,17 @@ namespace BrinksAPI.Controllers
                 }
                 #endregion
 
-                
                 UniversalShipmentData universalShipmentData = new UniversalShipmentData();
                 Shipment cwShipment = new Shipment();
 
                 ShipmentItem? firstShipmentItem = shipment.shipmentItems?.FirstOrDefault();
+                string shipmentId = GetShipmentNumberByHawb(shipment.hawbNum);
 
                 #region Data Context
                 DataContext dataContext = new DataContext();
                 DataTarget dataTarget = new DataTarget();
                 dataTarget.Type = "ForwardingShipment";
+                dataTarget.Key = shipmentId;
 
                 List<DataTarget> dataTargets = new List<DataTarget>();
                 dataTargets.Add(dataTarget);
@@ -110,31 +110,6 @@ namespace BrinksAPI.Controllers
 
                 cwShipment.DataContext = dataContext;
                 #endregion
-
-                string shipmentId = GetShipmentNumberByHawb(dataContext, shipment.hawbNum);
-                dataContext.DataTargetCollection[0].Key = shipmentId;
-
-                cwShipment.WayBillNumber = shipment.hawbNum;
-                cwShipment.ContainerMode = new ContainerMode() { Code = "LSE" };
-
-                ServiceLevel serviceLevel = new ServiceLevel();
-                serviceLevel.Code = shipment.serviceType;
-                cwShipment.ServiceLevel = serviceLevel;
-
-                string? transportModeCWCode = _context.transportModes.Where(t => t.BrinksCode == shipment.modeOfTransport).FirstOrDefault()?.CWCode;
-                CodeDescriptionPair transportMode = new CodeDescriptionPair();
-                transportMode.Code = transportModeCWCode;
-                cwShipment.TransportMode = transportMode;
-
-                //Mapping
-                CodeDescriptionPair paymentMethod = new CodeDescriptionPair();
-                paymentMethod.Code = shipment.chargesType; 
-                cwShipment.PaymentMethod = paymentMethod;
-
-                
-                IncoTerm incoTerm = new IncoTerm();
-                incoTerm.Code = firstShipmentItem?.termCode;
-                cwShipment.ShipmentIncoTerm = incoTerm;
 
                 #region PORT
                 var loadingPort = _context.sites.Where(s => s.Airport == shipment.pickupAirportCode).FirstOrDefault();
@@ -436,6 +411,28 @@ namespace BrinksAPI.Controllers
                 cwShipment.CustomizedFieldCollection = shipmentCustomizedFields.ToArray();
                 #endregion
 
+                #region BASIC REGISTRATION
+
+                cwShipment.WayBillNumber = shipment.hawbNum;
+                cwShipment.ContainerMode = new ContainerMode() { Code = "LSE" };
+
+                ServiceLevel serviceLevel = new ServiceLevel();
+                serviceLevel.Code = shipment.serviceType;
+                cwShipment.ServiceLevel = serviceLevel;
+
+                string? transportModeCWCode = _context.transportModes.Where(t => t.BrinksCode == shipment.modeOfTransport).FirstOrDefault()?.CWCode;
+                CodeDescriptionPair transportMode = new CodeDescriptionPair();
+                transportMode.Code = transportModeCWCode;
+                cwShipment.TransportMode = transportMode;
+
+                //Mapping
+                CodeDescriptionPair paymentMethod = new CodeDescriptionPair();
+                paymentMethod.Code = shipment.chargesType;
+                cwShipment.PaymentMethod = paymentMethod;
+
+                IncoTerm incoTerm = new IncoTerm();
+                incoTerm.Code = firstShipmentItem?.termCode;
+                cwShipment.ShipmentIncoTerm = incoTerm;
                 cwShipment.TotalWeightSpecified = true;
                 cwShipment.TotalNoOfPacksSpecified = true;
                 cwShipment.TotalNoOfPiecesSpecified = true;
@@ -452,8 +449,8 @@ namespace BrinksAPI.Controllers
                 cwShipment.OuterPacks = totalQunatity;
                 PackageType outerPackageType = new PackageType();
                 outerPackageType.Code = firstShipmentItem?.packageTypeCd;
-                cwShipment.OuterPacksPackageType  = outerPackageType;
-                cwShipment.TotalNoOfPacksPackageType  = outerPackageType;
+                cwShipment.OuterPacksPackageType = outerPackageType;
+                cwShipment.TotalNoOfPacksPackageType = outerPackageType;
 
                 Currency insurenceLiabilityCurrency = new Currency();
                 insurenceLiabilityCurrency.Code = firstShipmentItem?.insurCurrencyCode;
@@ -466,7 +463,8 @@ namespace BrinksAPI.Controllers
                 cwShipment.GoodsDescription = firstShipmentItem?.commodityDescription;
                 Currency goodsCurrency = new Currency();
                 goodsCurrency.Code = firstShipmentItem?.customsCurrencyCode;
-                cwShipment.GoodsValueCurrency = goodsCurrency;
+                cwShipment.GoodsValueCurrency = goodsCurrency; 
+                #endregion
 
                 universalShipmentData.Shipment = cwShipment;
                 successMessage = shipmentId == null ? "Shipment Created in CW. " : "Shipment Updated in CW. ";
@@ -480,6 +478,46 @@ namespace BrinksAPI.Controllers
                 }                
                 else
                 {
+                    #region CALLING BRINKS INHOUSE API
+
+                    Events.UniversalEventData cwEventXML = Utilities.ReadUniversalEvent(documentResponse.Data.Data.OuterXml);
+                    string originShipementId = cwEventXML.Event.DataContext.DataSourceCollection.Where(d => d.Type == "ForwardingShipment").FirstOrDefault().Key;
+
+                    UniversalShipmentData cwShipmentData = GetShipmentById(originShipementId);
+                    int serverId = 35;
+                    //int serverId = _context.sites.Where(s => s.CompanyCode == cwShipmentData.Shipment.DataContext.Company.Code).FirstOrDefault().ServerID;
+                    serverId = serverId == 0 ? 35 : serverId;// Default LATAM
+                    string originServerId = serverId.ToString();
+                    if (shipmentId == null)
+                        shipment.dateCreated = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                    else
+                        shipment.lastUpdated = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+
+                    shipment.originServerId = originServerId;
+                    shipment.originShipmentId = GetNumbers(originShipementId);
+                    for (int i = 0; i < shipment.shipmentItems.Count; i++)
+                    {
+                        shipment.shipmentItems[i].originServerId = originServerId;
+                        shipment.shipmentItems[i].originShipmentItemId = GetNumbers(cwShipmentData.Shipment.PackingLineCollection.PackingLine[i].PackingLineID);
+                        shipment.shipmentItems[i].customsCode = "SALE";
+                    }
+
+                    string atlasRequest = JsonConvert.SerializeObject(shipment);
+                    string atlasLoginURI = _configuration.AtlasURI + "/verification/login";
+                    string atlasPostShipmentURL = _configuration.AtlasURI + "/shipment/create";
+                    string atlasToken = Utilities.GetToken(atlasLoginURI, _configuration.AtlasUsername, _configuration.AtlasPassword);
+                    Tuple<HttpStatusCode, string> atlasResponse = Utilities.PostRequest(atlasPostShipmentURL, atlasToken, atlasRequest);
+                    if(atlasResponse.Item1 == HttpStatusCode.OK)
+                    {
+                        successMessage += "Successfully created/updated the shipment in Atlas.";
+                    }
+                    else
+                    {
+                        successMessage += "Error creating/updating the shipment in the Atlas.Error:" + atlasResponse.Item2;
+                    }
+
+                    #endregion
+                    
                     #region TRANSPORT BOOKING
                     string responseShipmentId = Utilities.ReadUniversalEvent(documentResponse.Data.Data.OuterXml).Event.DataContext.DataSourceCollection.Where(s => s.Type == "ForwardingShipment").FirstOrDefault().Key;
                     var tranportBookingObj = _context.transportBookings.Where(t => t.HawbNumber == shipment.hawbNum).FirstOrDefault();
@@ -745,8 +783,7 @@ namespace BrinksAPI.Controllers
                         var transportResponse = eAdaptor.Services.SendToCargowise(updatedTransportXML, _configuration.URI, _configuration.Username, _configuration.Password);
                         if (transportResponse.Status == "ERROR")
                         {
-                            string message = "Shipment created/updated with Id " + shipmentId + ". Unable to update the transport booking. Below are the reason.";
-                            //transportResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
+                            string message = "Shipment created/updated with Id " + shipmentId + ". Unable to update the transport booking. Below are the reason." + transportResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", ""); ;
                             dataResponse.Status = "ERROR";
                             dataResponse.Message = message;
                             return Ok(dataResponse);
@@ -755,68 +792,24 @@ namespace BrinksAPI.Controllers
                         {
                             dataResponse.Status = "SUCCESS";
                             dataResponse.Message = successMessage;
-
-                            atlsSuccessMessage = "Error creating/updating the shipment in the Atlas. ";
-                            // Serilialize
-                            Events.UniversalEventData cwEventXML = Utilities.ReadUniversalEvent(documentResponse.Data.Data.OuterXml);
-                            string originShipementId = cwEventXML.Event.DataContext.DataSourceCollection.Where(d => d.Type == "ForwardingShipment").FirstOrDefault().Key;
-
-                            Events.DataContext eventDataContext = new Events.DataContext();
-
-                            List<Events.DataTarget> eventDataTargets= new List<Events.DataTarget>();
-                            Events.DataTarget eventDataTarget= new Events.DataTarget();
-                            eventDataTarget.Type = "ForwardingShipment";
-                            eventDataTargets.Add(eventDataTarget);
-                            eventDataContext.DataTargetCollection = eventDataTargets.ToArray();
-
-                            eventDataContext.ServerID = dataContext.ServerID;
-                            eventDataContext.EnterpriseID = dataContext.EnterpriseID;
-
-                            UniversalShipmentData cwShipmentData = GetShipmentById(eventDataContext, originShipementId);
-
-                            int serverId = _context.sites.Where(s => s.CompanyCode == cwShipmentData.Shipment.DataContext.Company.Code).First().ServerID;
-                            serverId = serverId == 0 ? 35 : serverId;// Default LATAM
-                            string originServerId = serverId.ToString();
-                            if (shipmentId == null)
-                                shipment.dateCreated = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                            else
-                                shipment.lastUpdated = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-                            shipment.originServerId = originServerId;
-                            shipment.originShipmentId = GetNumbers(originShipementId);
-                            for (int i = 0; i < shipment.shipmentItems.Count; i++)
-                            {
-                                shipment.shipmentItems[i].originServerId = originServerId;
-                                shipment.shipmentItems[i].originShipmentItemId = GetNumbers(cwShipmentData.Shipment.PackingLineCollection.PackingLine[i].PackingLineID);
-                                shipment.shipmentItems[i].customsCode = "SALE";
-                            }
-
-                            string atlasRequest = JsonConvert.SerializeObject(shipment);
-                            string atlasLoginURI = _configuration.AtlasURI + "/verification/login";
-                            string atlasPostShipmentURL = _configuration.AtlasURI + "/shipment/create";
-                            string atlasToken = Utilities.GetToken(atlasLoginURI, _configuration.AtlasUsername, _configuration.AtlasPassword);
-                            string atlsResponse = Utilities.PostRequest(atlasPostShipmentURL, atlasToken, atlasRequest);
-                            atlsSuccessMessage = "Successfully created/updated the shipment in Atlas.";
-                            
-                            dataResponse.Message += successMessage + atlsSuccessMessage;
-
-
                             return Ok(dataResponse);
                         }
                     }
                     else
                     {
                         dataResponse.Status = "SUCCESS";
-                        dataResponse.Message = successMessage + atlsSuccessMessage;
+                        dataResponse.Message = successMessage;
                     }
                     #endregion
+
+                    
 
                 }
             }
             catch (Exception ex)
             {
                 dataResponse.Status = "ERROR";
-                dataResponse.Message = successMessage + atlsSuccessMessage +   ex.Message;
+                dataResponse.Message = successMessage  +   ex.Message;
                 return StatusCode(StatusCodes.Status500InternalServerError, dataResponse);
             }
             return Ok(dataResponse);
@@ -988,7 +981,7 @@ namespace BrinksAPI.Controllers
                                             string shipmentId = responseEvent.Event.DataContext.DataSourceCollection.Where(d => d.Type == "ForwardingShipment").FirstOrDefault().Key;
                                             if (history.TrackingNumber != null && shipmentId != null)
                                             {
-                                                UniversalShipmentData universalShipmentData = GetShipmentById(dataContext, shipmentId);
+                                                UniversalShipmentData universalShipmentData = GetShipmentById(shipmentId);
                                                 if (universalShipmentData is not null)
                                                 {
                                                     if (universalShipmentData.Shipment.SubShipmentCollection is not null)
@@ -1117,9 +1110,9 @@ namespace BrinksAPI.Controllers
             }
         } 
         #endregion
-        public UniversalShipmentData GetShipmentById(Events.DataContext dataContext,string shipmentId)
+        public UniversalShipmentData GetShipmentById(string shipmentId)
         {
-            UniversalShipmentData dataResponse = new UniversalShipmentData();
+            UniversalShipmentData? response = new UniversalShipmentData();
             try
             {
                 ShipmentRequest.UniversalShipmentRequestData dataRequest = new ShipmentRequest.UniversalShipmentRequestData();
@@ -1128,15 +1121,10 @@ namespace BrinksAPI.Controllers
                 List<ShipmentRequest.DataTarget> dataTargets = new List<ShipmentRequest.DataTarget>();
                 ShipmentRequest.DataTarget dataTarget = new ShipmentRequest.DataTarget();
 
-                dataTarget.Type = dataContext.DataTargetCollection[0].Type;
+                dataTarget.Type = "ForwardingShipment";
                 dataTarget.Key = shipmentId;
                 dataTargets.Add(dataTarget);
                 requestDataContext.DataTargetCollection = dataTargets.ToArray();
-                //ShipmentRequest.Company company = new ShipmentRequest.Company();
-                //company.Code = dataContext.Company.Code;
-                //requestDataContext.Company = company;
-                requestDataContext.EnterpriseID = dataContext.EnterpriseID;
-                requestDataContext.ServerID = dataContext.ServerID;
                 shipmentRequest.DataContext = requestDataContext;
                 dataRequest.ShipmentRequest = shipmentRequest;
 
@@ -1147,18 +1135,18 @@ namespace BrinksAPI.Controllers
                     using (var reader = new StringReader(shipmentRequestResponse.Data.Data.OuterXml))
                     {
                         var serializer = new XmlSerializer(typeof(UniversalShipmentData));
-                        dataResponse = (UniversalShipmentData)serializer.Deserialize(reader);
+                        response = (UniversalShipmentData?)serializer.Deserialize(reader);
                     }
                 }
-
-                return dataResponse;
             }
+         
             catch (Exception ex)
             {
                 throw ex;
             }
+            return response;
         }
-        public string GetShipmentNumberByHawb(DataContext dataContext, string hawb)
+        public string GetShipmentNumberByHawb(string hawb)
         {
             string? shipmentNumber = null;
             try
@@ -1168,24 +1156,18 @@ namespace BrinksAPI.Controllers
 
                 #region DATA CONTEXT
                 Events.DataContext eventDataContext = new Events.DataContext();
-
                 List<Events.DataTarget> dataTargets = new List<Events.DataTarget>();
                 Events.DataTarget dataTarget = new Events.DataTarget();
                 dataTarget.Type = "ForwardingShipment";
                 dataTargets.Add(dataTarget);
                 eventDataContext.DataTargetCollection = dataTargets.ToArray();
-
-                eventDataContext.EnterpriseID = dataContext.EnterpriseID;
-                eventDataContext.ServerID = dataContext.ServerID;
-
-                Events.Company company = new Events.Company();
-                company.Code = dataContext.Company.Code;
-                eventDataContext.Company = company;
-                @event.DataContext = eventDataContext; 
+                @event.DataContext = eventDataContext;
                 #endregion
 
+                #region EVENT DEATAIL
                 @event.EventTime = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss");
-                @event.EventType = "Z00";
+                @event.EventType = "Z00"; 
+                #endregion
 
                 #region CONTEXT COLLECTION
                 List<Events.Context> contexts = new List<Events.Context>();

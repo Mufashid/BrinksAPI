@@ -78,13 +78,13 @@ namespace BrinksAPI.Helpers
                 password = password,
             };
             string jsonData = JsonConvert.SerializeObject(credential);
-            dynamic response = JObject.Parse(PostRequest(url, "", jsonData));
+            dynamic response = JObject.Parse(PostRequest(url, "", jsonData).Item2);
             return response.token;
         }
-        public static string PostRequest(string url,string token,string data)
+        public static Tuple<HttpStatusCode, string> PostRequest(string url,string token,string data)
         {
-            string result = null;
-            var httpRequest = (HttpWebRequest)WebRequest.Create(url);
+            string? result = null;
+            HttpWebRequest httpRequest = (HttpWebRequest)WebRequest.Create(url);
             httpRequest.Method = "POST";
             httpRequest.Accept = "application/json";
             httpRequest.ContentType = "application/json";
@@ -95,12 +95,12 @@ namespace BrinksAPI.Helpers
                 streamWriter.Write(data);
             }
 
-            var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+            HttpWebResponse httpResponse = (HttpWebResponse)httpRequest.GetResponse();
             using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
             {
                 result = streamReader.ReadToEnd();
             }
-            return result;
+            return Tuple.Create(httpResponse.StatusCode,result);
         }
     }
 }
