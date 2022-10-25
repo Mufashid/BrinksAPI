@@ -301,28 +301,25 @@ namespace BrinksAPI.Controllers
                     List<CustomizedField> shipmentItemCustomizedFields = new List<CustomizedField>();
 
                     CustomizedField pickupDateCF = new CustomizedField();
-                    pickupDateCF.DataType = CustomizedFieldDataType.String;
                     pickupDateCF.Key = "pickup_date";
                     pickupDateCF.Value = shipmentItem.puDate;
                     shipmentItemCustomizedFields.Add(pickupDateCF);
 
                     CustomizedField deliveryDateCF = new CustomizedField();
-                    deliveryDateCF.DataType = CustomizedFieldDataType.String;
                     deliveryDateCF.Key = "delivery_date";
                     deliveryDateCF.Value = shipmentItem.dlvDate;
                     shipmentItemCustomizedFields.Add(deliveryDateCF);
 
-                    //CustomizedField originServerIdCF = new CustomizedField();
-                    //originServerIdCF.DataType = CustomizedFieldDataType.String;
-                    //originServerIdCF.Key = "Origin Server Id";
-                    //originServerIdCF.Value = shipmentItem.originServerId;
-                    //shipmentItemCustomizedFields.Add(originServerIdCF);
+                    CustomizedField packageLineNetWeightCF = new CustomizedField();
+                    packageLineNetWeightCF.Key = "net_weight";
+                    packageLineNetWeightCF.Value =  shipmentItem.uomNetWeight.ToString();
+                    shipmentItemCustomizedFields.Add(packageLineNetWeightCF);
 
-                    //CustomizedField originShipmentItemIdCF = new CustomizedField();
-                    //originShipmentItemIdCF.DataType = CustomizedFieldDataType.String;
-                    //originShipmentItemIdCF.Key = "Origin Shipment Item Id";
-                    //originShipmentItemIdCF.Value =shipmentItem.originShipmentItemId.ToString();
-                    //shipmentItemCustomizedFields.Add(originShipmentItemIdCF);
+                    CustomizedField packageLineUOMCF = new CustomizedField();
+                    packageLineUOMCF.DataType = CustomizedFieldDataType.String;
+                    packageLineUOMCF.Key = "uom";
+                    packageLineUOMCF.Value = shipmentItem.uomCode;
+                    shipmentItemCustomizedFields.Add(packageLineUOMCF);
 
                     packingLine.CustomizedFieldCollection = shipmentItemCustomizedFields.ToArray();
                     #endregion
@@ -637,7 +634,7 @@ namespace BrinksAPI.Controllers
                             packingLine.PackQtySpecified = true;
                             packingLine.WeightSpecified = true;
                             packingLine.PackQty = Convert.ToInt64(shipmentItem.numberOfItems);
-                            packingLine.Weight = Convert.ToDecimal(shipmentItem.uomNetWeight);
+                            packingLine.Weight = Convert.ToDecimal(shipmentItem.grossWeight);
 
                             //packingLine.LengthSpecified = true;
                             //packingLine.WeightSpecified = true;
