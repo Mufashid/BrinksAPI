@@ -496,9 +496,9 @@ namespace BrinksAPI.Controllers
                     #region CALLING BRINKS INHOUSE API
 
                     Events.UniversalEventData cwEventXML = Utilities.ReadUniversalEvent(documentResponse.Data.Data.OuterXml);
-                    string responseShipmentId = cwEventXML.Event.DataContext.DataSourceCollection.Where(d => d.Type == "ForwardingShipment").FirstOrDefault().Key;
+                    string atlasShipmentId = cwEventXML.Event.DataContext.DataSourceCollection.Where(d => d.Type == "ForwardingShipment").FirstOrDefault().Key;
 
-                    UniversalShipmentData cwShipmentData = GetShipmentById(responseShipmentId);
+                    UniversalShipmentData cwShipmentData = GetShipmentById(atlasShipmentId);
 
                     int? serverId =  _context.sites.Where(s => s.CompanyCode == cwShipmentData.Shipment.DataContext.Company.Code).FirstOrDefault()?.ServerID;
                     serverId = serverId == 0 ? 35 : serverId;// Default LATAM
