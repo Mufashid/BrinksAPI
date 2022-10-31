@@ -33,6 +33,8 @@ namespace BrinksAPI.Auth
         public DbSet<Entities.EventCode> eventCodes { get; set; } 
         public DbSet<Entities.TransportMode> transportModes { get; set; } 
         public DbSet<Entities.PackageType> packageTypes { get; set; } 
+        public DbSet<Entities.Category> Categories { get; set; } 
+        public DbSet<Entities.TaxType> TaxTypes { get; set; } 
         #endregion
         public DbSet<Document> documents { get; set; }
         public DbSet<TransportBooking> transportBookings { get; set; }

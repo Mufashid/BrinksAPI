@@ -318,7 +318,6 @@ namespace BrinksAPI.Models
         [Required]
         public int numberOfItems { get; set; }
         public string? uscsDlvCustomerType { get; set; }
-        public decimal? netWeight { get; set; }
         [Required]
         [StringLength(3)]
         public string? termCode { get; set; }

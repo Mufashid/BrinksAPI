@@ -23,13 +23,15 @@ namespace BrinksAPI.Controllers
     //[ApiController]
     public class ShipmentController : Controller
     {
+        private readonly ILogger<ShipmentController> _logger;
         private readonly IConfigManager _configuration;
 
         private readonly ApplicationDbContext _context;
-        public ShipmentController(IConfigManager configuration, ApplicationDbContext applicationDbContext)
+        public ShipmentController(IConfigManager configuration, ApplicationDbContext applicationDbContext, ILogger<ShipmentController> logger)
         {
             _configuration = configuration;
             _context = applicationDbContext;
+            _logger = logger;
 
         }
 
@@ -57,6 +59,7 @@ namespace BrinksAPI.Controllers
             string successMessage = "";
             try
             {
+                
                 dataResponse.HawbNum = shipment?.hawbNum;
 
                 #region MODEL VALIDATION
@@ -73,18 +76,23 @@ namespace BrinksAPI.Controllers
                             errorString += String.Format("{0}", subError.ErrorMessage);
                         }
                     }
+                    _logger.LogError("Error: {@Error} Request: {@Request}",errorString,shipment);
+
                     dataResponse.Status = "ERROR";
                     dataResponse.Message = errorString;
 
                     return Ok(dataResponse);
                 }
                 #endregion
-
+                
                 UniversalShipmentData universalShipmentData = new UniversalShipmentData();
                 Shipment cwShipment = new Shipment();
 
                 ShipmentItem? firstShipmentItem = shipment.shipmentItems?.FirstOrDefault();
                 string shipmentId = GetShipmentNumberByHawb(shipment.hawbNum);
+
+                Random random = new Random();
+                string originShipmentId = random.Next(30000000, 39999999).ToString();
 
                 #region Data Context
                 DataContext dataContext = new DataContext();
@@ -405,6 +413,13 @@ namespace BrinksAPI.Controllers
                 waiver.Value = shipment.waiverNumber;
                 shipmentCustomizedFields.Add(waiver);
 
+
+                CustomizedField originShipmentIdCF = new CustomizedField();
+                originShipmentIdCF.DataType = CustomizedFieldDataType.String;
+                originShipmentIdCF.Key = "Origin Shipment ID";
+                originShipmentIdCF.Value = originShipmentId;
+                shipmentCustomizedFields.Add(originShipmentIdCF);
+
                 cwShipment.CustomizedFieldCollection = shipmentCustomizedFields.ToArray();
                 #endregion
 
@@ -469,8 +484,11 @@ namespace BrinksAPI.Controllers
                 var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
                 if (documentResponse.Status == "ERROR")
                 {
+                    string errorMessage = documentResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
                     dataResponse.Status = documentResponse.Status;
-                    dataResponse.Message = documentResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
+                    dataResponse.Message = errorMessage;
+
+                    _logger.LogError("Error: {@Error} Request: {@Request}", errorMessage, shipment);
                     return Ok(dataResponse);
                 }                
                 else
@@ -478,20 +496,21 @@ namespace BrinksAPI.Controllers
                     #region CALLING BRINKS INHOUSE API
 
                     Events.UniversalEventData cwEventXML = Utilities.ReadUniversalEvent(documentResponse.Data.Data.OuterXml);
-                    string originShipementId = cwEventXML.Event.DataContext.DataSourceCollection.Where(d => d.Type == "ForwardingShipment").FirstOrDefault().Key;
+                    string responseShipmentId = cwEventXML.Event.DataContext.DataSourceCollection.Where(d => d.Type == "ForwardingShipment").FirstOrDefault().Key;
 
-                    UniversalShipmentData cwShipmentData = GetShipmentById(originShipementId);
-                    int serverId = 35;
-                    //int serverId = _context.sites.Where(s => s.CompanyCode == cwShipmentData.Shipment.DataContext.Company.Code).FirstOrDefault().ServerID;
+                    UniversalShipmentData cwShipmentData = GetShipmentById(responseShipmentId);
+
+                    int? serverId =  _context.sites.Where(s => s.CompanyCode == cwShipmentData.Shipment.DataContext.Company.Code).FirstOrDefault()?.ServerID;
                     serverId = serverId == 0 ? 35 : serverId;// Default LATAM
-                    string originServerId = serverId.ToString();
+                    string? originServerId = serverId.ToString();
+
                     if (shipmentId == null)
                         shipment.dateCreated = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                     else
                         shipment.lastUpdated = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
 
                     shipment.originServerId = originServerId;
-                    shipment.originShipmentId = GetNumbers(originShipementId);
+                    shipment.originShipmentId = originShipmentId;
                     for (int i = 0; i < shipment.shipmentItems.Count; i++)
                     {
                         shipment.shipmentItems[i].originServerId = originServerId;
@@ -507,10 +526,12 @@ namespace BrinksAPI.Controllers
                     if(atlasResponse.Item1 == HttpStatusCode.OK)
                     {
                         successMessage += "Successfully created/updated the shipment in Atlas.";
+                        _logger.LogInformation("Successfully created/updated the shipment in Atlas.");
                     }
                     else
                     {
                         successMessage += "Error creating/updating the shipment in the Atlas.Error:" + atlasResponse.Item2;
+                        _logger.LogError("Error: {@Error} Request: {@Request}", atlasResponse.Item2, atlasRequest);
                     }
 
                     #endregion
@@ -567,6 +588,7 @@ namespace BrinksAPI.Controllers
                             }
                             catch (Exception ex)
                             {
+                                _logger.LogError("Error: {@Error} Request: {@Request}", ex.Message, shipment);
                                 continue;
                             }
                             finally
@@ -783,12 +805,16 @@ namespace BrinksAPI.Controllers
                             string message = "Shipment created/updated with Id " + shipmentId + ". Unable to update the transport booking. Below are the reason." + transportResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", ""); ;
                             dataResponse.Status = "ERROR";
                             dataResponse.Message = message;
+
+                            _logger.LogError("Error: {@Error} Request: {@Request}", message, shipment);
                             return Ok(dataResponse);
                         }
                         else
                         {
                             dataResponse.Status = "SUCCESS";
                             dataResponse.Message = successMessage;
+
+                            _logger.LogInformation(successMessage);
                             return Ok(dataResponse);
                         }
                     }
@@ -796,15 +822,15 @@ namespace BrinksAPI.Controllers
                     {
                         dataResponse.Status = "SUCCESS";
                         dataResponse.Message = successMessage;
+                        _logger.LogInformation(successMessage);
                     }
                     #endregion
-
                     
-
                 }
             }
             catch (Exception ex)
             {
+                _logger.LogError("Error: {@Error} Request: {@Request}", ex.Message, shipment);
                 dataResponse.Status = "ERROR";
                 dataResponse.Message = successMessage  +   ex.Message;
                 return StatusCode(StatusCodes.Status500InternalServerError, dataResponse);
@@ -956,7 +982,7 @@ namespace BrinksAPI.Controllers
                                     using (var reader = new StringReader(documentResponse.Data.Data.OuterXml))
                                     {
                                         var serializer = new XmlSerializer(typeof(Events.UniversalEventData));
-                                        Events.UniversalEventData responseEvent = (Events.UniversalEventData)serializer.Deserialize(reader);
+                                        Events.UniversalEventData? responseEvent = (Events.UniversalEventData)serializer.Deserialize(reader);
 
                                         bool isError = responseEvent.Event.ContextCollection.Any(c => c.Type.Value.Contains("FailureReason"));
                                         if (isError)
@@ -967,8 +993,8 @@ namespace BrinksAPI.Controllers
                                                 .Replace("Error - ", "")
                                                 .Replace("Warning - ", "");
                                             dataResponse.Status = "ERROR";
-                                            if (errorMessage == "No Module found a Business Entity to link this Universal Event to.")
-                                                dataResponse.Message = String.Format("{0} - Hawb does not exist", history.HawbNumber);
+                                            if (errorMessage.Contains("No Module found a Business Entity to link this Universal Event to."))
+                                                dataResponse.Message = String.Format("{0} - Shipment Not Found", history.HawbNumber);
                                             else
                                                 dataResponse.Message = errorMessage;
                                         }

@@ -2,6 +2,7 @@ using BrinksAPI.Auth;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Serilog;
 using System.Reflection;
 using System.Text.Json.Serialization;
 
@@ -9,15 +10,29 @@ var builder = WebApplication.CreateBuilder(args);
 ConfigurationManager configuration = builder.Configuration;
 
 // Add services to the container.
+
+#region Seri Log
+builder.Logging.ClearProviders();
+var path = configuration.GetValue<string>("Logging:FilePath");
+var logger = new LoggerConfiguration()
+    .WriteTo.File(path)
+    .CreateLogger();
+builder.Logging.AddSerilog(logger);
+
+#endregion
+
+#region CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AnyOrigin", builder =>
-    {
-        builder
-            .AllowAnyOrigin()
-            .AllowAnyMethod();
-    });
+options.AddPolicy("AnyOrigin", builder =>
+{
+builder
+    .AllowAnyOrigin()
+    .AllowAnyMethod();
 });
+}); 
+#endregion
+
 #region Entity Framework
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(configuration.GetConnectionString("ConnStr")));
 #endregion
@@ -139,6 +154,7 @@ app.MapControllers();
 
 //app.UseStatusCodePages();
 #endregion
+
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.Run();

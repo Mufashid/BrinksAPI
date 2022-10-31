@@ -40,6 +40,7 @@ public class BasicAuthenticationHandler : AuthenticationHandler<AuthenticationSc
             var claims = new[] { new Claim("name", credentials[0]), new Claim(ClaimTypes.Role, role) };
             var identity = new ClaimsIdentity(claims, "Basic");
             var claimsPrincipal = new ClaimsPrincipal(identity);
+
             return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(claimsPrincipal, Scheme.Name)));
         }
         else
