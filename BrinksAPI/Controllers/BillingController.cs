@@ -10,13 +10,14 @@ namespace BrinksAPI.Controllers
 {
     public class BillingController : Controller
     {
+        private readonly ILogger<BillingController> _logger;
         private readonly IConfigManager _configuration;
-
         private readonly ApplicationDbContext _context;
-        public BillingController(IConfigManager configuration, ApplicationDbContext applicationDbContext)
+        public BillingController(IConfigManager configuration, ApplicationDbContext applicationDbContext, ILogger<BillingController> logger)
         {
             _configuration = configuration;
             _context = applicationDbContext;
+            _logger = logger;
         }
 
         #region HERMES COST FILE

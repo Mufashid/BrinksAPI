@@ -25,14 +25,12 @@ namespace BrinksAPI.Controllers
     {
         private readonly ILogger<ShipmentController> _logger;
         private readonly IConfigManager _configuration;
-
         private readonly ApplicationDbContext _context;
         public ShipmentController(IConfigManager configuration, ApplicationDbContext applicationDbContext, ILogger<ShipmentController> logger)
         {
             _configuration = configuration;
             _context = applicationDbContext;
             _logger = logger;
-
         }
 
 
@@ -501,7 +499,7 @@ namespace BrinksAPI.Controllers
                     UniversalShipmentData cwShipmentData = GetShipmentById(atlasShipmentId);
 
                     int? serverId =  _context.sites.Where(s => s.CompanyCode == cwShipmentData.Shipment.DataContext.Company.Code).FirstOrDefault()?.ServerID;
-                    serverId = serverId == 0 ? 35 : serverId;// Default LATAM
+                    serverId = serverId == null ? 35 : serverId;// Default LATAM
                     string? originServerId = serverId.ToString();
 
                     if (shipmentId == null)
@@ -994,7 +992,7 @@ namespace BrinksAPI.Controllers
                                                 .Replace("Warning - ", "");
                                             dataResponse.Status = "ERROR";
                                             if (errorMessage.Contains("No Module found a Business Entity to link this Universal Event to."))
-                                                dataResponse.Message = String.Format("{0} - Shipment Not Found", history.HawbNumber);
+                                                dataResponse.Message = String.Format("{0} Not Found.", history.HawbNumber);
                                             else
                                                 dataResponse.Message = errorMessage;
                                         }
