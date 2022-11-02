@@ -231,7 +231,7 @@ namespace BrinksAPI.Models
         public float customsLiabilityUsd { get; set; }
         public string? customsCurrencyCode { get; set; }
         public string? originCountry { get; set; }
-        public string? uscsScheduleBCode { get; set; }
+        public string? usScheduleBCode { get; set; }
         public string? exportOrigin { get; set; }
         public string? exportLicenseNumber { get; set; }
         public string? exportLicenseValue { get; set; }

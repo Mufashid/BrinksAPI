@@ -259,6 +259,7 @@ namespace BrinksAPI.Controllers
                     commodity.Code = shipmentItem.globalCommodityCode;
                     packingLine.Commodity = commodity;
 
+                    packingLine.HarmonisedCode = shipmentItem.usScheduleBCode;
                     packingLine.GoodsDescription = shipmentItem.commodityDescription;
 
                     string? packaheTypeCodeCW = _context.packageTypes.Where(p => p.BrinksCode == shipmentItem.packageTypeCd)?.FirstOrDefault()?.CWCode;
