@@ -93,7 +93,10 @@ namespace BrinksAPI.Controllers
 
                                     dataContext.EnterpriseID = shipmentData.Shipment.DataContext.EnterpriseID;
                                     dataContext.ServerID = shipmentData.Shipment.DataContext.ServerID;
-                                    dataContext.Company = shipmentData.Shipment.DataContext.Company;
+                                    //dataContext.Company = shipmentData.Shipment.DataContext.Company; // Sending default to CHN
+                                    Company company = new Company();
+                                    company.Code = "DXB";
+                                    dataContext.Company = company;
 
                                     dataContext.DataTargetCollection = dataTargets.ToArray();
                                     shipment.DataContext = dataContext;
@@ -140,18 +143,48 @@ namespace BrinksAPI.Controllers
                                     shipment.JobCosting = jobCosting;
                                     shipmentData.Shipment = shipment;
                                     string xml = Utilities.Serialize(shipmentData);
-                                    //string xml2 = Utilities.Serialize(shipmentData);
+                                    var billingResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+
+                                    if (billingResponse.Status == "SUCCESS")
+                                    {
+                                        using (var reader = new StringReader(billingResponse.Data.Data.OuterXml))
+                                        {
+                                            var serializer = new XmlSerializer(typeof(Events.UniversalEventData));
+                                            Events.UniversalEventData? responseEvent = (Events.UniversalEventData?)serializer.Deserialize(reader);
+
+                                            bool isError = responseEvent.Event.ContextCollection.Any(c => c.Type.Value.Contains("FailureReason"));
+                                            if (isError)
+                                            {
+                                                string errorMessage = responseEvent.Event.ContextCollection.Where(c => c.Type.Value == "FailureReason").FirstOrDefault().Value.Replace("Error - ", "").Replace("Warning - ", "");
+                                                dataResponse.Status = "ERROR";
+                                                dataResponse.Message = errorMessage;
+                                            }
+                                            else
+                                            {
+                                                dataResponse.Status = "SUCCESS";
+                                                dataResponse.Message = "Revenue Created Sucessfully";
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        string errorMessage = billingResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
+                                        dataResponse.Status = "ERROR";
+                                        dataResponse.Message = errorMessage;
+                                    }
+
                                 }
                                 else
                                 {
-
+                                    dataResponse.Status = "ERROR";
+                                    dataResponse.Message = "Unable to fetch the shipment from the CW.";
                                 }
                         
                             }
                             else
                             {
                                 dataResponse.Status = "ERROR";
-                                dataResponse.Message = "Shipment does not exist with hawb" + revenue.hawb_number;
+                                dataResponse.Message = String.Format("{0} Not Found.", revenue?.hawb_number);
                             }
                         }
                         else
