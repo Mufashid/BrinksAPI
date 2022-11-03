@@ -206,7 +206,7 @@ namespace BrinksAPI.Models
         public string? poNumber { get; set; }
         [StringLength(20)]
         public string? puInvoiceNumber { get; set; }
-        public string? contentQuantity { get; set; }
+        public long contentQuantity { get; set; }
         public float dimLength { get; set; }
         public float dimWidth { get; set; }
         public float dimHeight { get; set; }

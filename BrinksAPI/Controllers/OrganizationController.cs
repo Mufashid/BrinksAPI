@@ -464,7 +464,34 @@ namespace BrinksAPI.Controllers
                         notes.Add(creditRiskNote);
                     }
 
-                    nativeOrganization.StmNoteCollection = notes.ToArray();
+                    Dictionary<string, string> kycDict = new Dictionary<string, string>();
+                    kycDict.Add("kycCreatedPrior2018", organization.kycCreatedPrior2018.ToString());
+                    kycDict.Add("kycOpenProcCompleted", organization.kycOpenProcCompleted.ToString());
+                    kycDict.Add("kycRefNbr", organization.kycRefNbr);
+                    kycDict.Add("kycVerifDate", organization.kycVerifDate);
+                    kycDict.Add("kycApprovedBy", organization.kycApprovedBy);
+                    kycDict.Add("kycOpeningStation", organization.kycOpeningStation);
+
+                    string kycNotes = "";
+                    foreach (KeyValuePair<string, string> entry in kycDict)
+                        if (entry.Value != null)
+                            kycNotes += String.Format("{0} : {1}\n", entry.Key, entry.Value);
+                    
+                    if(kycNotes != "")
+                    {
+                        NativeOrganizationStmNote kycNote = new NativeOrganizationStmNote();
+                        kycNote.ActionSpecified = true;
+                        kycNote.Action = NativeOrganization.Action.INSERT;
+                        kycNote.NoteContext = "ALL";
+                        kycNote.IsCustomDescription = false;
+                        kycNote.ForceRead = true;
+                        kycNote.NoteType = "PUB";
+                        kycNote.Description = "Additional Information";
+                        kycNote.NoteText = kycNotes;
+                        notes.Add(kycNote);
+                    }
+
+                        nativeOrganization.StmNoteCollection = notes.ToArray();
                     #endregion
 
                     #region ORGANIZATION ADDRESS
@@ -516,12 +543,12 @@ namespace BrinksAPI.Controllers
                     Dictionary<string, string> customValues = new Dictionary<string, string>();
                     //customValues.Add("siteCode", organization?.siteCode);
                     customValues.Add("locationVerifiedDate", organization.locationVerifiedDate);
-                    customValues.Add("kycCreatedPrior2018", organization.kycCreatedPrior2018.ToString());
-                    customValues.Add("kycOpenProcCompleted", organization.kycOpenProcCompleted.ToString());
-                    customValues.Add("kycRefNbr", organization.kycRefNbr);
-                    customValues.Add("kycVerifDate", organization.kycVerifDate);
-                    customValues.Add("kycApprovedBy", organization.kycApprovedBy);
-                    customValues.Add("kycOpeningStation", organization.kycOpeningStation);
+                    //customValues.Add("kycCreatedPrior2018", organization.kycCreatedPrior2018.ToString());
+                    //customValues.Add("kycOpenProcCompleted", organization.kycOpenProcCompleted.ToString());
+                    //customValues.Add("kycRefNbr", organization.kycRefNbr);
+                    //customValues.Add("kycVerifDate", organization.kycVerifDate);
+                    //customValues.Add("kycApprovedBy", organization.kycApprovedBy);
+                    //customValues.Add("kycOpeningStation", organization.kycOpeningStation);
                     customValues.Add("Lob", organization.lob);
                     customValues.Add("adyenPay", organization.adyenPay?.ToString());
                     customValues.Add("adyenPayPreference", organization.adyenPayPreference);
@@ -1091,6 +1118,59 @@ namespace BrinksAPI.Controllers
                         }
                     }
 
+                    if (organization.kycApprovedBy != null)
+                    {
+                        Dictionary<string, string> kycDict = new Dictionary<string, string>();
+                        kycDict.Add("kycCreatedPrior2018", organization.kycCreatedPrior2018.ToString());
+                        kycDict.Add("kycOpenProcCompleted", organization.kycOpenProcCompleted.ToString());
+                        kycDict.Add("kycRefNbr", organization.kycRefNbr);
+                        kycDict.Add("kycVerifDate", organization.kycVerifDate);
+                        kycDict.Add("kycApprovedBy", organization.kycApprovedBy);
+                        kycDict.Add("kycOpeningStation", organization.kycOpeningStation);
+
+                        string kycNotes = "";
+                        foreach (KeyValuePair<string, string> entry in kycDict)
+                            if (entry.Value != null)
+                                kycNotes += String.Format("{0} : {1}\n", entry.Key, entry.Value);
+
+                        NativeOrganizationStmNote note = new NativeOrganizationStmNote();
+                        if (organizationData.OrgHeader.StmNoteCollection is not null)
+                        {
+                            var filteredOrganizationKycNote = organizationData.OrgHeader.StmNoteCollection.Where(on => on.Description == "Additional Information").FirstOrDefault();
+                            if (filteredOrganizationKycNote is not null)
+                            {
+                                filteredOrganizationKycNote.ActionSpecified = true;
+                                filteredOrganizationKycNote.Action = NativeOrganization.Action.UPDATE;
+                                filteredOrganizationKycNote.NoteText = kycNotes;
+                                notes.Add(filteredOrganizationKycNote);
+                            }
+                            else
+                            {
+                                note.ActionSpecified = true;
+                                note.Action = NativeOrganization.Action.INSERT;
+                                //note.NoteContext = "A";
+                                note.IsCustomDescription = false;
+                                note.ForceRead = true;
+                                note.NoteType = "PUB";
+                                note.Description = "Additional Information";
+                                note.NoteText = kycNotes;
+                                notes.Add(note);
+                            }
+                        }
+                        else
+                        {
+                            note.ActionSpecified = true;
+                            note.Action = NativeOrganization.Action.INSERT;
+                            //note.NoteContext = "A";
+                            note.IsCustomDescription = false;
+                            note.ForceRead = true;
+                            note.NoteType = "PUB";
+                            note.Description = "Additional Information";
+                            note.NoteText = kycNotes;
+                            notes.Add(note);
+                        }
+                    }
+
                     if (organization.creditRiskNotes != null)
                     {
                         NativeOrganizationStmNote note = new NativeOrganizationStmNote();
@@ -1130,6 +1210,7 @@ namespace BrinksAPI.Controllers
                             notes.Add(note);
                         }
                     }
+
                     organizationData.OrgHeader.StmNoteCollection = notes.ToArray();
                     #endregion
 

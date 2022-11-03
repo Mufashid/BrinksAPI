@@ -14,7 +14,7 @@ using System.Net;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
-using WindowsServiceTemplate.Classes.Cargowise.UniversalTransaction;
+
 using WinSCP;
 
 namespace BrinksAPI.Controllers
