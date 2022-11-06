@@ -230,24 +230,27 @@ namespace BrinksAPI.Controllers
         /// Sample request:
         ///
         ///     POST /api/shipment/revenue
-        ///     [{
-        ///         "customer_gcc": "HERMESLTD",
-        ///         "category_code": "GROUND",
-        ///         "tax_code": "NONEURO0",
-        ///         "description": "CH - Ground support",
-        ///         "invoice_amount": 60.00,
-        ///         "invoice_tax_amount": 0,
-        ///         "hawb_number": "37100449646"
-        ///     },
         ///     {
-        ///         "customer_gcc": "HERMESLTD",
-        ///         "category_code": "GROUND",
-        ///         "tax_code": "NONEURO0",
-        ///         "description": "CH - Ground support",
-        ///         "invoice_amount": 60.00,
-        ///         "invoice_tax_amount": 0,
-        ///         "hawb_number": "37100449647"
-        ///     }]
+        ///       "invoice_number": "456795",
+        ///       "invoice_gcc": "HERMESLTD",
+        ///       "invoice_date": "03-11-2022 10:00:00",
+        ///       "exchange_date": "03-11-2022 10:00:00",
+        ///       "currency_code": "AED",
+        ///       "exchange_rate": "1",
+        ///       "origin_site_code": "3210",
+        ///       "revenues": [
+        ///         {
+        ///           "category_code": "CUSTOMS",
+        ///           "description": "Revenue Line Discription",
+        ///           "invoice_currency": "USD",
+        ///           "invoice_amount": "37",
+        ///           "invoice_tax_amount": "5",
+        ///           "tax_code": "NONEURO0",
+        ///           "billed_from_site_code": "3210",
+        ///           "revenue_hawb_number": "32100235812"
+        ///         }
+        ///       ]
+        ///     }
         /// </remarks>
         /// <response code="200">Success</response>
         /// <response code="401">Unauthorized</response>
@@ -257,172 +260,225 @@ namespace BrinksAPI.Controllers
         [ProducesResponseType(401)]
         [ProducesResponseType(500)]
         [Route("api/invoice/payable")]
-        public ActionResult<List<RevenueResponse>> PayableInvoice([FromBody] Billing.PayableInvoice[] payableInvoices)
+        public ActionResult<List<PayableInvoiceResponse>> PayableInvoice([FromBody] Billing.PayableInvoice payableInvoice)
         {
-            List<RevenueResponse> dataResponses = new List<RevenueResponse>();
+            PayableInvoiceResponse dataResponse = new PayableInvoiceResponse();
             try
             {
-                foreach (var payableInvoice in payableInvoices)
+                dataResponse.InvoiceNum = payableInvoice?.invoice_number;
+
+                #region MODEL VALIDATION
+                if (!ModelState.IsValid)
                 {
-                    RevenueResponse dataResponse = new RevenueResponse();
-                    dataResponse.HawbNum = payableInvoice?.revenue_hawb_number;
-                    try
+                    string errorString = "";
+                    var errors = ModelState.Select(x => x.Value.Errors)
+                         .Where(y => y.Count > 0)
+                         .ToList();
+                    foreach (var error in errors)
                     {
-                        var validationResults = new List<ValidationResult>();
-                        var validationContext = new ValidationContext(payableInvoice);
-                        var isValid = Validator.TryValidateObject(payableInvoice, validationContext, validationResults);
-                        if (isValid)
+                        foreach (var subError in error)
                         {
-                            string shipmentId = GetShipmentNumberByHawb(payableInvoice?.revenue_hawb_number);
+                            errorString += String.Format("{0}", subError.ErrorMessage);
+                        }
+                    }
+                    _logger.LogError("Error: {@Error} Request: {@Request}", errorString, payableInvoice);
 
-                            if (shipmentId != null && shipmentId != "")
-                            {
-                                UniversalShipmentData shipmentData = GetShipmentById(shipmentId);
-                                if (shipmentData.Shipment != null)
-                                {
-                                    Shipment shipment = new Shipment();
-                                    UniversalTransaction.UniversalTransactionData universalTransactionData = new UniversalTransaction.UniversalTransactionData();
-                                    UniversalTransaction.TransactionInfo transactionInfo = new UniversalTransaction.TransactionInfo();
+                    dataResponse.Status = "ERROR";
+                    dataResponse.Message = errorString;
 
-                                    #region DATA CONTEXT
-                                    UniversalTransaction.DataContext dataContext = new UniversalTransaction.DataContext();
-                                    List<UniversalTransaction.DataTarget> dataTargets = new List<UniversalTransaction.DataTarget>();
-                                    UniversalTransaction.DataTarget dataTarget = new UniversalTransaction.DataTarget();
-                                    dataTarget.Type = "AccountingInvoice";
-                                    dataTargets.Add(dataTarget);
+                    return Ok(dataResponse);
+                }
+                #endregion
 
-                                    dataContext.EnterpriseID = shipmentData.Shipment.DataContext.EnterpriseID;
-                                    dataContext.ServerID = shipmentData.Shipment.DataContext.ServerID;
-                                    //dataContext.Company = shipmentData.Shipment.DataContext.Company; // Sending default to CHN
-                                    UniversalTransaction.Company company = new UniversalTransaction.Company();
-                                    company.Code = "DXB";
-                                    dataContext.Company = company;
+                UniversalTransaction.UniversalTransactionData universalTransactionData = new UniversalTransaction.UniversalTransactionData();
+                UniversalTransaction.TransactionInfo transactionInfo = new UniversalTransaction.TransactionInfo();
 
-                                    dataContext.DataTargetCollection = dataTargets.ToArray();
-                                    transactionInfo.DataContext = dataContext;
-                                    #endregion
+                int originSiteCode = Convert.ToInt32(payableInvoice.origin_site_code);
+                string? branchCodeCW = _context.sites.Where(s => s.SiteCode == originSiteCode).FirstOrDefault()?.CompanyCode;
 
-                                    OrganizationData invoiceOrg = SearchOrgWithRegNo(payableInvoice.invoice_gcc);
-                                    string invoiceOrgCode = invoiceOrg.OrgHeader == null ? "HERMESLTD": invoiceOrg.OrgHeader.Code;
-                                    UniversalTransaction.OrganizationAddress invoiceAddress = new UniversalTransaction.OrganizationAddress();
-                                    invoiceAddress.AddressType = "OFC";
-                                    invoiceAddress.OrganizationCode = invoiceOrgCode;
-                                    transactionInfo.OrganizationAddress = invoiceAddress;
+                #region DATA CONTEXT
+                UniversalTransaction.DataContext dataContext = new UniversalTransaction.DataContext();
+                List<UniversalTransaction.DataTarget> dataTargets = new List<UniversalTransaction.DataTarget>();
+                UniversalTransaction.DataTarget dataTarget = new UniversalTransaction.DataTarget();
+                dataTarget.Type = "AccountingInvoice";
+                dataTargets.Add(dataTarget);
 
-                                    UniversalTransaction.CodeDescriptionPair apAccountGroup = new UniversalTransaction.CodeDescriptionPair();
-                                    apAccountGroup.Code = "TPY";
-                                    transactionInfo.APAccountGroup = apAccountGroup;
-                                    //transactionInfo.JobInvoiceNumber = Internal referece
-                                    transactionInfo.Number = payableInvoice.invoice_number;
-                                    transactionInfo.TransactionDate = payableInvoice.invoice_date;
-                                    transactionInfo.DueDate = payableInvoice.exchange_date;
+                dataContext.EnterpriseID = _configuration.EnterpriseId;
+                dataContext.ServerID = _configuration.ServerId;
+                UniversalTransaction.Company company = new UniversalTransaction.Company();
+                company.Code = branchCodeCW;
+                dataContext.Company = company;
 
-                                    UniversalTransaction.Currency currency = new UniversalTransaction.Currency();
-                                    currency.Code = payableInvoice.currency_code;
-                                    transactionInfo.LocalCurrency = currency;
-                                    transactionInfo.ExchangeRateSpecified = true;
-                                    transactionInfo.ExchangeRate = Convert.ToDecimal(payableInvoice.exchange_rate);
+                dataContext.DataTargetCollection = dataTargets.ToArray();
+                transactionInfo.DataContext = dataContext;
+                #endregion
 
-                                    UniversalTransaction.PostingJournal journal = new UniversalTransaction.PostingJournal();
+               
+                transactionInfo.Ledger = "AP";
+                transactionInfo.TransactionType = UniversalTransaction.TransactionInfoTransactionType.INV;
+                UniversalTransaction.CodeDescriptionPair apAccountGroup = new UniversalTransaction.CodeDescriptionPair();
+                apAccountGroup.Code = "TPY";
+                transactionInfo.APAccountGroup = apAccountGroup;
 
-                                    UniversalTransaction.Branch originBranch = new UniversalTransaction.Branch();
-                                    originBranch.Code = payableInvoice.origin_site_code; // Need mapping
-                                    journal.Branch = originBranch;
+                transactionInfo.Number = payableInvoice.invoice_number;
+                transactionInfo.TransactionDate = payableInvoice.invoice_date;
+                transactionInfo.DueDate = payableInvoice.exchange_date;
 
-                                    string? chargeCodeCW = _context.Categories.Where(c => c.BrinksCode == payableInvoice.category_code).FirstOrDefault()?.CWCode;
-                                    UniversalTransaction.ChargeCode chargeCode = new UniversalTransaction.ChargeCode();
-                                    chargeCode.Code = chargeCodeCW;
-                                    journal.ChargeCode = chargeCode;
+                OrganizationData invoiceOrg = SearchOrgWithRegNo(payableInvoice.invoice_gcc);
+                string invoiceOrgCode = invoiceOrg.OrgHeader == null ? "HERMESLTD" : invoiceOrg.OrgHeader.Code;
+                UniversalTransaction.OrganizationAddress invoiceAddress = new UniversalTransaction.OrganizationAddress();
+                invoiceAddress.AddressType = "OFC";
+                invoiceAddress.OrganizationCode = invoiceOrgCode;
+                transactionInfo.OrganizationAddress = invoiceAddress;
 
-                                    UniversalTransaction.Currency chargeCurrency = new UniversalTransaction.Currency();
-                                    chargeCurrency.Code = payableInvoice.currency_code;
-                                    journal.ChargeCurrency = chargeCurrency;
+                UniversalTransaction.Currency currency = new UniversalTransaction.Currency();
+                currency.Code = payableInvoice.currency_code;
+                transactionInfo.LocalCurrency = currency;
 
-                                    journal.ChargeTotalAmountSpecified = true;
-                                    journal.ChargeTotalAmount = Convert.ToDecimal(payableInvoice.invoice_amount);
+                transactionInfo.ExchangeRateSpecified = true;
+                transactionInfo.ExchangeRate = Convert.ToDecimal(payableInvoice.exchange_rate);
 
-                                    journal.ChargeTotalExVATAmountSpecified = true;
-                                    journal.ChargeTotalExVATAmount = Convert.ToDecimal(payableInvoice.invoice_tax_amount);
-
-                                    UniversalTransaction.EntityReference job = new UniversalTransaction.EntityReference();
-                                    job.Type = "Job";
-                                    job.Key = shipmentId;
-                                    journal.Job = job;
+                UniversalTransaction.Branch branch = new UniversalTransaction.Branch();
+                branch.Code = branchCodeCW;
+                transactionInfo.Branch = branch;
 
 
-                                    string xml = Utilities.Serialize(shipmentData);
-                                    var billingResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+                List<UniversalTransaction.PostingJournal> journals = new List<UniversalTransaction.PostingJournal>();
+                List<string> shipmentIds = new List<string>();
+               
+                foreach (var revenue in payableInvoice.revenues)
+                {
+                    string shipmentId = GetShipmentNumberByHawb(revenue?.revenue_hawb_number);
 
-                                    if (billingResponse.Status == "SUCCESS")
-                                    {
-                                        using (var reader = new StringReader(billingResponse.Data.Data.OuterXml))
-                                        {
-                                            var serializer = new XmlSerializer(typeof(Events.UniversalEventData));
-                                            Events.UniversalEventData? responseEvent = (Events.UniversalEventData?)serializer.Deserialize(reader);
+                    //int billFromSiteCode = Convert.ToInt32(revenue.billed_from_site_code);
+                    //string? companyCodeCW = _context.sites.Where(s => s.SiteCode == billFromSiteCode).FirstOrDefault()?.CompanyCode;
 
-                                            bool isError = responseEvent.Event.ContextCollection.Any(c => c.Type.Value.Contains("FailureReason"));
-                                            if (isError)
-                                            {
-                                                string errorMessage = responseEvent.Event.ContextCollection.Where(c => c.Type.Value == "FailureReason").FirstOrDefault().Value.Replace("Error - ", "").Replace("Warning - ", "");
-                                                dataResponse.Status = "ERROR";
-                                                dataResponse.Message = errorMessage;
-                                            }
-                                            else
-                                            {
-                                                dataResponse.Status = "SUCCESS";
-                                                dataResponse.Message = "Revenue Created Sucessfully";
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        string errorMessage = billingResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
-                                        dataResponse.Status = "ERROR";
-                                        dataResponse.Message = errorMessage;
-                                    }
+                    UniversalTransaction.PostingJournal journal = new UniversalTransaction.PostingJournal();
 
-                                }
-                                else
-                                {
-                                    dataResponse.Status = "ERROR";
-                                    dataResponse.Message = "Unable to fetch the shipment from the CW.";
-                                }
+                    string? chargeCodeCW = _context.Categories.Where(c => c.BrinksCode == revenue.category_code).FirstOrDefault()?.CWCode;
+                    UniversalTransaction.ChargeCode chargeCode = new UniversalTransaction.ChargeCode();
+                    chargeCode.Code = DefaultValue(chargeCodeCW, "OTHER");
+                    journal.ChargeCode = chargeCode;
 
-                            }
-                            else
-                            {
-                                dataResponse.Status = "ERROR";
-                                dataResponse.Message = String.Format("{0} Not Found.", payableInvoice?.revenue_hawb_number);
-                            }
+                    journal.Description = revenue.description;
+
+                    UniversalTransaction.Currency chargeCurrency = new UniversalTransaction.Currency();
+                    chargeCurrency.Code = revenue.invoice_currency;
+                    journal.ChargeCurrency = chargeCurrency;
+                    journal.OSCurrency = chargeCurrency;
+
+                    journal.ChargeTotalAmountSpecified = true;
+                    journal.ChargeTotalAmount = Convert.ToDecimal(revenue.invoice_amount);
+
+                    journal.ChargeTotalExVATAmountSpecified = true;
+                    journal.ChargeTotalExVATAmount = Convert.ToDecimal(revenue.invoice_tax_amount);
+
+                    journal.OSAmountSpecified = true;
+                    journal.OSAmount = Convert.ToDecimal(revenue.invoice_amount);
+
+                    journal.OSGSTVATAmountSpecified = true;
+                    journal.OSGSTVATAmount = Convert.ToDecimal(revenue.invoice_tax_amount);
+
+                    string? taxCodeCW = _context.TaxTypes.Where(t => t.BrinksCode == revenue.tax_code).FirstOrDefault()?.BrinksCode;
+                    UniversalTransaction.TaxID taxID = new UniversalTransaction.TaxID();
+                    taxID.TaxCode = DefaultValue(taxCodeCW, "FREEVAT");
+                    journal.VATTaxID = taxID;
+
+                    UniversalTransaction.Branch originBranch = new UniversalTransaction.Branch();
+                    originBranch.Code = branchCodeCW;
+                    journal.Branch = originBranch;
+
+                    UniversalTransaction.EntityReference job = new UniversalTransaction.EntityReference();
+                    job.Type = "Job";
+                    job.Key = shipmentId;
+                    journal.Job = job;
+                    shipmentIds.Add(shipmentId);
+
+                    UniversalTransaction.OrganizationReference organizationReference = new UniversalTransaction.OrganizationReference();
+                    organizationReference.Type = "Organization";
+                    organizationReference.Key = invoiceOrgCode;
+                    journal.Organization = organizationReference;
+
+                    journals.Add(journal);
+                }
+
+                decimal totalAmountExcludeTax = payableInvoice.revenues.Sum(s => Convert.ToDecimal(s.invoice_amount)) * Convert.ToDecimal(payableInvoice.exchange_rate);
+                transactionInfo.OSExGSTVATAmountSpecified = true;
+                transactionInfo.OSExGSTVATAmount = totalAmountExcludeTax;
+
+                transactionInfo.PostingJournalCollection = journals.ToArray();
+
+                List<UniversalTransaction.Shipment> shipments = new List<UniversalTransaction.Shipment>();
+                UniversalTransaction.Shipment shipment = new UniversalTransaction.Shipment();
+                UniversalTransaction.DataContext shipmentDataContext = new UniversalTransaction.DataContext();
+
+                shipmentIds = shipmentIds.Distinct().ToList();
+
+                List<UniversalTransaction.DataSource> shipmentDataSources = new List<UniversalTransaction.DataSource>();
+                List<UniversalTransaction.DataTarget> shipmentDataTargets = new List<UniversalTransaction.DataTarget>();
+                foreach (var shipmentId in shipmentIds)
+                {
+
+                    UniversalTransaction.DataSource shipmentDataSource = new UniversalTransaction.DataSource();
+                    shipmentDataSource.Type = "ForwardingShipment";
+                    shipmentDataSource.Key = shipmentId;
+                    shipmentDataSources.Add(shipmentDataSource);
+
+                    UniversalTransaction.DataTarget shipmentDataTarget = new UniversalTransaction.DataTarget();
+                    shipmentDataTarget.Type = "ForwardingShipment";
+                    shipmentDataTarget.Key = shipmentId;
+                    shipmentDataTargets.Add(shipmentDataTarget);
+                }
+
+
+                shipmentDataContext.DataSourceCollection = shipmentDataSources.ToArray();
+                shipmentDataContext.DataTargetCollection = shipmentDataTargets.ToArray();
+                shipment.DataContext = shipmentDataContext;
+                shipments.Add(shipment);
+                transactionInfo.ShipmentCollection = shipments.ToArray();
+
+
+                universalTransactionData.TransactionInfo = transactionInfo;
+
+                string xml = Utilities.Serialize(universalTransactionData);
+                var invoiceResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+
+                if (invoiceResponse.Status == "SUCCESS")
+                {
+                    using (var reader = new StringReader(invoiceResponse.Data.Data.OuterXml))
+                    {
+                        var serializer = new XmlSerializer(typeof(Events.UniversalEventData));
+                        Events.UniversalEventData? responseEvent = (Events.UniversalEventData?)serializer.Deserialize(reader);
+
+                        bool isError = responseEvent.Event.ContextCollection.Any(c => c.Type.Value.Contains("FailureReason"));
+                        if (isError)
+                        {
+                            string errorMessage = responseEvent.Event.ContextCollection.Where(c => c.Type.Value == "FailureReason").FirstOrDefault().Value.Replace("Error - ", "").Replace("Warning - ", "");
+                            dataResponse.Status = "ERROR";
+                            dataResponse.Message = errorMessage;
                         }
                         else
                         {
-                            string validationMessage = "";
-                            dataResponse.Status = "ERROR";
-                            foreach (var validationResult in validationResults)
-                                validationMessage += validationResult.ErrorMessage;
-                            dataResponse.Message = validationMessage;
+                            dataResponse.Status = "SUCCESS";
+                            dataResponse.Message = "Revenue Created Sucessfully";
                         }
-                        dataResponses.Add(dataResponse);
-                    }
-                    catch (Exception ex)
-                    {
-                        dataResponse.Status = "ERROR";
-                        dataResponse.Message = ex.Message;
-                        dataResponses.Add(dataResponse);
-                        continue;
                     }
                 }
-                return Ok(dataResponses);
+                else
+                {
+                    string errorMessage = invoiceResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
+                    dataResponse.Status = "ERROR";
+                    dataResponse.Message = errorMessage;
+                }
+
             }
             catch (Exception ex)
             {
-                RevenueResponse dataResponse = new RevenueResponse();
                 dataResponse.Status = "ERROR";
                 dataResponse.Message = ex.Message;
-                dataResponses.Add(dataResponse);
-                return StatusCode(StatusCodes.Status500InternalServerError, dataResponses);
+                return StatusCode(StatusCodes.Status500InternalServerError, dataResponse);
             }
+            return Ok(dataResponse);
         }
         #endregion
         public string GetShipmentNumberByHawb(string hawb)
@@ -574,5 +630,11 @@ namespace BrinksAPI.Controllers
             }
             return organizationData;
         }
+        #region DEFAULT VALUE
+        private static string DefaultValue(string value, string defaultValue)
+        {
+            return value == null || value == "" ? defaultValue : value;
+        }
+        #endregion
     }
 }

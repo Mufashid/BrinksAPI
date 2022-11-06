@@ -170,6 +170,9 @@ namespace BrinksAPI.Controllers
                 shipperAddress.AddressType = "ConsignorDocumentaryAddress";
                 if (shipperOrganizationData.OrgHeader == null)
                 {
+                    shipperAddress.AddressOverrideSpecified = true;
+                    shipperAddress.AddressOverride = true;
+
                     shipperAddress.CompanyName = shipment.shipperName;
                     shipperAddress.Address1 = shipment.shipperAddress1;
                     shipperAddress.Address2 = shipment.shipperAddress2;
@@ -208,6 +211,8 @@ namespace BrinksAPI.Controllers
                 consigneeAddress.AddressType = "ConsigneeDocumentaryAddress";
                 if (consigneeOrganizationData.OrgHeader == null)
                 {
+                    consigneeAddress.AddressOverrideSpecified = true;
+                    consigneeAddress.AddressOverride = true;
                     consigneeAddress.CompanyName = shipment.consigneeName;
                     consigneeAddress.Address1 = shipment.consigneeAddress1;
                     consigneeAddress.Address2 = shipment.consigneeAddress2;

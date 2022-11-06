@@ -37,7 +37,7 @@ namespace BrinksAPI.Models
             public string? invoice_number { get; set; }
             [Required]
             [StringLength(20)]
-            public string? invoice_gcc{ get; set; }
+            public string? invoice_gcc { get; set; }
             [Required]
             public string? invoice_date { get; set; }
             [Required]
@@ -51,6 +51,11 @@ namespace BrinksAPI.Models
             [Required]
             [StringLength(4)]
             public string? origin_site_code { get; set; }
+            public  List<PayableRevenue>? revenues { get; set; }
+
+        }
+        public class PayableRevenue
+        {
             [Required]
             [StringLength(10)]
             public string? category_code { get; set; }
@@ -76,5 +81,6 @@ namespace BrinksAPI.Models
             [StringLength(11)]
             public string? revenue_hawb_number { get; set; }
         }
+
     }
 }
