@@ -242,7 +242,7 @@ namespace BrinksAPI.Controllers
         ///         {
         ///           "category_code": "CUSTOMS",
         ///           "description": "Revenue Line Discription",
-        ///           "invoice_currency": "USD",
+        ///           "invoice_currency": "AED",
         ///           "invoice_amount": "37",
         ///           "invoice_tax_amount": "5",
         ///           "tax_code": "NONEURO0",
@@ -322,7 +322,7 @@ namespace BrinksAPI.Controllers
 
                 transactionInfo.Number = payableInvoice.invoice_number;
                 transactionInfo.TransactionDate = payableInvoice.invoice_date;
-                transactionInfo.DueDate = payableInvoice.exchange_date;
+                //transactionInfo.DueDate = payableInvoice.exchange_date;
 
                 OrganizationData invoiceOrg = SearchOrgWithRegNo(payableInvoice.invoice_gcc);
                 string invoiceOrgCode = invoiceOrg.OrgHeader == null ? "HERMESLTD" : invoiceOrg.OrgHeader.Code;
@@ -333,7 +333,7 @@ namespace BrinksAPI.Controllers
 
                 UniversalTransaction.Currency currency = new UniversalTransaction.Currency();
                 currency.Code = payableInvoice.currency_code;
-                transactionInfo.LocalCurrency = currency;
+                transactionInfo.OSCurrency = currency;
 
                 transactionInfo.ExchangeRateSpecified = true;
                 transactionInfo.ExchangeRate = Convert.ToDecimal(payableInvoice.exchange_rate);
@@ -341,6 +341,10 @@ namespace BrinksAPI.Controllers
                 UniversalTransaction.Branch branch = new UniversalTransaction.Branch();
                 branch.Code = branchCodeCW;
                 transactionInfo.Branch = branch;
+
+                UniversalTransaction.Department department = new UniversalTransaction.Department();
+                department.Code = "FES";
+                transactionInfo.Department = department;
 
 
                 List<UniversalTransaction.PostingJournal> journals = new List<UniversalTransaction.PostingJournal>();
@@ -362,31 +366,26 @@ namespace BrinksAPI.Controllers
 
                     journal.Description = revenue.description;
 
-                    UniversalTransaction.Currency chargeCurrency = new UniversalTransaction.Currency();
-                    chargeCurrency.Code = revenue.invoice_currency;
-                    journal.ChargeCurrency = chargeCurrency;
-                    journal.OSCurrency = chargeCurrency;
-
-                    journal.ChargeTotalAmountSpecified = true;
-                    journal.ChargeTotalAmount = Convert.ToDecimal(revenue.invoice_amount);
-
-                    journal.ChargeTotalExVATAmountSpecified = true;
-                    journal.ChargeTotalExVATAmount = Convert.ToDecimal(revenue.invoice_tax_amount);
+                    UniversalTransaction.Currency osCurrency = new UniversalTransaction.Currency();
+                    osCurrency.Code = revenue.invoice_currency;
+                    journal.OSCurrency = osCurrency;
 
                     journal.OSAmountSpecified = true;
-                    journal.OSAmount = Convert.ToDecimal(revenue.invoice_amount);
+                    journal.OSAmount = -Math.Abs(Convert.ToDecimal(revenue.invoice_amount));
 
                     journal.OSGSTVATAmountSpecified = true;
-                    journal.OSGSTVATAmount = Convert.ToDecimal(revenue.invoice_tax_amount);
+                    journal.OSGSTVATAmount = -Math.Abs(Convert.ToDecimal(revenue.invoice_tax_amount));
+
+                    journal.OSTotalAmountSpecified = true;
+                    journal.OSTotalAmount = -Math.Abs(Convert.ToDecimal(revenue.invoice_amount) + Convert.ToDecimal(revenue.invoice_tax_amount));
 
                     string? taxCodeCW = _context.TaxTypes.Where(t => t.BrinksCode == revenue.tax_code).FirstOrDefault()?.BrinksCode;
                     UniversalTransaction.TaxID taxID = new UniversalTransaction.TaxID();
                     taxID.TaxCode = DefaultValue(taxCodeCW, "FREEVAT");
                     journal.VATTaxID = taxID;
 
-                    UniversalTransaction.Branch originBranch = new UniversalTransaction.Branch();
-                    originBranch.Code = branchCodeCW;
-                    journal.Branch = originBranch;
+                    journal.Branch = branch;
+                    journal.Department = department;
 
                     UniversalTransaction.EntityReference job = new UniversalTransaction.EntityReference();
                     job.Type = "Job";
@@ -403,8 +402,16 @@ namespace BrinksAPI.Controllers
                 }
 
                 decimal totalAmountExcludeTax = payableInvoice.revenues.Sum(s => Convert.ToDecimal(s.invoice_amount)) * Convert.ToDecimal(payableInvoice.exchange_rate);
+                decimal totalAmountTax = payableInvoice.revenues.Sum(s => Convert.ToDecimal(s.invoice_tax_amount)) * Convert.ToDecimal(payableInvoice.exchange_rate);
+
                 transactionInfo.OSExGSTVATAmountSpecified = true;
-                transactionInfo.OSExGSTVATAmount = totalAmountExcludeTax;
+                transactionInfo.OSExGSTVATAmount = -Math.Abs(totalAmountExcludeTax);
+
+                transactionInfo.OSGSTVATAmountSpecified = true;
+                transactionInfo.OSGSTVATAmount = -Math.Abs(totalAmountTax);
+
+                transactionInfo.OSTotalSpecified = true;
+                transactionInfo.OSTotal = -Math.Abs(totalAmountExcludeTax + totalAmountTax);
 
                 transactionInfo.PostingJournalCollection = journals.ToArray();
 
@@ -460,7 +467,7 @@ namespace BrinksAPI.Controllers
                         else
                         {
                             dataResponse.Status = "SUCCESS";
-                            dataResponse.Message = "Revenue Created Sucessfully";
+                            dataResponse.Message = "Invoice Created Sucessfully";
                         }
                     }
                 }
