@@ -96,8 +96,10 @@ namespace BrinksAPI.Controllers
                                     dataContext.EnterpriseID = shipmentData.Shipment.DataContext.EnterpriseID;
                                     dataContext.ServerID = shipmentData.Shipment.DataContext.ServerID;
                                     //dataContext.Company = shipmentData.Shipment.DataContext.Company; // Sending default to CHN
+                                    int siteId = Convert.ToInt32(revenue.site_id);
+                                    string? companyCodeCW = _context.sites.Where(s => s.SiteCode == siteId).FirstOrDefault()?.CompanyCode;
                                     Company company = new Company();
-                                    company.Code = "DXB";
+                                    company.Code =  DefaultValue(companyCodeCW,"DXB");
                                     dataContext.Company = company;
 
                                     dataContext.DataTargetCollection = dataTargets.ToArray();
@@ -222,10 +224,10 @@ namespace BrinksAPI.Controllers
 
         #region HERMES PAYABLE INVOICE
         /// <summary>
-        /// Creates Revenue
+        /// Creates Payable Invoice
         /// </summary>
         /// <param name="invoice"></param>
-        /// <returns>A newly created Revenue</returns>
+        /// <returns>A newly created payable invoice</returns>
         /// <remarks>
         /// Sample request:
         ///

@@ -10,6 +10,7 @@ namespace BrinksAPI.Models
             [Required]
             [StringLength(20)]
             public string? customer_gcc { get; set; }
+            public string? site_id { get; set; }
             [Required]
             [StringLength(10)]
             public string? category_code { get; set; }
