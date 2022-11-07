@@ -31,7 +31,7 @@ namespace BrinksAPI.Controllers
         /// <remarks>
         /// Sample request:
         ///
-        ///     POST /api/shipment/revenue
+        ///     POST /api/invoice/revenue
         ///     [{
         ///         "customer_gcc": "HERMESLTD",
         ///         "category_code": "GROUND",
@@ -80,11 +80,31 @@ namespace BrinksAPI.Controllers
                             if (shipmentId != null && shipmentId != "")
                             {
                                 UniversalShipmentData shipmentData = GetShipmentById(shipmentId);
+
                                 string xml2 = Utilities.Serialize(shipmentData);
                                 if (shipmentData.Shipment != null)
                                 {
                                     Shipment shipment = new Shipment();
-                                    
+
+                                    // Consol or Shipment
+                                    string? destinationCountry = "";
+                                    string? destinationPort = "";
+                                    if (shipmentData.Shipment.PortOfDestination != null)
+                                    {
+                                       destinationCountry = shipmentData.Shipment.PortOfDestination?.Code.Substring(0, 2);
+                                       destinationPort = shipmentData.Shipment.PortOfDestination?.Code.Substring(2, 3);
+                                        
+                                    }
+                                    else
+                                    {
+                                        if(shipmentData.Shipment.SubShipmentCollection != null)
+                                        {
+                                            destinationCountry = shipmentData.Shipment.SubShipmentCollection[0].PortOfDestination?.Code.Substring(0, 2);
+                                            destinationPort = shipmentData.Shipment.SubShipmentCollection[0].PortOfDestination?.Code.Substring(2, 3);
+                                        }
+                                    }
+                                    string? companyCode = _context.sites.Where(s => s.Country == destinationCountry && s.Airport == destinationPort).FirstOrDefault()?.CompanyCode;
+
                                     #region DATA CONTEXT
                                     DataContext dataContext = new DataContext();
                                     List<DataTarget> dataTargets = new List<DataTarget>();
@@ -96,10 +116,13 @@ namespace BrinksAPI.Controllers
                                     dataContext.EnterpriseID = shipmentData.Shipment.DataContext.EnterpriseID;
                                     dataContext.ServerID = shipmentData.Shipment.DataContext.ServerID;
                                     //dataContext.Company = shipmentData.Shipment.DataContext.Company; // Sending default to CHN
-                                    int siteId = Convert.ToInt32(revenue.site_id);
-                                    string? companyCodeCW = _context.sites.Where(s => s.SiteCode == siteId).FirstOrDefault()?.CompanyCode;
+                                    if (revenue.site_id != null)
+                                    {
+                                        companyCode = _context.sites.Where(s => s.SiteCode == Convert.ToInt32(revenue.site_id)).FirstOrDefault()?.CompanyCode;
+                                    }
+                                    
                                     Company company = new Company();
-                                    company.Code =  DefaultValue(companyCodeCW,"DXB");
+                                    company.Code = companyCode;
                                     dataContext.Company = company;
 
                                     dataContext.DataTargetCollection = dataTargets.ToArray();
@@ -231,7 +254,7 @@ namespace BrinksAPI.Controllers
         /// <remarks>
         /// Sample request:
         ///
-        ///     POST /api/shipment/revenue
+        ///     POST /api/invoice/revenue
         ///     {
         ///       "invoice_number": "456795",
         ///       "invoice_gcc": "HERMESLTD",
