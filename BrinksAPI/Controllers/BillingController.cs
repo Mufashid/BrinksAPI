@@ -429,10 +429,10 @@ namespace BrinksAPI.Controllers
                 decimal totalAmountExcludeTax = payableInvoice.revenues.Sum(s => Convert.ToDecimal(s.invoice_amount)) * Convert.ToDecimal(payableInvoice.exchange_rate);
                 decimal totalAmountTax = payableInvoice.revenues.Sum(s => Convert.ToDecimal(s.invoice_tax_amount)) * Convert.ToDecimal(payableInvoice.exchange_rate);
 
-                transactionInfo.OSExGSTVATAmountSpecified = true;
+                transactionInfo.OSExGSTVATAmountSpecified = !IsNullOrEmpty(totalAmountExcludeTax.ToString()); ;
                 transactionInfo.OSExGSTVATAmount = -Math.Abs(totalAmountExcludeTax);
 
-                transactionInfo.OSGSTVATAmountSpecified = true;
+                transactionInfo.OSGSTVATAmountSpecified = !IsNullOrEmpty(totalAmountTax.ToString());
                 transactionInfo.OSGSTVATAmount = -Math.Abs(totalAmountTax);
 
                 transactionInfo.OSTotalSpecified = true;
@@ -571,95 +571,84 @@ namespace BrinksAPI.Controllers
         public UniversalShipmentData GetShipmentById(string shipmentId)
         {
             UniversalShipmentData? response = new UniversalShipmentData();
-            try
+
+            ShipmentRequest.UniversalShipmentRequestData dataRequest = new ShipmentRequest.UniversalShipmentRequestData();
+            ShipmentRequest.ShipmentRequest shipmentRequest = new ShipmentRequest.ShipmentRequest();
+            ShipmentRequest.DataContext requestDataContext = new ShipmentRequest.DataContext();
+            List<ShipmentRequest.DataTarget> dataTargets = new List<ShipmentRequest.DataTarget>();
+            ShipmentRequest.DataTarget dataTarget = new ShipmentRequest.DataTarget();
+
+            dataTarget.Type = "ForwardingShipment";
+            dataTarget.Key = shipmentId;
+            dataTargets.Add(dataTarget);
+            requestDataContext.DataTargetCollection = dataTargets.ToArray();
+            shipmentRequest.DataContext = requestDataContext;
+            dataRequest.ShipmentRequest = shipmentRequest;
+
+            string xml = Utilities.Serialize(dataRequest);
+            var shipmentRequestResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+            if (shipmentRequestResponse.Status == "SUCCESS")
             {
-                ShipmentRequest.UniversalShipmentRequestData dataRequest = new ShipmentRequest.UniversalShipmentRequestData();
-                ShipmentRequest.ShipmentRequest shipmentRequest = new ShipmentRequest.ShipmentRequest();
-                ShipmentRequest.DataContext requestDataContext = new ShipmentRequest.DataContext();
-                List<ShipmentRequest.DataTarget> dataTargets = new List<ShipmentRequest.DataTarget>();
-                ShipmentRequest.DataTarget dataTarget = new ShipmentRequest.DataTarget();
-
-                dataTarget.Type = "ForwardingShipment";
-                dataTarget.Key = shipmentId;
-                dataTargets.Add(dataTarget);
-                requestDataContext.DataTargetCollection = dataTargets.ToArray();
-                shipmentRequest.DataContext = requestDataContext;
-                dataRequest.ShipmentRequest = shipmentRequest;
-
-                string xml = Utilities.Serialize(dataRequest);
-                var shipmentRequestResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
-                if (shipmentRequestResponse.Status == "SUCCESS")
+                using (var reader = new StringReader(shipmentRequestResponse.Data.Data.OuterXml))
                 {
-                    using (var reader = new StringReader(shipmentRequestResponse.Data.Data.OuterXml))
-                    {
-                        var serializer = new XmlSerializer(typeof(UniversalShipmentData));
-                        response = (UniversalShipmentData?)serializer.Deserialize(reader);
-                    }
+                    var serializer = new XmlSerializer(typeof(UniversalShipmentData));
+                    response = (UniversalShipmentData?)serializer.Deserialize(reader);
                 }
             }
 
-            catch (Exception ex)
-            {
-                throw ex;
-            }
             return response;
         }
 
         public OrganizationData SearchOrgWithRegNo(string regNo)
         {
             OrganizationData organizationData = new OrganizationData();
-            try
+
+            NativeRequest.Native native = new NativeRequest.Native();
+            NativeRequest.NativeBody body = new NativeRequest.NativeBody();
+            CriteriaData criteria = new CriteriaData();
+
+            CriteriaGroupType criteriaGroupType = new CriteriaGroupType();
+            criteriaGroupType.Type = TypeEnum.Partial;
+
+            List<CriteriaType> criteriaTypes = new List<CriteriaType>();
+
+            CriteriaType criteriaType1 = new CriteriaType();
+            criteriaType1.Entity = "OrgHeader.OrgCusCode";
+            criteriaType1.FieldName = "CodeType";
+            criteriaType1.Value = "LSC";
+            criteriaTypes.Add(criteriaType1);
+
+            CriteriaType criteriaType2 = new CriteriaType();
+            criteriaType2.Entity = "OrgHeader.OrgCusCode";
+            criteriaType2.FieldName = "CustomsRegNo";
+            criteriaType2.Value = regNo;
+            criteriaTypes.Add(criteriaType2);
+
+            criteriaGroupType.Criteria = criteriaTypes.ToArray();
+
+            criteria.CriteriaGroup = criteriaGroupType;
+            body.ItemElementName = ItemChoiceType.Organization;
+            body.Item = criteria;
+            native.Body = body;
+
+            string xml = Utilities.Serialize(native);
+            var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+            if (documentResponse.Status == "SUCCESS" && documentResponse.Data.Status == "PRS" && documentResponse.Data.ProcessingLog != null)
             {
-                NativeRequest.Native native = new NativeRequest.Native();
-                NativeRequest.NativeBody body = new NativeRequest.NativeBody();
-                CriteriaData criteria = new CriteriaData();
-
-                CriteriaGroupType criteriaGroupType = new CriteriaGroupType();
-                criteriaGroupType.Type = TypeEnum.Partial;
-
-                List<CriteriaType> criteriaTypes = new List<CriteriaType>();
-
-                CriteriaType criteriaType1 = new CriteriaType();
-                criteriaType1.Entity = "OrgHeader.OrgCusCode";
-                criteriaType1.FieldName = "CodeType";
-                criteriaType1.Value = "LSC";
-                criteriaTypes.Add(criteriaType1);
-
-                CriteriaType criteriaType2 = new CriteriaType();
-                criteriaType2.Entity = "OrgHeader.OrgCusCode";
-                criteriaType2.FieldName = "CustomsRegNo";
-                criteriaType2.Value = regNo;
-                criteriaTypes.Add(criteriaType2);
-
-                criteriaGroupType.Criteria = criteriaTypes.ToArray();
-
-                criteria.CriteriaGroup = criteriaGroupType;
-                body.ItemElementName = ItemChoiceType.Organization;
-                body.Item = criteria;
-                native.Body = body;
-
-                string xml = Utilities.Serialize(native);
-                var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
-                if (documentResponse.Status == "SUCCESS" && documentResponse.Data.Status == "PRS" && documentResponse.Data.ProcessingLog != null)
+                using (TextReader reader = new StringReader(documentResponse.Data.Data.OuterXml))
                 {
-                    using (TextReader reader = new StringReader(documentResponse.Data.Data.OuterXml))
+                    var serializer = new XmlSerializer(typeof(NativeOrganization.Native));
+                    NativeOrganization.Native result = (NativeOrganization.Native)serializer.Deserialize(reader);
+                    string organization = result.Body.Any[0].OuterXml;
+                    using (TextReader reader2 = new StringReader(organization))
                     {
-                        var serializer = new XmlSerializer(typeof(NativeOrganization.Native));
-                        NativeOrganization.Native result = (NativeOrganization.Native)serializer.Deserialize(reader);
-                        string organization = result.Body.Any[0].OuterXml;
-                        using (TextReader reader2 = new StringReader(organization))
-                        {
-                            var serializer2 = new XmlSerializer(typeof(OrganizationData));
-                            organizationData = (OrganizationData)serializer2.Deserialize(reader2);
-                        }
+                        var serializer2 = new XmlSerializer(typeof(OrganizationData));
+                        organizationData = (OrganizationData)serializer2.Deserialize(reader2);
                     }
                 }
+            }
 
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+
             return organizationData;
         }
         #region DEFAULT VALUE
@@ -668,5 +657,10 @@ namespace BrinksAPI.Controllers
             return value == null || value == "" ? defaultValue : value;
         }
         #endregion
+
+        public bool IsNullOrEmpty(string value)
+        {
+            return value == null || value.Length == 0 || value == "";
+        }
     }
 }

@@ -321,7 +321,7 @@ namespace BrinksAPI.Controllers
                         else
                         {
                             _logger.LogError(String.Format("House Bill {0} not found.", document.DocumentReferenceId));
-                            dataResponse.Status = "ERROR";
+                            dataResponse.Status = "NOTFOUND";
                             dataResponse.Message = String.Format("{0} Not Found.", document?.DocumentReferenceId);
                             return Ok(dataResponse);
                         }
@@ -335,7 +335,7 @@ namespace BrinksAPI.Controllers
                         else
                         {
                             _logger.LogError(String.Format("MAWB {0} not found.",document.DocumentReferenceId));
-                            dataResponse.Status = "ERROR";
+                            dataResponse.Status = "NOTFOUND";
                             dataResponse.Message = String.Format("{0} Not Found.", document?.DocumentReferenceId);
                             return Ok(dataResponse);
                         }
@@ -350,7 +350,7 @@ namespace BrinksAPI.Controllers
                         else
                         {
                             _logger.LogError(String.Format("Global Cuatomer Code {0} not found.", document.DocumentReferenceId));
-                            dataResponse.Status = "ERROR";
+                            dataResponse.Status = "NOTFOUND";
                             dataResponse.Message = String.Format("{0} Not Found.", document?.DocumentReferenceId);
                             return Ok(dataResponse);
                         }

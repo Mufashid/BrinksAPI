@@ -69,13 +69,13 @@ namespace BrinksAPI.Models
             [Required]
             [Precision(18, 2)]
             public string? invoice_amount { get; set; }
-            [Required]
+
             [Precision(18, 2)]
             public string? invoice_tax_amount { get; set; }
             [Required]
             [StringLength(20)]
             public string? tax_code { get; set; }
-            [Required]
+
             [StringLength(4)]
             public string? billed_from_site_code { get; set; }
             [Required]
