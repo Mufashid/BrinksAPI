@@ -40,7 +40,6 @@ namespace BrinksAPI.Models
         [StringLength(5)]
         public string? originServerId { get; set; }
 
-        [RegularExpression(@"^(0|-?\d{0,18}(\.\d{0,2})?)$")]
         public string? originShipmentId { get; set; }
 
         [StringLength(8)]
@@ -181,7 +180,6 @@ namespace BrinksAPI.Models
         [StringLength(5)]
         public string? originServerId { get; set; }
 
-        [RegularExpression(@"^(0|-?\d{0,18}(\.\d{0,2})?)$")]
         public string? originShipmentItemId { get; set; }
         [Required]
         [StringLength(16)]
@@ -231,7 +229,7 @@ namespace BrinksAPI.Models
         public float customsLiabilityUsd { get; set; }
         public string? customsCurrencyCode { get; set; }
         public string? originCountry { get; set; }
-        public string? usScheduleBCode { get; set; }
+        public string? uscsScheduleBCode { get; set; }
         public string? exportOrigin { get; set; }
         public string? exportLicenseNumber { get; set; }
         public string? exportLicenseValue { get; set; }

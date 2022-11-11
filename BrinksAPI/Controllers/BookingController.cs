@@ -21,6 +21,7 @@ namespace BrinksAPI.Controllers
         #region Create Forward Booking Using Single-Location Json
         [HttpPost]
         [Route("api/booking/create")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public IActionResult CreateBooking([FromBody]BrinksSingleShipment.Root brinksShipment)
         {
             Response dataResponse = new Response();

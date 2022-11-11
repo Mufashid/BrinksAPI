@@ -210,7 +210,7 @@ namespace BrinksAPI.Controllers
                             }
                             else
                             {
-                                dataResponse.Status = "ERROR";
+                                dataResponse.Status = "NOTFOUND";
                                 dataResponse.Message = String.Format("{0} Not Found.", revenue?.hawb_number);
                             }
                         }

@@ -13,7 +13,9 @@ ConfigurationManager configuration = builder.Configuration;
 
 #region Seri Log
 builder.Logging.ClearProviders();
-var path = configuration.GetValue<string>("Logging:FilePath");
+
+string path = Path.Join(configuration.GetValue<string>("Logging:FilePath"),Path.Join(DateTime.Now.ToString("yyyy"), DateTime.Now.ToString("MM"), DateTime.Now.ToString("dd") + ".log"));
+
 var logger = new LoggerConfiguration()
     .WriteTo.File(path)
     .CreateLogger();
