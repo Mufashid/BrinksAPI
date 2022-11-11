@@ -118,13 +118,13 @@ namespace BrinksAPI.Controllers
                 #endregion
 
                 #region PORT
-                var loadingPort = _context.sites.Where(s => s.Airport == shipment.pickupAirportCode).FirstOrDefault();
+                var loadingPort = _context.sites.Where(s => s.SiteCode.ToString() == shipment.pickupSiteCode).FirstOrDefault();
                 UNLOCO portOfLoading = new UNLOCO();
                 portOfLoading.Code = loadingPort?.Country + loadingPort?.Airport;
                 cwShipment.PortOfOrigin = portOfLoading;
                 cwShipment.PortOfLoading = portOfLoading;
 
-                var dischargePort = _context.sites.Where(s => s.Airport == shipment.deliveryAirportCode).FirstOrDefault();
+                var dischargePort = _context.sites.Where(s => s.SiteCode.ToString() == shipment.deliverySiteCode).FirstOrDefault();
                 UNLOCO portOfDischarge = new UNLOCO();
                 portOfDischarge.Code = dischargePort?.Country + dischargePort?.Airport;
                 cwShipment.PortOfDestination = portOfDischarge;
@@ -521,12 +521,20 @@ namespace BrinksAPI.Controllers
                         shipment.shipmentItems[i].originShipmentItemId = long.Parse(GetNumbers(cwShipmentData.Shipment.PackingLineCollection.PackingLine[i].PackingLineID));
                         shipment.shipmentItems[i].customsCode = "SALE";
                     }
-
+                    
                     string atlasRequest = JsonConvert.SerializeObject(shipment);
+
+                    // Removing pickupsite code and delivery site code from the request (Atlas wont accept this fields)
+                    var atlasRequest2 = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(atlasRequest);
+                    atlasRequest2.Property("pickupSiteCode").Remove();
+                    atlasRequest2.Property("deliverySiteCode").Remove();
+                    string test = atlasRequest2.ToString();
+
+
                     string atlasLoginURI = _configuration.AtlasURI + "/verification/login";
                     string atlasPostShipmentURL = _configuration.AtlasURI + "/shipment/create";
                     string atlasToken = Utilities.GetToken(atlasLoginURI, _configuration.AtlasUsername, _configuration.AtlasPassword);
-                    Tuple<HttpStatusCode, string> atlasResponse = Utilities.PostRequest(atlasPostShipmentURL, atlasToken, atlasRequest);
+                    Tuple<HttpStatusCode, string> atlasResponse = Utilities.PostRequest(atlasPostShipmentURL, atlasToken, atlasRequest2.ToString());
                     if(atlasResponse.Item1 == HttpStatusCode.OK)
                     {
                         successMessage += "Successfully created/updated the shipment in Atlas.";
