@@ -23,7 +23,7 @@ namespace BrinksAPI.Models
             [Required]
             [Precision(18, 2)]
             public decimal invoice_amount { get; set; }
-            [Required]
+
             [Precision(18, 2)]
             public decimal invoice_tax_amount { get; set; }
             [Required]

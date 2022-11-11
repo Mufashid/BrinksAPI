@@ -13,7 +13,7 @@ namespace BrinksAPI.Models
         public string? TrackingNumber { get; set; }
         [StringLength(50)]
         public string? UserId { get; set; }
-        [StringLength(5)]
+        [StringLength(8)]
         public string? ActionType { get; set; }
         [StringLength(5)]
         public string? AreaType { get; set; }
@@ -40,7 +40,7 @@ namespace BrinksAPI.Models
         [StringLength(5)]
         public string? originServerId { get; set; }
 
-        public string? originShipmentId { get; set; }
+        public long? originShipmentId { get; set; }
 
         [StringLength(8)]
         public string? userId { get; set; }
@@ -180,7 +180,7 @@ namespace BrinksAPI.Models
         [StringLength(5)]
         public string? originServerId { get; set; }
 
-        public string? originShipmentItemId { get; set; }
+        public long? originShipmentItemId { get; set; }
         [Required]
         [StringLength(16)]
         public string? barcode { get; set; }

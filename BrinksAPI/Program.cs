@@ -117,6 +117,7 @@ builder.Services.AddSingleton<BrinksAPI.Interfaces.IConfigManager, BrinksAPI.Ser
 
 var app = builder.Build();
 app.UseCors("AnyOrigin");
+
 #region For Development
 //if (app.Environment.IsDevelopment())
 //{

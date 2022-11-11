@@ -90,7 +90,7 @@ namespace BrinksAPI.Controllers
                 string shipmentId = GetShipmentNumberByHawb(shipment.hawbNum);
 
                 Random random = new Random();
-                string originShipmentId = random.Next(30000000, 39999999).ToString();
+                long originShipmentId = random.Next(30000000, 39999999);
 
                 #region Data Context
                 DataContext dataContext = new DataContext();
@@ -421,7 +421,7 @@ namespace BrinksAPI.Controllers
                 CustomizedField originShipmentIdCF = new CustomizedField();
                 originShipmentIdCF.DataType = CustomizedFieldDataType.String;
                 originShipmentIdCF.Key = "Origin Shipment ID";
-                originShipmentIdCF.Value = originShipmentId;
+                originShipmentIdCF.Value = originShipmentId.ToString();
                 shipmentCustomizedFields.Add(originShipmentIdCF);
 
                 cwShipment.CustomizedFieldCollection = shipmentCustomizedFields.ToArray();
@@ -518,7 +518,7 @@ namespace BrinksAPI.Controllers
                     for (int i = 0; i < shipment.shipmentItems.Count; i++)
                     {
                         shipment.shipmentItems[i].originServerId = originServerId;
-                        shipment.shipmentItems[i].originShipmentItemId = GetNumbers(cwShipmentData.Shipment.PackingLineCollection.PackingLine[i].PackingLineID);
+                        shipment.shipmentItems[i].originShipmentItemId = long.Parse(GetNumbers(cwShipmentData.Shipment.PackingLineCollection.PackingLine[i].PackingLineID));
                         shipment.shipmentItems[i].customsCode = "SALE";
                     }
 
