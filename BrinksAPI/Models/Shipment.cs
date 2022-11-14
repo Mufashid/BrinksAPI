@@ -39,7 +39,6 @@ namespace BrinksAPI.Models
     
         [StringLength(5)]
         public string? originServerId { get; set; }
-
         public long? originShipmentId { get; set; }
 
         [StringLength(8)]
@@ -178,6 +177,8 @@ namespace BrinksAPI.Models
         public string? amsSentDate { get; set; }
         [StringLength(1)]
         public string? trackingStatus { get; set; }
+        public int toShowId { get; set; }
+        public int fromShowId { get; set; }
     }
 
     public class ShipmentItem
@@ -214,10 +215,10 @@ namespace BrinksAPI.Models
         public float dimWidth { get; set; }
         public float dimHeight { get; set; }
         public float dimWeight { get; set; }
-        public float? chargableWeight { get; set; }
+        public float? chargeableWeight { get; set; }
         public string? dimUOM { get; set; }
         public double customerWeight { get; set; }
-        public string? codAmount { get; set; }
+        public double codAmount { get; set; }
         public string? codTypeCode { get; set; }
         [StringLength(15)]
         public string? showSealNumber { get; set; }
@@ -237,7 +238,7 @@ namespace BrinksAPI.Models
         public string? uscsScheduleBCode { get; set; }
         public string? exportOrigin { get; set; }
         public string? exportLicenseNumber { get; set; }
-        public string? exportLicenseValue { get; set; }
+        public double? exportLicenseValue { get; set; }
         public string? licenseCode { get; set; }
         public string? destinationCustomsCode { get; set; }
 
