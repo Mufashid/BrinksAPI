@@ -267,18 +267,42 @@ namespace BrinksAPI.Controllers
                     packingLine.PackType = packageType;
 
                     packingLine.PackQtySpecified = true;
-                    packingLine.WeightSpecified = true;
                     packingLine.PackQty = Convert.ToInt64(shipmentItem.numberOfItems);
-                    packingLine.Weight = Convert.ToDecimal(shipmentItem.grossWeight);
 
-                    packingLine.OutturnedWeightSpecified = true;
-                    packingLine.OutturnedLengthSpecified = true;
-                    packingLine.OutturnedWidthSpecified = true;
-                    packingLine.OutturnedHeightSpecified = true;
-                    packingLine.OutturnedWeight = Convert.ToDecimal(shipmentItem.dimWeight);
-                    packingLine.OutturnedLength = Convert.ToDecimal(shipmentItem.dimLength);
-                    packingLine.OutturnedWidth = Convert.ToDecimal(shipmentItem.dimWidth);
-                    packingLine.OutturnedHeight = Convert.ToDecimal(shipmentItem.dimHeight);
+                    UnitOfWeight unitOfWeight = new UnitOfWeight();
+                    unitOfWeight.Code = "KG";
+                    packingLine.WeightUnit = unitOfWeight;
+
+                    string? unitOfLengthCWCode = shipmentItem.dimUOM == "in" ? "IN" : "CM";
+                    UnitOfLength unitOfLength = new UnitOfLength();
+                    unitOfLength.Code = unitOfLengthCWCode;
+                    packingLine.LengthUnit = unitOfLength;
+
+                    string? unitOfVolumeCWCode = shipmentItem.dimUOM == "in" ? "CI" : "CC";
+                    UnitOfVolume unitOfVolume = new UnitOfVolume();
+                    unitOfVolume.Code = unitOfVolumeCWCode;
+                    packingLine.VolumeUnit = unitOfVolume;
+
+                    packingLine.WeightSpecified = true;
+                    packingLine.LengthSpecified = true;
+                    packingLine.WidthSpecified = true;
+                    packingLine.HeightSpecified = true;
+                    packingLine.VolumeSpecified = true;
+
+                    packingLine.Weight = Convert.ToDecimal(shipmentItem.grossWeight);
+                    packingLine.Length = Convert.ToDecimal(shipmentItem.dimLength);
+                    packingLine.Width = Convert.ToDecimal(shipmentItem.dimWidth);
+                    packingLine.Height = Convert.ToDecimal(shipmentItem.dimHeight);
+                    packingLine.Volume = Convert.ToDecimal(shipmentItem.dimLength)* Convert.ToDecimal(shipmentItem.dimWidth)* Convert.ToDecimal(shipmentItem.dimHeight);
+
+                    //packingLine.OutturnedWeightSpecified = true;
+                    //packingLine.OutturnedLengthSpecified = true;
+                    //packingLine.OutturnedWidthSpecified = true;
+                    //packingLine.OutturnedHeightSpecified = true;
+                    //packingLine.OutturnedWeight = Convert.ToDecimal(shipmentItem.dimWeight);
+                    //packingLine.OutturnedLength = Convert.ToDecimal(shipmentItem.dimLength);
+                    //packingLine.OutturnedWidth = Convert.ToDecimal(shipmentItem.dimWidth);
+                    //packingLine.OutturnedHeight = Convert.ToDecimal(shipmentItem.dimHeight);
 
                     packingLine.ReferenceNumber = shipmentItem.barcode;
                     packingLine.MarksAndNos = shipmentItem.showSealNumber;
@@ -287,20 +311,6 @@ namespace BrinksAPI.Controllers
                     countryOforigin.Code = shipmentItem.originCountry;
                     packingLine.CountryOfOrigin = countryOforigin;
 
-                    string? unitOfLengthBitsCode = shipmentItem.dimUOM == "in" ? "IN" : "CM";
-                    UnitOfLength unitOfLength = new UnitOfLength();
-                    unitOfLength.Code = unitOfLengthBitsCode;
-                    packingLine.LengthUnit = unitOfLength;
-
-                    string? unitOfVolumeBitsCode = shipmentItem.dimUOM == "in" ? "CI" : "CC";
-                    UnitOfVolume unitOfVolume = new UnitOfVolume();
-                    unitOfVolume.Code = unitOfVolumeBitsCode;
-                    packingLine.VolumeUnit = unitOfVolume;
-
-                    // Mapping (Bits sending 3 characters CW allows 2 characters)
-                    UnitOfWeight unitOfWeight = new UnitOfWeight();
-                    unitOfWeight.Code = shipmentItem.uomCode;
-                    packingLine.WeightUnit = unitOfWeight;
 
                     #region CUSTOMIZED FIELDS COLLECTION
                     List<CustomizedField> shipmentItemCustomizedFields = new List<CustomizedField>();
@@ -320,12 +330,14 @@ namespace BrinksAPI.Controllers
                     packageLineNetWeightCF.Value = shipmentItem.uomNetWeight.ToString();
                     shipmentItemCustomizedFields.Add(packageLineNetWeightCF);
 
+                    // Mapping (Bits sending 3 characters CW allows 2 characters)
                     CustomizedField packageLineUOMCF = new CustomizedField();
                     packageLineUOMCF.DataType = CustomizedFieldDataType.String;
                     packageLineUOMCF.Key = "uom";
                     packageLineUOMCF.Value = shipmentItem.uomCode;
                     shipmentItemCustomizedFields.Add(packageLineUOMCF);
 
+                    shipmentItemCustomizedFields.RemoveAll(s => s.Value == null);
                     packingLine.CustomizedFieldCollection = shipmentItemCustomizedFields.ToArray();
                     #endregion
 
@@ -343,6 +355,7 @@ namespace BrinksAPI.Controllers
                 decimal totalDimWeight = Convert.ToDecimal(shipment?.shipmentItems?.Sum(i => i.dimWeight));
                 decimal totalInsurenceLiability = Convert.ToDecimal(shipment?.shipmentItems?.Sum(i => i.insuranceLiability));
                 decimal totalCustomsLiability = Convert.ToDecimal(shipment?.shipmentItems?.Sum(i => i.customsLiability));
+                decimal totalVolume = Convert.ToDecimal(shipment?.shipmentItems?.Sum(i => i.dimLength)) * Convert.ToDecimal(shipment?.shipmentItems?.Sum(i => i.dimWidth))* Convert.ToDecimal(shipment?.shipmentItems?.Sum(i => i.dimHeight));
 
                 #region CUSTOMIZED FIELDS
                 List<CustomizedField> shipmentCustomizedFields = new List<CustomizedField>();
@@ -447,11 +460,18 @@ namespace BrinksAPI.Controllers
                 cwShipment.TotalNoOfPiecesSpecified = true;
                 cwShipment.ActualChargeableSpecified = true;
                 cwShipment.OuterPacksSpecified = true;
+                cwShipment.TotalVolumeSpecified = true;
+
+                UnitOfVolume totalUnitVolume = new UnitOfVolume();
+                totalUnitVolume.Code = firstShipmentItem?.dimUOM == "in" ? "CI" : "CC";
+                cwShipment.TotalVolumeUnit = totalUnitVolume;
 
                 UnitOfWeight totalWeightUnit = new UnitOfWeight();
-                totalWeightUnit.Code = firstShipmentItem?.uomCode;
+                totalWeightUnit.Code = "KG";//firstShipmentItem.grossWeightUomCode;
                 cwShipment.TotalWeightUnit = totalWeightUnit;
+
                 cwShipment.TotalWeight = totalGrossWeight;
+                cwShipment.TotalVolume = totalVolume;
                 cwShipment.ActualChargeable = totalChargableWeight;
                 cwShipment.TotalNoOfPacks = totalQunatity;
                 cwShipment.TotalNoOfPieces = totalQunatity;

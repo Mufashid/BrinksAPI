@@ -194,6 +194,8 @@ namespace BrinksAPI.Models
         [Required]
         public float insuranceLiability { get; set; }
         public float grossWeight { get; set; }
+        [StringLength(3)]
+        public string? grossWeightUomCode { get; set; }
         [Required]
         [StringLength(4)]
         public string? uomCode { get; set; }
