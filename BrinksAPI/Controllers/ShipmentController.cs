@@ -441,7 +441,6 @@ namespace BrinksAPI.Controllers
                 transportMode.Code = transportModeCWCode;
                 cwShipment.TransportMode = transportMode;
 
-                //Mapping
                 CodeDescriptionPair paymentMethod = new CodeDescriptionPair();
                 paymentMethod.Code = shipment.chargesType;
                 cwShipment.PaymentMethod = paymentMethod;
@@ -497,56 +496,6 @@ namespace BrinksAPI.Controllers
                 }                
                 else
                 {
-                    #region CALLING BRINKS INHOUSE API
-
-                    Events.UniversalEventData cwEventXML = Utilities.ReadUniversalEvent(documentResponse.Data.Data.OuterXml);
-                    string atlasShipmentId = cwEventXML.Event.DataContext.DataSourceCollection.Where(d => d.Type == "ForwardingShipment").FirstOrDefault().Key;
-
-                    UniversalShipmentData cwShipmentData = GetShipmentById(atlasShipmentId);
-
-                    int? serverId =  _context.sites.Where(s => s.CompanyCode == cwShipmentData.Shipment.DataContext.Company.Code).FirstOrDefault()?.ServerID;
-                    serverId = serverId == null ? 35 : serverId;// Default LATAM
-                    string? originServerId = serverId.ToString();
-
-                    if (shipmentId == null)
-                        shipment.dateCreated = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                    else
-                        shipment.lastUpdated = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-
-                    shipment.originServerId = originServerId;
-                    shipment.originShipmentId = originShipmentId;
-                    for (int i = 0; i < shipment.shipmentItems.Count; i++)
-                    {
-                        shipment.shipmentItems[i].originServerId = originServerId;
-                        shipment.shipmentItems[i].originShipmentItemId = long.Parse(GetNumbers(cwShipmentData.Shipment.PackingLineCollection.PackingLine[i].PackingLineID));
-                        shipment.shipmentItems[i].customsCode = "SALE";
-                    }
-                    
-                    string atlasRequest = JsonConvert.SerializeObject(shipment);
-
-                    // Removing pickupsite code and delivery site code from the request (Atlas wont accept this fields)
-                    var atlasRequest2 = (Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(atlasRequest);
-                    atlasRequest2.Property("pickupSiteCode").Remove();
-                    atlasRequest2.Property("deliverySiteCode").Remove();
-                    string test = atlasRequest2.ToString();
-
-
-                    string atlasLoginURI = _configuration.AtlasURI + "/verification/login";
-                    string atlasPostShipmentURL = _configuration.AtlasURI + "/shipment/create";
-                    string atlasToken = Utilities.GetToken(atlasLoginURI, _configuration.AtlasUsername, _configuration.AtlasPassword);
-                    Tuple<HttpStatusCode, string> atlasResponse = Utilities.PostRequest(atlasPostShipmentURL, atlasToken, atlasRequest2.ToString());
-                    if(atlasResponse.Item1 == HttpStatusCode.OK)
-                    {
-                        successMessage += "Successfully created/updated the shipment in Atlas.";
-                        _logger.LogInformation("Successfully created/updated the shipment in Atlas.");
-                    }
-                    else
-                    {
-                        successMessage += "Error creating/updating the shipment in the Atlas.Error:" + atlasResponse.Item2;
-                        _logger.LogError("Error: {@Error} Request: {@Request}", atlasResponse.Item2, atlasRequest);
-                    }
-
-                    #endregion
                     
                     #region TRANSPORT BOOKING
                     string responseShipmentId = Utilities.ReadUniversalEvent(documentResponse.Data.Data.OuterXml).Event.DataContext.DataSourceCollection.Where(s => s.Type == "ForwardingShipment").FirstOrDefault().Key;

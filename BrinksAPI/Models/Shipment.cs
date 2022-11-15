@@ -37,10 +37,6 @@ namespace BrinksAPI.Models
     public class Shipment
     {
     
-        [StringLength(5)]
-        public string? originServerId { get; set; }
-        public long? originShipmentId { get; set; }
-
         [StringLength(8)]
         public string? userId { get; set; }
         [Required]
@@ -183,10 +179,6 @@ namespace BrinksAPI.Models
 
     public class ShipmentItem
     {
-        [StringLength(5)]
-        public string? originServerId { get; set; }
-
-        public long? originShipmentItemId { get; set; }
         [Required]
         [StringLength(16)]
         public string? barcode { get; set; }
