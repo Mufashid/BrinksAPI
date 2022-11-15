@@ -34,15 +34,13 @@ namespace BrinksAPI.Controllers
         }
 
 
-
-
-        #region UPSERT SHIPMENT
+        #region UPSERT SHIPMENT  API
         /// <summary>
         /// Creates Shipment and Transport Booking.
         /// </summary>
         /// <param name="shipment"></param>
         /// <returns>A newly created Shipment </returns>
-        
+
         /// <response code="200">Success</response>
         /// <response code="401">Unauthorized</response>
         /// <response code="500">Internal server error</response>
@@ -57,7 +55,7 @@ namespace BrinksAPI.Controllers
             string successMessage = "";
             try
             {
-                
+
                 dataResponse.HawbNum = shipment?.hawbNum;
 
                 #region MODEL VALIDATION
@@ -74,7 +72,7 @@ namespace BrinksAPI.Controllers
                             errorString += String.Format("{0}", subError.ErrorMessage);
                         }
                     }
-                    _logger.LogError("Error: {@Error} Request: {@Request}",errorString,shipment);
+                    _logger.LogError("Error: {@Error} Request: {@Request}", errorString, shipment);
 
                     dataResponse.Status = "ERROR";
                     dataResponse.Message = errorString;
@@ -82,15 +80,15 @@ namespace BrinksAPI.Controllers
                     return Ok(dataResponse);
                 }
                 #endregion
-                
+
                 UniversalShipmentData universalShipmentData = new UniversalShipmentData();
                 Shipment cwShipment = new Shipment();
 
                 ShipmentItem? firstShipmentItem = shipment.shipmentItems?.FirstOrDefault();
-                string shipmentId = GetShipmentNumberByHawb(shipment.hawbNum);
+                string? shipmentId = GetShipmentNumberByHawb(shipment.hawbNum);
 
                 Random random = new Random();
-                long originShipmentId = random.Next(30000000, 39999999);
+                long originShipmentId = random.Next(30000000, 39999999);// 30 million
 
                 #region Data Context
                 DataContext dataContext = new DataContext();
@@ -106,11 +104,6 @@ namespace BrinksAPI.Controllers
                 staff.Code = shipment.userId;
                 dataContext.EventUser = staff;
 
-                Company company = new Company();
-                company.Code = _configuration.CompanyCode;
-                dataContext.Company = company;
-
-                dataContext.DataProvider = _configuration.ServiceDataProvider;
                 dataContext.EnterpriseID = _configuration.EnterpriseId;
                 dataContext.ServerID = _configuration.ServerId;
 
@@ -157,6 +150,7 @@ namespace BrinksAPI.Controllers
                 deliveryNote.NoteText = shipment.dlvNotes;
                 notes.Add(deliveryNote);
 
+                notes.RemoveAll(n => n.NoteText == null);
                 shipmentNoteCollection.Note = notes.ToArray();
                 cwShipment.NoteCollection = shipmentNoteCollection;
                 #endregion
@@ -242,7 +236,7 @@ namespace BrinksAPI.Controllers
                 {
                     consigneeAddress.OrganizationCode = consigneeOrganizationData.OrgHeader.Code;
                 }
-                organizationAddresses.Add(consigneeAddress); 
+                organizationAddresses.Add(consigneeAddress);
                 #endregion
 
                 cwShipment.OrganizationAddressCollection = organizationAddresses.ToArray();
@@ -267,16 +261,15 @@ namespace BrinksAPI.Controllers
                     packingLine.HarmonisedCode = shipmentItem.uscsScheduleBCode;
                     packingLine.GoodsDescription = shipmentItem.commodityDescription;
 
-                    string? packaheTypeCodeCW = _context.packageTypes.Where(p => p.BrinksCode == shipmentItem.packageTypeCd)?.FirstOrDefault()?.CWCode;
+                    string? packageTypeCodeCW = _context.packageTypes.Where(p => p.BrinksCode == shipmentItem.packageTypeCd)?.FirstOrDefault()?.CWCode;
                     PackageType packageType = new PackageType();
-                    packageType.Code = packaheTypeCodeCW;
+                    packageType.Code = packageTypeCodeCW;
                     packingLine.PackType = packageType;
 
                     packingLine.PackQtySpecified = true;
                     packingLine.WeightSpecified = true;
                     packingLine.PackQty = Convert.ToInt64(shipmentItem.numberOfItems);
                     packingLine.Weight = Convert.ToDecimal(shipmentItem.grossWeight);
-
 
                     packingLine.OutturnedWeightSpecified = true;
                     packingLine.OutturnedLengthSpecified = true;
@@ -304,7 +297,7 @@ namespace BrinksAPI.Controllers
                     unitOfVolume.Code = unitOfVolumeBitsCode;
                     packingLine.VolumeUnit = unitOfVolume;
 
-                    // Mapping
+                    // Mapping (Bits sending 3 characters CW allows 2 characters)
                     UnitOfWeight unitOfWeight = new UnitOfWeight();
                     unitOfWeight.Code = shipmentItem.uomCode;
                     packingLine.WeightUnit = unitOfWeight;
@@ -324,7 +317,7 @@ namespace BrinksAPI.Controllers
 
                     CustomizedField packageLineNetWeightCF = new CustomizedField();
                     packageLineNetWeightCF.Key = "net_weight";
-                    packageLineNetWeightCF.Value =  shipmentItem.uomNetWeight.ToString();
+                    packageLineNetWeightCF.Value = shipmentItem.uomNetWeight.ToString();
                     shipmentItemCustomizedFields.Add(packageLineNetWeightCF);
 
                     CustomizedField packageLineUOMCF = new CustomizedField();
@@ -424,6 +417,7 @@ namespace BrinksAPI.Controllers
                 originShipmentIdCF.Value = originShipmentId.ToString();
                 shipmentCustomizedFields.Add(originShipmentIdCF);
 
+                shipmentCustomizedFields.RemoveAll(s => s.Value == null);
                 cwShipment.CustomizedFieldCollection = shipmentCustomizedFields.ToArray();
                 #endregion
 
@@ -462,8 +456,10 @@ namespace BrinksAPI.Controllers
                 cwShipment.TotalNoOfPacks = totalQunatity;
                 cwShipment.TotalNoOfPieces = totalQunatity;
                 cwShipment.OuterPacks = totalQunatity;
+
+                string? outerPackageCWCode = _context.packageTypes.Where(p => p.BrinksCode == firstShipmentItem.packageTypeCd)?.FirstOrDefault()?.CWCode;
                 PackageType outerPackageType = new PackageType();
-                outerPackageType.Code = firstShipmentItem?.packageTypeCd;
+                outerPackageType.Code = outerPackageCWCode;
                 cwShipment.OuterPacksPackageType = outerPackageType;
                 cwShipment.TotalNoOfPacksPackageType = outerPackageType;
 
@@ -478,7 +474,7 @@ namespace BrinksAPI.Controllers
                 cwShipment.GoodsDescription = firstShipmentItem?.commodityDescription;
                 Currency goodsCurrency = new Currency();
                 goodsCurrency.Code = firstShipmentItem?.customsCurrencyCode;
-                cwShipment.GoodsValueCurrency = goodsCurrency; 
+                cwShipment.GoodsValueCurrency = goodsCurrency;
                 #endregion
 
                 universalShipmentData.Shipment = cwShipment;
@@ -493,15 +489,15 @@ namespace BrinksAPI.Controllers
 
                     _logger.LogError("Error: {@Error} Request: {@Request}", errorMessage, shipment);
                     return Ok(dataResponse);
-                }                
+                }
                 else
                 {
-                    
+
                     #region TRANSPORT BOOKING
                     string responseShipmentId = Utilities.ReadUniversalEvent(documentResponse.Data.Data.OuterXml).Event.DataContext.DataSourceCollection.Where(s => s.Type == "ForwardingShipment").FirstOrDefault().Key;
                     var tranportBookingObj = _context.transportBookings.Where(t => t.HawbNumber == shipment.hawbNum).FirstOrDefault();
                     string? transportBooking = "";
-                    
+
                     #region TRANPORTBOOKIN INSERT OR UPDATE
                     if (tranportBookingObj != null)
                     {
@@ -577,8 +573,6 @@ namespace BrinksAPI.Controllers
                         tbDataTargets.Add(tbDataTarget);
                         tbDataContext.DataTargetCollection = tbDataTargets.ToArray();
 
-                        tbDataContext.Company = company;
-                        tbDataContext.DataProvider = _configuration.ServiceDataProvider;
                         tbDataContext.EnterpriseID = _configuration.EnterpriseId;
                         tbDataContext.ServerID = _configuration.ServerId;
                         #endregion
@@ -786,21 +780,21 @@ namespace BrinksAPI.Controllers
                         _logger.LogInformation(successMessage);
                     }
                     #endregion
-                    
+
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError("Error: {@Error} Request: {@Request}", ex.Message, shipment);
                 dataResponse.Status = "ERROR";
-                dataResponse.Message = successMessage  +   ex.Message;
+                dataResponse.Message = successMessage + ex.Message;
                 return StatusCode(StatusCodes.Status500InternalServerError, dataResponse);
             }
             return Ok(dataResponse);
-        } 
+        }
         #endregion
 
-        #region SHIPMENT HISTORY
+        #region SHIPMENT HISTORY API
         /// <summary>
         /// Creates Shipment History.
         /// </summary>
@@ -1099,223 +1093,190 @@ namespace BrinksAPI.Controllers
                 dataResponses.Add(dataResponse);
                 return StatusCode(StatusCodes.Status500InternalServerError, dataResponses);
             }
-        } 
+        }
         #endregion
-        public UniversalShipmentData GetShipmentById(string shipmentId)
+
+        #region GET SHIPMENT DETAILS BY SHIPMENT ID
+        public UniversalShipmentData? GetShipmentById(string shipmentId)
         {
             UniversalShipmentData? response = new UniversalShipmentData();
-            try
+
+            ShipmentRequest.UniversalShipmentRequestData dataRequest = new ShipmentRequest.UniversalShipmentRequestData();
+            ShipmentRequest.ShipmentRequest shipmentRequest = new ShipmentRequest.ShipmentRequest();
+            ShipmentRequest.DataContext requestDataContext = new ShipmentRequest.DataContext();
+            List<ShipmentRequest.DataTarget> dataTargets = new List<ShipmentRequest.DataTarget>();
+            ShipmentRequest.DataTarget dataTarget = new ShipmentRequest.DataTarget();
+
+            dataTarget.Type = "ForwardingShipment";
+            dataTarget.Key = shipmentId;
+            dataTargets.Add(dataTarget);
+            requestDataContext.DataTargetCollection = dataTargets.ToArray();
+            shipmentRequest.DataContext = requestDataContext;
+            dataRequest.ShipmentRequest = shipmentRequest;
+
+            string xml = Utilities.Serialize(dataRequest);
+            var shipmentRequestResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+            if (shipmentRequestResponse.Status == "SUCCESS")
             {
-                ShipmentRequest.UniversalShipmentRequestData dataRequest = new ShipmentRequest.UniversalShipmentRequestData();
-                ShipmentRequest.ShipmentRequest shipmentRequest = new ShipmentRequest.ShipmentRequest();
-                ShipmentRequest.DataContext requestDataContext = new ShipmentRequest.DataContext();
-                List<ShipmentRequest.DataTarget> dataTargets = new List<ShipmentRequest.DataTarget>();
-                ShipmentRequest.DataTarget dataTarget = new ShipmentRequest.DataTarget();
-
-                dataTarget.Type = "ForwardingShipment";
-                dataTarget.Key = shipmentId;
-                dataTargets.Add(dataTarget);
-                requestDataContext.DataTargetCollection = dataTargets.ToArray();
-                shipmentRequest.DataContext = requestDataContext;
-                dataRequest.ShipmentRequest = shipmentRequest;
-
-                string xml = Utilities.Serialize(dataRequest);
-                var shipmentRequestResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
-                if (shipmentRequestResponse.Status == "SUCCESS")
+                using (var reader = new StringReader(shipmentRequestResponse.Data.Data.OuterXml))
                 {
-                    using (var reader = new StringReader(shipmentRequestResponse.Data.Data.OuterXml))
-                    {
-                        var serializer = new XmlSerializer(typeof(UniversalShipmentData));
-                        response = (UniversalShipmentData?)serializer.Deserialize(reader);
-                    }
+                    var serializer = new XmlSerializer(typeof(UniversalShipmentData));
+                    response = (UniversalShipmentData?)serializer.Deserialize(reader);
                 }
             }
-         
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+
             return response;
         }
-        public string GetShipmentNumberByHawb(string hawb)
+        #endregion
+
+        #region GET SHIPMENT NUMBER USING HOUSE BILL NUMBER
+        public string? GetShipmentNumberByHawb(string hawb)
         {
             string? shipmentNumber = null;
-            try
+
+            Events.UniversalEventData universalEvent = new Events.UniversalEventData();
+            Events.Event @event = new Events.Event();
+
+            #region DATA CONTEXT
+            Events.DataContext eventDataContext = new Events.DataContext();
+            List<Events.DataTarget> dataTargets = new List<Events.DataTarget>();
+            Events.DataTarget dataTarget = new Events.DataTarget();
+            dataTarget.Type = "ForwardingShipment";
+            dataTargets.Add(dataTarget);
+            eventDataContext.DataTargetCollection = dataTargets.ToArray();
+            @event.DataContext = eventDataContext;
+            #endregion
+
+            #region EVENT DEATAIL
+            @event.EventTime = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss");
+            @event.EventType = "Z00";
+            #endregion
+
+            #region CONTEXT COLLECTION
+            List<Events.Context> contexts = new List<Events.Context>();
+            Events.Context context = new Events.Context();
+            Events.ContextType type = new Events.ContextType();
+            type.Value = "HAWBNumber";
+            context.Type = type;
+            context.Value = hawb;
+            contexts.Add(context);
+            @event.ContextCollection = contexts.ToArray();
+            #endregion
+
+            universalEvent.Event = @event;
+
+            string xml = Utilities.Serialize(universalEvent);
+            eAdaptor.Entities.XMLDataResponse? shipmentRequestResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+            if (shipmentRequestResponse.Status == "SUCCESS")
             {
-                Events.UniversalEventData universalEvent = new Events.UniversalEventData();
-                Events.Event @event = new Events.Event();
-
-                #region DATA CONTEXT
-                Events.DataContext eventDataContext = new Events.DataContext();
-                List<Events.DataTarget> dataTargets = new List<Events.DataTarget>();
-                Events.DataTarget dataTarget = new Events.DataTarget();
-                dataTarget.Type = "ForwardingShipment";
-                dataTargets.Add(dataTarget);
-                eventDataContext.DataTargetCollection = dataTargets.ToArray();
-                @event.DataContext = eventDataContext;
-                #endregion
-
-                #region EVENT DEATAIL
-                @event.EventTime = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss");
-                @event.EventType = "Z00"; 
-                #endregion
-
-                #region CONTEXT COLLECTION
-                List<Events.Context> contexts = new List<Events.Context>();
-                Events.Context context = new Events.Context();
-                Events.ContextType type = new Events.ContextType();
-                type.Value = "HAWBNumber";
-                context.Type = type;
-                context.Value =hawb;
-                contexts.Add(context);
-                @event.ContextCollection = contexts.ToArray();
-                #endregion
-
-                universalEvent.Event = @event;
-
-                string xml = Utilities.Serialize(universalEvent);
-                eAdaptor.Entities.XMLDataResponse? shipmentRequestResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
-                if (shipmentRequestResponse.Status == "SUCCESS")
+                using (var reader = new StringReader(shipmentRequestResponse.Data.Data.OuterXml))
                 {
-                    using (var reader = new StringReader(shipmentRequestResponse.Data.Data.OuterXml))
-                    {
-                        var serializer = new XmlSerializer(typeof(Events.UniversalEventData));
-                        Events.UniversalEventData? eventResponse = (Events.UniversalEventData)serializer.Deserialize(reader);
-                        shipmentNumber = eventResponse?.Event?.DataContext?.DataSourceCollection?.Where(d => d.Type == "ForwardingShipment")?.FirstOrDefault()?.Key;
-                    }
+                    var serializer = new XmlSerializer(typeof(Events.UniversalEventData));
+                    Events.UniversalEventData? eventResponse = (Events.UniversalEventData?)serializer.Deserialize(reader);
+                    shipmentNumber = eventResponse?.Event?.DataContext?.DataSourceCollection?.Where(d => d.Type == "ForwardingShipment")?.FirstOrDefault()?.Key;
                 }
             }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+
             return shipmentNumber;
         }
+        #endregion
 
-        public static void GetFilesFromSFTP(string hostname,string username,string password,string remoteFolder,string localFolder)
+        #region GET FILES FROM SFTP FOLDER (FOR TRANSPORT BOOKING)
+        public static void GetFilesFromSFTP(string hostname, string username, string password, string remoteFolder, string localFolder)
         {
-            try
-            {
-                WinSCP.SessionOptions sessionOptions = new WinSCP.SessionOptions
-                {
-                    Protocol = Protocol.Sftp,
-                    HostName = hostname,
-                    UserName = username,
-                    Password = password,
-                    SshHostKeyFingerprint = "ssh-ed25519 255 faw0PNQCsw3K8cO5TdV7F8MgCOPLXNgmTLvvBl+lbYw"
 
-                };
-                using (Session session = new Session())
-                {
-                    // Connect
-                    session.Open(sessionOptions);
-                    session.GetFilesToDirectory(remoteFolder, localFolder, "*.xml>=180S").Check();
-                }
-            }
-            catch(Exception ex)
+            WinSCP.SessionOptions sessionOptions = new WinSCP.SessionOptions
             {
-                throw ex;
-            }
+                Protocol = Protocol.Sftp,
+                HostName = hostname,
+                UserName = username,
+                Password = password,
+                SshHostKeyFingerprint = "ssh-ed25519 255 faw0PNQCsw3K8cO5TdV7F8MgCOPLXNgmTLvvBl+lbYw"
 
+            };
+            using (Session session = new Session())
+            {
+                // Connect
+                session.Open(sessionOptions);
+                session.GetFilesToDirectory(remoteFolder, localFolder, "*.xml>=180S").Check();
+            }
         }
+        #endregion
 
-        public static void MoveFileFTP(string hostname, string username, string password,string sourcePath,string destinationPath)
+        #region MOVE FILE FROM SFTP FOLDER
+        public static void MoveFileFTP(string hostname, string username, string password, string sourcePath, string destinationPath)
         {
-            try
-            {
-                WinSCP.SessionOptions sessionOptions = new WinSCP.SessionOptions
-                {
-                    Protocol = Protocol.Sftp,
-                    HostName = hostname,
-                    UserName = username,
-                    Password = password,
-                    SshHostKeyFingerprint = "ssh-ed25519 255 faw0PNQCsw3K8cO5TdV7F8MgCOPLXNgmTLvvBl+lbYw"
 
-                };
-                using (Session session = new Session())
-                {
-                    // Connect
-                    session.Open(sessionOptions);
-                    session.MoveFile(sourcePath, destinationPath);
-                }
-            }
-            catch (Exception ex)
+            WinSCP.SessionOptions sessionOptions = new WinSCP.SessionOptions
             {
-                throw ex;
-            }
+                Protocol = Protocol.Sftp,
+                HostName = hostname,
+                UserName = username,
+                Password = password,
+                SshHostKeyFingerprint = "ssh-ed25519 255 faw0PNQCsw3K8cO5TdV7F8MgCOPLXNgmTLvvBl+lbYw"
 
+            };
+            using (Session session = new Session())
+            {
+                // Connect
+                session.Open(sessionOptions);
+                session.MoveFile(sourcePath, destinationPath);
+            }
         }
+        #endregion
 
-        public OrganizationData SearchOrgWithRegNo(string regNo)
+        #region SEARCH ORGANIZATION WITH LSC CODE
+        public OrganizationData? SearchOrgWithRegNo(string regNo)
         {
-            OrganizationData organizationData = new OrganizationData();
-            try
+            OrganizationData? organizationData = new OrganizationData();
+
+            NativeRequest.Native native = new NativeRequest.Native();
+            NativeRequest.NativeBody body = new NativeRequest.NativeBody();
+            CriteriaData criteria = new CriteriaData();
+
+            CriteriaGroupType criteriaGroupType = new CriteriaGroupType();
+            criteriaGroupType.Type = TypeEnum.Partial;
+
+            List<CriteriaType> criteriaTypes = new List<CriteriaType>();
+
+            CriteriaType criteriaType1 = new CriteriaType();
+            criteriaType1.Entity = "OrgHeader.OrgCusCode";
+            criteriaType1.FieldName = "CodeType";
+            criteriaType1.Value = "LSC";
+            criteriaTypes.Add(criteriaType1);
+
+            CriteriaType criteriaType2 = new CriteriaType();
+            criteriaType2.Entity = "OrgHeader.OrgCusCode";
+            criteriaType2.FieldName = "CustomsRegNo";
+            criteriaType2.Value = regNo;
+            criteriaTypes.Add(criteriaType2);
+
+            criteriaGroupType.Criteria = criteriaTypes.ToArray();
+
+            criteria.CriteriaGroup = criteriaGroupType;
+            body.ItemElementName = ItemChoiceType.Organization;
+            body.Item = criteria;
+            native.Body = body;
+
+            string xml = Utilities.Serialize(native);
+            var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+            if (documentResponse.Status == "SUCCESS" && documentResponse.Data.Status == "PRS" && documentResponse.Data.ProcessingLog != null)
             {
-                NativeRequest.Native native = new NativeRequest.Native();
-                NativeRequest.NativeBody body = new NativeRequest.NativeBody();
-                CriteriaData criteria = new CriteriaData();
-
-                CriteriaGroupType criteriaGroupType = new CriteriaGroupType();
-                criteriaGroupType.Type = TypeEnum.Partial;
-
-                List<CriteriaType> criteriaTypes = new List<CriteriaType>();
-
-                CriteriaType criteriaType1 = new CriteriaType();
-                criteriaType1.Entity = "OrgHeader.OrgCusCode";
-                criteriaType1.FieldName = "CodeType";
-                criteriaType1.Value = "LSC";
-                criteriaTypes.Add(criteriaType1);
-
-                CriteriaType criteriaType2 = new CriteriaType();
-                criteriaType2.Entity = "OrgHeader.OrgCusCode";
-                criteriaType2.FieldName = "CustomsRegNo";
-                criteriaType2.Value = regNo;
-                criteriaTypes.Add(criteriaType2);
-
-                criteriaGroupType.Criteria = criteriaTypes.ToArray();
-
-                criteria.CriteriaGroup = criteriaGroupType;
-                body.ItemElementName = ItemChoiceType.Organization;
-                body.Item = criteria;
-                native.Body = body;
-
-                string xml = Utilities.Serialize(native);
-                var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
-                if (documentResponse.Status == "SUCCESS" && documentResponse.Data.Status == "PRS" && documentResponse.Data.ProcessingLog != null)
+                using (TextReader reader = new StringReader(documentResponse.Data.Data.OuterXml))
                 {
-                    using (TextReader reader = new StringReader(documentResponse.Data.Data.OuterXml))
+                    var serializer = new XmlSerializer(typeof(NativeOrganization.Native));
+                    NativeOrganization.Native? result = (NativeOrganization.Native?)serializer.Deserialize(reader);
+                    string organization = result.Body.Any[0].OuterXml;
+                    using (TextReader reader2 = new StringReader(organization))
                     {
-                        var serializer = new XmlSerializer(typeof(NativeOrganization.Native));
-                        NativeOrganization.Native result = (NativeOrganization.Native)serializer.Deserialize(reader);
-                        string organization = result.Body.Any[0].OuterXml;
-                        using (TextReader reader2 = new StringReader(organization))
-                        {
-                            var serializer2 = new XmlSerializer(typeof(OrganizationData));
-                            organizationData = (OrganizationData)serializer2.Deserialize(reader2);
-                        }
+                        var serializer2 = new XmlSerializer(typeof(OrganizationData));
+                        organizationData = (OrganizationData?)serializer2.Deserialize(reader2);
                     }
                 }
-
-            }
-            catch (Exception ex)
-            {
-                throw ex;
             }
             return organizationData;
-        }
-        private static string GetNumbers(string input)
-        {
-            string numberString = "";
-            if (input != null)
-            {
-                numberString = new string(input.Where(c => char.IsDigit(c)).ToArray());
-            }
-            return numberString;
-        }
-        private string GetToken()
-        {
-            string loginURI = _configuration.AtlasURI + "/verification/login";
-            return Utilities.GetToken(loginURI,_configuration.AtlasUsername, _configuration.AtlasPassword);
-        }
+        } 
+        #endregion
+
     }
 }
