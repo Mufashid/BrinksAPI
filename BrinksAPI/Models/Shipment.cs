@@ -45,10 +45,10 @@ namespace BrinksAPI.Models
         [Required]
         [StringLength(2)]
         public string? serviceType { get; set; }
-        [Required]
+  
         [StringLength(4)]
         public string? pickupSiteCode { get; set; }
-        [Required]
+  
         [StringLength(4)]
         public string? deliverySiteCode { get; set; }
         [StringLength(30)]
