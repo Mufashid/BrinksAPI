@@ -351,7 +351,7 @@ namespace BrinksAPI.Controllers
                 int totalQunatity = shipment.shipmentItems.Sum(i => i.numberOfItems);
                 decimal totalNetWeight = Convert.ToDecimal(shipment?.shipmentItems?.Sum(i => i.uomNetWeight));
                 decimal totalGrossWeight = Convert.ToDecimal(shipment?.shipmentItems?.Sum(i => i.grossWeight));
-                decimal totalChargableWeight = Convert.ToDecimal(shipment?.shipmentItems?.Sum(i => i.chargeableWeight));
+                decimal totalChargableWeight = Convert.ToDecimal(shipment?.shipmentItems?.Sum(i => i.chargableWeight));
                 decimal totalDimWeight = Convert.ToDecimal(shipment?.shipmentItems?.Sum(i => i.dimWeight));
                 decimal totalInsurenceLiability = Convert.ToDecimal(shipment?.shipmentItems?.Sum(i => i.insuranceLiability));
                 decimal totalCustomsLiability = Convert.ToDecimal(shipment?.shipmentItems?.Sum(i => i.customsLiability));

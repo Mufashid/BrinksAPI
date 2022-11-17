@@ -209,7 +209,7 @@ namespace BrinksAPI.Models
         public float dimWidth { get; set; }
         public float dimHeight { get; set; }
         public float dimWeight { get; set; }
-        public float? chargeableWeight { get; set; }
+        public float? chargableWeight { get; set; }
         public string? dimUOM { get; set; }
         public double customerWeight { get; set; }
         public double codAmount { get; set; }
