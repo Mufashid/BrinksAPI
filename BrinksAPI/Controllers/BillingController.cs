@@ -249,7 +249,7 @@ namespace BrinksAPI.Controllers
         /// <summary>
         /// Creates Payable Invoice
         /// </summary>
-        /// <param name="invoice"></param>
+        /// <param name="payableInvoice"></param>
         /// <returns>A newly created payable invoice</returns>
         /// <remarks>
         /// Sample request:

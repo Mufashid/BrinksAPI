@@ -22,12 +22,12 @@ namespace BrinksAPI.Controllers
             _configuration = configuaration;
             _context = context;
         }
-       
+
 
         /// <summary>
         /// Creates MAWB History.
         /// </summary>
-        /// <param name="mawb"></param>
+        /// <param name="mawbs"></param>
         /// <returns>A newly created MAWB</returns>
         /// <remarks>
         /// Sample request:
@@ -58,14 +58,14 @@ namespace BrinksAPI.Controllers
         [ProducesResponseType(401)]
         [ProducesResponseType(500)]
         [Route("api/mawb/history")]
-        public ActionResult <List<MawbResponse>> UpdateMawbHistory([FromBody] Mawb[] mawbs)
+        public ActionResult <List<Response>> UpdateMawbHistory([FromBody] Mawb[] mawbs)
         {
-            List<MawbResponse> dataResponses = new List<MawbResponse>();
+            List<Response> dataResponses = new List<Response>();
             try
             {
                 foreach (Mawb mawb in mawbs)
                 {
-                    MawbResponse dataResponse = new MawbResponse();
+                    Response dataResponse = new Response();
                     dataResponse.RequestId = mawb?.requestId;
                     try
                     {
@@ -125,7 +125,7 @@ namespace BrinksAPI.Controllers
                                 using (var reader = new StringReader(documentResponse.Data.Data.OuterXml))
                                 {
                                     var serializer = new XmlSerializer(typeof(Events.UniversalEventData));
-                                    Events.UniversalEventData responseEvent = (Events.UniversalEventData)serializer.Deserialize(reader);
+                                    Events.UniversalEventData? responseEvent = (Events.UniversalEventData?)serializer.Deserialize(reader);
 
                                     bool isError = responseEvent.Event.ContextCollection.Any(c => c.Type.Value.Contains("FailureReason"));
                                     if (isError)
@@ -188,7 +188,7 @@ namespace BrinksAPI.Controllers
             }
             catch (Exception ex)
             {
-                MawbResponse dataResponse = new MawbResponse();
+                Response dataResponse = new Response();
                 dataResponse.Status = "ERROR";
                 dataResponse.Message = ex.Message;
                 dataResponses.Add(dataResponse);

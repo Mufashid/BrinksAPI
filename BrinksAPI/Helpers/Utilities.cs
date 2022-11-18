@@ -28,7 +28,7 @@ namespace BrinksAPI.Helpers
         #endregion
 
         #region Serialize Object to XML Element
-        public static XmlElement SerializeToXmlElement(object o)
+        public static XmlElement? SerializeToXmlElement(object o)
         {
             XmlDocument doc = new XmlDocument();
             using (XmlWriter writer = doc.CreateNavigator().AppendChild())
@@ -48,24 +48,24 @@ namespace BrinksAPI.Helpers
             return elemlist[0].InnerXml;
         }
 
-        public static UniversalShipmentData ReadUniversalShipment(string xml)
+        public static UniversalShipmentData? ReadUniversalShipment(string xml)
         {
             XmlSerializer ser = new XmlSerializer(typeof(UniversalShipmentData));
             UniversalShipmentData? s = new UniversalShipmentData();
             using (TextReader reader = new StringReader(xml))
             {
-                s = (UniversalShipmentData)ser.Deserialize(reader);
+                s = (UniversalShipmentData?)ser.Deserialize(reader);
             }
             return s;
         }
 
-        public static Events.UniversalEventData ReadUniversalEvent(string xml)
+        public static Events.UniversalEventData? ReadUniversalEvent(string xml)
         {
             XmlSerializer ser = new XmlSerializer(typeof(Events.UniversalEventData));
             Events.UniversalEventData? s = new Events.UniversalEventData();
             using (TextReader reader = new StringReader(xml))
             {
-                s = (Events.UniversalEventData)ser.Deserialize(reader);
+                s = (Events.UniversalEventData?)ser.Deserialize(reader);
             }
             return s;
         }
@@ -102,5 +102,7 @@ namespace BrinksAPI.Helpers
             }
             return Tuple.Create(httpResponse.StatusCode,result);
         }
+
+
     }
 }

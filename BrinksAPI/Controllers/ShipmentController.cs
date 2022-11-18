@@ -818,7 +818,7 @@ namespace BrinksAPI.Controllers
         /// <summary>
         /// Creates Shipment History.
         /// </summary>
-        /// <param name="shipmentHistory"></param>
+        /// <param name="histories"></param>
         /// <returns>A newly created Shipment History</returns>
         /// <remarks>
         /// Sample request:
@@ -857,16 +857,16 @@ namespace BrinksAPI.Controllers
         [ProducesResponseType(401)]
         [ProducesResponseType(500)]
         [Route("api/shipment/history")]
-        public ActionResult<List<ShipemtHistoryResponse>> UpdateShipmentHistory([FromBody] ShipmentHistory[] histories)
+        public ActionResult<List<Response>> CreateShipmentHistory([FromBody] ShipmentHistory[] histories)
         {
-            List<ShipemtHistoryResponse> dataResponses = new List<ShipemtHistoryResponse>();
+            List<Response> dataResponses = new List<Response>();
 
             try
             {
-                
-                foreach (var history in histories)
+
+                foreach (ShipmentHistory history in histories)
                 {
-                    ShipemtHistoryResponse dataResponse = new ShipemtHistoryResponse();
+                    Response dataResponse = new Response();
                     dataResponse.RequestId = history?.RequestId;
                     try
                     {
@@ -876,212 +876,179 @@ namespace BrinksAPI.Controllers
 
                         if (isValid)
                         {
-                            int serverId = Int32.Parse(history.ServerId);
-                            Site? site = _context.sites.Where(s => s.ServerID == serverId).FirstOrDefault();
-                            if (site != null)
+                            string? shipmentId = GetShipmentNumberByHawb(history.HawbNumber);
+                            if (shipmentId != null)
                             {
-                                Events.UniversalEventData universalEvent = new Events.UniversalEventData();
+                                //string? responseMessage = "";
 
-                                string? actionType = "";
-                                string? eventType = "";
-                                string? companyCode = "";
-                                if (history.ActionType != null)
+                                int serverId = Int32.Parse(history.ServerId);
+                                Site? site = _context.sites.Where(s => s.ServerID == serverId).FirstOrDefault();
+                                string? companyCode = site?.CompanyCode;
+                                if (site != null)
                                 {
-                                    var actionTypeObj = _context.actionTypes.Where(a => a.BrinksCode == history.ActionType).FirstOrDefault();
-                                    actionType = actionTypeObj?.CWCode;
-                                    eventType = actionTypeObj == null ? "Z00" : actionTypeObj.EventType;
-                                    companyCode = site?.CompanyCode;
-                                }
-                                else
-                                {
-                                    actionType = "Picked up date";
-                                    eventType = "Z00";
-                                    companyCode = site?.CompanyCode;
-                                }
-                                if (history.SiteCode != null)
-                                {
-                                    int siteCode = Int32.Parse(history.SiteCode);
-                                    site = _context.sites.Where(s => s.SiteCode == siteCode).FirstOrDefault();
-                                    companyCode = site?.CompanyCode;
-                                }
-                                
-                                #region DataContext
-                                Events.Event @event = new Events.Event();
-                                Events.DataContext dataContext = new Events.DataContext();
+                                    ActionType? actionTypeObj = _context.actionTypes.Where(a => a.BrinksCode.ToLower() == history.ActionType.ToLower()).FirstOrDefault();
+                                    string? eventType = actionTypeObj is null ? "Z00" : actionTypeObj.EventType;
 
-                                List<Events.DataTarget> dataTargets = new List<Events.DataTarget>();
-                                Events.DataTarget dataTarget = new Events.DataTarget();
-                                dataTarget.Type = "ForwardingShipment";
-                                dataTargets.Add(dataTarget);
-                                dataContext.DataTargetCollection = dataTargets.ToArray();
-
-                                Events.Company company = new Events.Company();
-                                company.Code = companyCode;
-                                Events.Country country = new Events.Country();
-                                country.Code = site.Country;
-                                company.Country = country;
-                                dataContext.Company = company;
-
-                                dataContext.EnterpriseID = _configuration.EnterpriseId;
-                                dataContext.ServerID = _configuration.ServerId;
-                                Events.Staff staff = new Events.Staff();
-                                staff.Code = history.UserId;
-                                dataContext.EventUser = staff;
-                                @event.DataContext = dataContext;
-                                #endregion
-
-                                #region Event
-                                @event.EventTime = history.HistoryDate;
-                                @event.EventType = eventType;
-                                @event.EventReference = history.HistoryDetails;
-                                #endregion
-
-                                #region Contexts
-                                List<Events.Context> contexts = new List<Events.Context>();
-                                Events.Context context = new Events.Context();
-                                Events.ContextType type = new Events.ContextType();
-                                type.Value = "HAWBNumber";
-                                context.Type = type;
-                                context.Value = history.HawbNumber;
-                                contexts.Add(context);
-                                @event.ContextCollection = contexts.ToArray();
-                                #endregion
-
-                                universalEvent.Event = @event;
-
-                                string xml = Utilities.Serialize(universalEvent);
-                                var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
-
-                                if (documentResponse.Status == "SUCCESS")
-                                {
-                                    using (var reader = new StringReader(documentResponse.Data.Data.OuterXml))
+                                    if (history.SiteCode != null)// Extra 
                                     {
-                                        var serializer = new XmlSerializer(typeof(Events.UniversalEventData));
-                                        Events.UniversalEventData? responseEvent = (Events.UniversalEventData)serializer.Deserialize(reader);
+                                        int siteCode = Int32.Parse(history.SiteCode);
+                                        site = _context.sites.Where(s => s.SiteCode == siteCode).FirstOrDefault();
+                                        companyCode = site?.CompanyCode!= null?site?.CompanyCode:companyCode;
+                                    }
+                                    Events.UniversalEventData universalEvent = new Events.UniversalEventData();
 
-                                        bool isError = responseEvent.Event.ContextCollection.Any(c => c.Type.Value.Contains("FailureReason"));
-                                        if (isError)
+                                    #region DataContext
+                                    Events.Event @event = new Events.Event();
+                                    Events.DataContext dataContext = new Events.DataContext();
+
+                                    List<Events.DataTarget> dataTargets = new List<Events.DataTarget>();
+                                    Events.DataTarget dataTarget = new Events.DataTarget();
+                                    dataTarget.Type = "ForwardingShipment";
+                                    dataTargets.Add(dataTarget);
+                                    dataContext.DataTargetCollection = dataTargets.ToArray();
+
+                                    Events.Company company = new Events.Company();
+                                    company.Code = companyCode;
+                                    Events.Country country = new Events.Country();
+                                    country.Code = site.Country;
+                                    company.Country = country;
+                                    dataContext.Company = company;
+
+                                    dataContext.EnterpriseID = _configuration.EnterpriseId;
+                                    dataContext.ServerID = _configuration.ServerId;
+                                    Events.Staff staff = new Events.Staff();
+                                    staff.Code = history.UserId;
+                                    dataContext.EventUser = staff;
+                                    @event.DataContext = dataContext;
+                                    #endregion
+
+                                    #region Event
+                                    @event.EventTime = history.HistoryDate;
+                                    @event.EventType = eventType;
+                                    @event.EventReference = history.HistoryDetails;
+                                    #endregion
+
+                                    #region Contexts
+                                    List<Events.Context> contexts = new List<Events.Context>();
+                                    Events.Context context = new Events.Context();
+                                    Events.ContextType type = new Events.ContextType();
+                                    type.Value = "HAWBNumber";
+                                    context.Type = type;
+                                    context.Value = history.HawbNumber;
+                                    contexts.Add(context);
+                                    @event.ContextCollection = contexts.ToArray();
+                                    #endregion
+
+                                    universalEvent.Event = @event;
+
+                                    string xml = Utilities.Serialize(universalEvent);
+                                    var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+
+                                    if (documentResponse.Status == "SUCCESS")
+                                    {
+                                        using (var reader = new StringReader(documentResponse.Data.Data.OuterXml))
                                         {
-                                            string errorMessage = responseEvent.Event.ContextCollection
-                                                .Where(c => c.Type.Value == "FailureReason")
-                                                .FirstOrDefault().Value
-                                                .Replace("Error - ", "")
-                                                .Replace("Warning - ", "");
-                                            
-                                            if (errorMessage.Contains("No Module found a Business Entity to link this Universal Event to."))
-                                            {
-                                                dataResponse.Status = "NOTFOUND";
-                                                dataResponse.Message = String.Format("{0} Not Found.", history.HawbNumber);
-                                            }
+                                            var serializer = new XmlSerializer(typeof(Events.UniversalEventData));
+                                            Events.UniversalEventData? responseEvent = (Events.UniversalEventData?)serializer.Deserialize(reader);
 
-                                            else
+                                            bool isError = responseEvent.Event.ContextCollection.Any(c => c.Type.Value.Contains("FailureReason"));
+                                            if (isError)
                                             {
+                                                string errorMessage = responseEvent.Event.ContextCollection.Where(c => c.Type.Value == "FailureReason").FirstOrDefault().Value;
                                                 dataResponse.Status = "ERROR";
                                                 dataResponse.Message = errorMessage;
+
                                             }
-                                        }
-                                        else
-                                        {
-                                            string message = "Shipment history created.";
-                                            string shipmentId = responseEvent.Event.DataContext.DataSourceCollection.Where(d => d.Type == "ForwardingShipment").FirstOrDefault().Key;
-                                            if (history.TrackingNumber != null && shipmentId != null)
+                                            else
                                             {
-                                                UniversalShipmentData universalShipmentData = GetShipmentById(shipmentId);
+                                                string message = "Shipment history created.";
+
+                                                #region UPDATING THE PACKAGE LINE USING TRACKING NUMBER
+
+                                                UniversalShipmentData? universalShipmentData = GetShipmentById(shipmentId);
                                                 if (universalShipmentData is not null)
                                                 {
-                                                    if (universalShipmentData.Shipment.SubShipmentCollection is not null)
-                                                    {
-                                                        var packingLineObject = universalShipmentData.Shipment
-                                                                    .SubShipmentCollection
-                                                                    .Where(sub => sub.PackingLineCollection.PackingLine
-                                                                    .All(pkg => pkg.ReferenceNumber == history.TrackingNumber))
-                                                                    .FirstOrDefault();
-                                                        if (packingLineObject is null)
-                                                            message += "Tracking Number " + history.TrackingNumber + " can't find.";
-                                                        else
-                                                        {
-                                                            if (universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection is not null)
-                                                            {
-                                                                for (int i = 0; i < universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection.Length; i++)
-                                                                {
-                                                                    for (int j = 0; j < universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection[i].PackingLineCollection.PackingLine.Length; j++)
-                                                                    {
-                                                                        if (universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection[i].PackingLineCollection.PackingLine[j].ReferenceNumber == history.TrackingNumber)
-                                                                        {
-                                                                            for (int k = 0; k < universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection[i].PackingLineCollection.PackingLine[j].CustomizedFieldCollection.Length; k++)
-                                                                            {
-                                                                                if (universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection[i].PackingLineCollection.PackingLine[j].CustomizedFieldCollection[k].Key == actionType)
-                                                                                {
-                                                                                    universalShipmentData.Shipment.SubShipmentCollection[0].SubShipmentCollection[i].PackingLineCollection.PackingLine[j].CustomizedFieldCollection[k].Value = history.HistoryDate;
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
+                                                    Shipment? shipment = universalShipmentData?.Shipment;
 
-                                                    }
-                                                    else
+                                                    bool isConsol = shipment.DataContext.DataSourceCollection.Any(ds => ds.Type.Contains("ForwardingConsol"));
+                                                    if (isConsol)
                                                     {
-                                                        var packingLineObject = universalShipmentData.Shipment
-                                                        .PackingLineCollection.PackingLine
-                                                        .Where(p => p.ReferenceNumber == history.TrackingNumber)
-                                                        .FirstOrDefault();
-                                                        if (packingLineObject is null)
-                                                            message += "Tracking Number " + history.TrackingNumber + " can't find.";
-                                                        else
+                                                        shipment = shipment.SubShipmentCollection.Where(s => s.DataContext.DataSourceCollection.Any(k => k.Key == shipmentId)).FirstOrDefault();
+                                                    }
+
+                                                    if (actionTypeObj is not null)
+                                                    {
+                                                        PackingLine? packingLineObject = shipment.PackingLineCollection.PackingLine.Where(p => p.ReferenceNumber == history.TrackingNumber).FirstOrDefault();
+                                                        if (packingLineObject is not null)
                                                         {
+                                                            // Adding new customized field to packing line
                                                             if (packingLineObject.CustomizedFieldCollection is null)
                                                             {
-                                                                
+
                                                                 List<CustomizedField> customizedFields = new List<CustomizedField>();
                                                                 CustomizedField customizedField = new CustomizedField();
                                                                 customizedField.DataType = CustomizedFieldDataType.String;
-                                                                customizedField.Key = actionType;
+                                                                customizedField.Key = actionTypeObj.CWCode;
                                                                 customizedField.Value = history.HistoryDate.ToString();
                                                                 customizedFields.Add(customizedField);
                                                                 packingLineObject.CustomizedFieldCollection = customizedFields.ToArray();
                                                             }
+                                                            // Updating existing packing line
                                                             else
                                                             {
                                                                 packingLineObject
                                                                     .CustomizedFieldCollection
-                                                                    .Where(c => c.Key == actionType)
+                                                                    .Where(c => c.Key == actionTypeObj.CWCode)
                                                                     .FirstOrDefault()
                                                                     .Value = history.HistoryDate;
                                                             }
                                                         }
-
+                                                        else
+                                                        {
+                                                            message += "Tracking Number " + history.TrackingNumber + " can't find.";
+                                                        }
+                                                        string universalShipmentDataXml = Utilities.Serialize(universalShipmentData);
+                                                        universalShipmentDataXml = universalShipmentDataXml.Replace("DataSource", "DataTarget");
+                                                        var universalShipmentDataResponse = eAdaptor.Services.SendToCargowise(universalShipmentDataXml, _configuration.URI, _configuration.Username, _configuration.Password);
+                                                        if (universalShipmentDataResponse.Status == "SUCCESS")
+                                                        {
+                                                            message += "Successfully updated the packing item.";
+                                                        }
+                                                        else
+                                                        {
+                                                            message += "Unable to update the packing line with the traking number " + history.TrackingNumber;
+                                                        }
                                                     }
 
-                                                    string universalShipmentDataXml = Utilities.Serialize(universalShipmentData);
-                                                    universalShipmentDataXml = universalShipmentDataXml.Replace("DataSource", "DataTarget");
-                                                    var universalShipmentDataResponse = eAdaptor.Services.SendToCargowise(universalShipmentDataXml, _configuration.URI, _configuration.Username, _configuration.Password);
-                                                    if (universalShipmentDataResponse.Status != "SUCCESS")
-                                                        message += "Unable to update the packing line with the traking number " + history.TrackingNumber;
                                                 }
-                                                //else
-                                                //    message = "No matching tracking number("+ history.trackingNumber + ") found.";
 
+                                                #endregion
+
+                                                dataResponse.Status = "SUCCESS";
+                                                dataResponse.Message = message;
                                             }
-                                            dataResponse.Status = "SUCCESS";
-                                            dataResponse.Message = message;
                                         }
+                                    }
+                                    else
+                                    {
+                                        dataResponse.Status = documentResponse.Status;
+                                        dataResponse.Message = documentResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
+
                                     }
                                 }
                                 else
                                 {
-                                    dataResponse.Status = documentResponse.Status;
-                                    dataResponse.Message = documentResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
-
+                                    dataResponse.Status = "ERROR";
+                                    dataResponse.Message = "Server ID " + history.ServerId + " is not found in mapping DB.";
                                 }
+
                             }
                             else
                             {
-                                dataResponse.Status = "ERROR";
-                                dataResponse.Message = "Server ID " + history.ServerId + " is not found in mapping DB.";
+                                dataResponse.Status = "NOTFOUND";
+                                dataResponse.Message = String.Format("{0} Not Found.", history.HawbNumber);
                             }
+                            
                         }
                         else
                         {
@@ -1095,7 +1062,7 @@ namespace BrinksAPI.Controllers
                         }
                         dataResponses.Add(dataResponse);
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         dataResponse.Status = "ERROR";
                         dataResponse.Message = ex.Message;
@@ -1107,7 +1074,7 @@ namespace BrinksAPI.Controllers
             }
             catch (Exception ex)
             {
-                ShipemtHistoryResponse dataResponse = new ShipemtHistoryResponse();
+                Response dataResponse = new Response();
                 dataResponse.Status = "ERROR";
                 dataResponse.Message = ex.Message;
                 dataResponses.Add(dataResponse);

@@ -97,9 +97,9 @@ namespace BrinksAPI.Controllers
         [ProducesResponseType(401)]
         [ProducesResponseType(500)]
         [Route("api/organization")]
-        public ActionResult<OrganizationResponse> UpsertOrganization([FromBody] Organization organization)
+        public ActionResult<Response> UpsertOrganization([FromBody] Organization organization)
         {
-            OrganizationResponse dataResponse = new OrganizationResponse();
+            Response dataResponse = new Response();
             string successMessage = "";
             try
             {
