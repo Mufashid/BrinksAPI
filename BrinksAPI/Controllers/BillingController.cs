@@ -183,7 +183,14 @@ namespace BrinksAPI.Controllers
                                             if (isError)
                                             {
                                                 string errorMessage = responseEvent.Event.ContextCollection.Where(c => c.Type.Value == "FailureReason").FirstOrDefault().Value.Replace("Error - ", "").Replace("Warning - ", "");
-                                                dataResponse.Status = "ERROR";
+                                                if (errorMessage.Contains("hasn't saved it yet"))
+                                                {
+                                                    dataResponse.Status = "RETRY";
+                                                }
+                                                else
+                                                {
+                                                    dataResponse.Status = "ERROR";
+                                                }
                                                 dataResponse.Message = errorMessage;
                                             }
                                             else
@@ -254,7 +261,7 @@ namespace BrinksAPI.Controllers
         /// <remarks>
         /// Sample request:
         ///
-        ///     POST /api/invoice/revenue
+        ///     POST /api/invoice/payable
         ///     {
         ///       "invoice_number": "456795",
         ///       "invoice_gcc": "HERMESLTD",
