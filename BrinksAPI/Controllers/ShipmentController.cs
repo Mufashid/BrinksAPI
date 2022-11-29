@@ -106,6 +106,7 @@ namespace BrinksAPI.Controllers
 
                 dataContext.EnterpriseID = _configuration.EnterpriseId;
                 dataContext.ServerID = _configuration.ServerId;
+                dataContext.DataProvider = "ShipmentAPI";
 
                 cwShipment.DataContext = dataContext;
                 #endregion
