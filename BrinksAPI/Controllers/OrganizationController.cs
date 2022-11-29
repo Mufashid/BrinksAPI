@@ -104,15 +104,17 @@ namespace BrinksAPI.Controllers
             try
             {
                 dataResponse.RequestId = organization?.requestId;
+
+                #region MODEL VALIDATION
                 if (!ModelState.IsValid)
                 {
                     string errorString = "";
                     var errors = ModelState.Select(x => x.Value.Errors)
                          .Where(y => y.Count > 0)
                          .ToList();
-                    foreach(var error in errors)
+                    foreach (var error in errors)
                     {
-                        foreach(var subError in error)
+                        foreach (var subError in error)
                         {
                             errorString += String.Format("{0}", subError.ErrorMessage);
                         }
@@ -121,7 +123,8 @@ namespace BrinksAPI.Controllers
                     dataResponse.Message = errorString;
 
                     return Ok(dataResponse);
-                }
+                } 
+                #endregion
 
                 if (organization.billingAttention != null && organization.accountOwner !=null && organization.billingAttention == organization.accountOwner)
                 {
@@ -129,13 +132,8 @@ namespace BrinksAPI.Controllers
                     dataResponse.Message = "Billing Attention and Account Owner field are same. Please check";
                     return Ok(dataResponse);
                 }
-                if (organization.globalCustomerCode == null)
-                {
-                    dataResponse.Status = "ERROR";
-                    dataResponse.Message = String.Format("{0} Global customer code cannot be empty", organization.globalCustomerCode);
-                    return Ok(dataResponse);
-                }
                 NativeOrganization.Native native = new NativeOrganization.Native();
+
                 #region HEADER
                 NativeHeader header = new NativeHeader();
                 NativeOrganization.DataContext dataContext = new NativeOrganization.DataContext();

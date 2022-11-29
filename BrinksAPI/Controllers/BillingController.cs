@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using NativeOrganization;
 using NativeRequest;
 using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 using System.Xml.Serialization;
 
 namespace BrinksAPI.Controllers
@@ -80,8 +81,6 @@ namespace BrinksAPI.Controllers
                             if (shipmentId != null && shipmentId != "")
                             {
                                 UniversalShipmentData shipmentData = GetShipmentById(shipmentId);
-
-                                string xml2 = Utilities.Serialize(shipmentData);
                                 if (shipmentData.Shipment != null)
                                 {
                                     Shipment shipment = new Shipment();
@@ -182,7 +181,7 @@ namespace BrinksAPI.Controllers
                                             bool isError = responseEvent.Event.ContextCollection.Any(c => c.Type.Value.Contains("FailureReason"));
                                             if (isError)
                                             {
-                                                string errorMessage = responseEvent.Event.ContextCollection.Where(c => c.Type.Value == "FailureReason").FirstOrDefault().Value.Replace("Error - ", "").Replace("Warning - ", "");
+                                                string errorMessage = responseEvent.Event.ContextCollection.Where(c => c.Type.Value == "FailureReason").FirstOrDefault().Value;          
                                                 if (errorMessage.Contains("hasn't saved it yet"))
                                                 {
                                                     dataResponse.Status = "RETRY";
@@ -191,7 +190,9 @@ namespace BrinksAPI.Controllers
                                                 {
                                                     dataResponse.Status = "ERROR";
                                                 }
-                                                dataResponse.Message = errorMessage;
+                                                MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
+                                                string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
+                                                dataResponse.Message = string.Join(",", groupedErrors);
                                             }
                                             else
                                             {
@@ -202,9 +203,12 @@ namespace BrinksAPI.Controllers
                                     }
                                     else
                                     {
-                                        string errorMessage = billingResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
                                         dataResponse.Status = "ERROR";
-                                        dataResponse.Message = errorMessage;
+
+                                        string errorMessage = billingResponse.Data.Data.FirstChild.InnerText;
+                                        MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
+                                        string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y=>y.Key).ToArray();
+                                        dataResponse.Message = string.Join(",", groupedErrors);
                                     }
 
                                 }
