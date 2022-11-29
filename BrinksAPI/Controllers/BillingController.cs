@@ -115,6 +115,7 @@ namespace BrinksAPI.Controllers
 
                                     dataContext.EnterpriseID = shipmentData.Shipment.DataContext.EnterpriseID;
                                     dataContext.ServerID = shipmentData.Shipment.DataContext.ServerID;
+                                    dataContext.DataProvider = "RevenueAPI";
                                     //dataContext.Company = shipmentData.Shipment.DataContext.Company; // Sending default to CHN
                                     if (revenue.site_id != null)
                                     {
@@ -499,7 +500,9 @@ namespace BrinksAPI.Controllers
                         {
                             string errorMessage = responseEvent.Event.ContextCollection.Where(c => c.Type.Value == "FailureReason").FirstOrDefault().Value.Replace("Error - ", "").Replace("Warning - ", "");
                             dataResponse.Status = "ERROR";
-                            dataResponse.Message = errorMessage;
+                            MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
+                            string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
+                            dataResponse.Message = string.Join(",", groupedErrors);
                         }
                         else
                         {
@@ -510,9 +513,11 @@ namespace BrinksAPI.Controllers
                 }
                 else
                 {
-                    string errorMessage = invoiceResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
+                    string errorMessage = invoiceResponse.Data.Data.FirstChild.InnerText;
                     dataResponse.Status = "ERROR";
-                    dataResponse.Message = errorMessage;
+                    MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
+                    string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
+                    dataResponse.Message = string.Join(",", groupedErrors);
                 }
 
             }

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Serialization;
 
@@ -141,7 +142,11 @@ namespace BrinksAPI.Controllers
                                         else
                                         {
                                             dataResponse.Status = "ERROR";
-                                            dataResponse.Message = errorMessage;
+                                            MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
+                                            string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
+                                            dataResponse.Message = string.Join(",", groupedErrors);
+
+
                                         }
                                     }
                                     else
@@ -155,11 +160,16 @@ namespace BrinksAPI.Controllers
                             {
                                 dataResponse.Status = "ERROR";
                                 string notValidEventCodeMsg = "Cannot import XML Event unless it has a valid code.";
-                                string responseErrorMsg = documentResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
+                                string responseErrorMsg = documentResponse.Data.Data.FirstChild.InnerText;
                                 if (responseErrorMsg.Contains(notValidEventCodeMsg))
                                     dataResponse.Message = mawb.historyCode + " Is not a valid history code.";
                                 else
-                                    dataResponse.Message = responseErrorMsg;
+                                {
+                                    MatchCollection matchedError = Regex.Matches(responseErrorMsg, "(Error)(.*)");
+                                    string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
+                                    dataResponse.Message = string.Join(",", groupedErrors);
+         
+                                }
                             }
 
                         }

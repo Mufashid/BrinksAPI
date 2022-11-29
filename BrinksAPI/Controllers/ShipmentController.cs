@@ -11,6 +11,7 @@ using NativeRequest;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Serialization;
@@ -20,7 +21,6 @@ using WinSCP;
 namespace BrinksAPI.Controllers
 {
     [Authorize]
-    //[ApiController]
     public class ShipmentController : Controller
     {
         private readonly ILogger<ShipmentController> _logger;
@@ -517,11 +517,14 @@ namespace BrinksAPI.Controllers
                 var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
                 if (documentResponse.Status == "ERROR")
                 {
-                    string errorMessage = documentResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
+                    string errorMessage = documentResponse.Data.Data.FirstChild.InnerText;
                     dataResponse.Status = documentResponse.Status;
-                    dataResponse.Message = errorMessage;
 
-                    _logger.LogError("Error: {@Error} Request: {@Request}", errorMessage, shipment);
+                    MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
+                    string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
+                    dataResponse.Message = string.Join(",", groupedErrors);
+
+                    _logger.LogError("Error: {@Error} Request: {@Request}", string.Join(",", groupedErrors), shipment);
                     return Ok(dataResponse);
                 }
                 else
@@ -609,6 +612,7 @@ namespace BrinksAPI.Controllers
 
                         tbDataContext.EnterpriseID = _configuration.EnterpriseId;
                         tbDataContext.ServerID = _configuration.ServerId;
+                        tbDataContext.DataProvider = "TBAAPI";
                         #endregion
 
                         tbShipment.DataContext = tbDataContext;
@@ -934,6 +938,7 @@ namespace BrinksAPI.Controllers
                                     Events.Staff staff = new Events.Staff();
                                     staff.Code = history.UserId;
                                     dataContext.EventUser = staff;
+                                    dataContext.DataProvider = "ShipmentHistoryAPI";
                                     @event.DataContext = dataContext;
                                     #endregion
 
@@ -971,7 +976,10 @@ namespace BrinksAPI.Controllers
                                             {
                                                 string errorMessage = responseEvent.Event.ContextCollection.Where(c => c.Type.Value == "FailureReason").FirstOrDefault().Value;
                                                 dataResponse.Status = "ERROR";
-                                                dataResponse.Message = errorMessage;
+                                                MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
+                                                string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
+                                                dataResponse.Message = string.Join(",", groupedErrors);
+                                    
 
                                             }
                                             else
@@ -1046,8 +1054,11 @@ namespace BrinksAPI.Controllers
                                     }
                                     else
                                     {
+                                        string errorMessage = documentResponse.Data.Data.FirstChild.InnerText;
                                         dataResponse.Status = documentResponse.Status;
-                                        dataResponse.Message = documentResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
+                                        MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
+                                        string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
+                                        dataResponse.Message = string.Join(",", groupedErrors);
 
                                     }
                                 }

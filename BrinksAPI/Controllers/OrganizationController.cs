@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using NativeOrganization;
 using NativeRequest;
 using System.Globalization;
+using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Serialization;
 
@@ -1318,8 +1319,11 @@ namespace BrinksAPI.Controllers
                 var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
                 if (documentResponse.Status == "ERROR")
                 {
+                    string errorMessage = documentResponse.Data.Data.FirstChild.InnerText;
                     dataResponse.Status = documentResponse.Status;
-                    dataResponse.Message = documentResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
+                    MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
+                    string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
+                    dataResponse.Message = string.Join(",", groupedErrors);
                     return Ok(dataResponse);
                 }
 

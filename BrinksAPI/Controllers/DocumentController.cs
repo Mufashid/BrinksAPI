@@ -9,6 +9,7 @@ using BrinksAPI.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using NativeRequest;
 using NativeOrganization;
+using System.Text.RegularExpressions;
 
 namespace BrinksAPI.Controllers
 {
@@ -148,10 +149,13 @@ namespace BrinksAPI.Controllers
                 }
                 else
                 {
-                    string errorMessage = documentResponse.Data.Data.FirstChild.InnerText.Replace("Error - ", "").Replace("Warning - ", "");
-                    _logger.LogError(errorMessage);
                     dataResponse.Status = "ERROR";
-                    dataResponse.Message = errorMessage;
+                    string errorMessage = documentResponse.Data.Data.FirstChild.InnerText;
+                    MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
+                    string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
+                    dataResponse.Message = string.Join(",", groupedErrors);
+                    _logger.LogError(string.Join(",", groupedErrors));
+
                     return Ok(dataResponse);
                 } 
                 #endregion
