@@ -111,13 +111,16 @@ namespace BrinksAPI.Controllers
                 #endregion
 
                 #region PORT
-                var loadingPort = _context.sites.Where(s => s.SiteCode.ToString() == shipment.pickupSiteCode).FirstOrDefault();
+
+                var loadingPort = _context.sites.Where(s => s.Airport == shipment.pickupAirportCode).FirstOrDefault();
+                loadingPort = loadingPort == null ? _context.sites.Where(s => s.SiteCode.ToString() == shipment.pickupSiteCode).FirstOrDefault() : loadingPort;
                 UNLOCO portOfLoading = new UNLOCO();
                 portOfLoading.Code = loadingPort?.Country + loadingPort?.Airport;
                 cwShipment.PortOfOrigin = portOfLoading;
                 cwShipment.PortOfLoading = portOfLoading;
 
-                var dischargePort = _context.sites.Where(s => s.SiteCode.ToString() == shipment.deliverySiteCode).FirstOrDefault();
+                var dischargePort = _context.sites.Where(s => s.Airport == shipment.deliveryAirportCode).FirstOrDefault();
+                dischargePort = dischargePort == null ? _context.sites.Where(s => s.SiteCode.ToString() == shipment.deliverySiteCode).FirstOrDefault() : dischargePort;
                 UNLOCO portOfDischarge = new UNLOCO();
                 portOfDischarge.Code = dischargePort?.Country + dischargePort?.Airport;
                 cwShipment.PortOfDestination = portOfDischarge;

@@ -81,6 +81,7 @@ namespace BrinksAPI.Controllers
                             if (shipmentId != null && shipmentId != "")
                             {
                                 UniversalShipmentData shipmentData = GetShipmentById(shipmentId);
+                                string del = Utilities.Serialize(shipmentData);
                                 if (shipmentData.Shipment != null)
                                 {
                                     Shipment shipment = new Shipment();
