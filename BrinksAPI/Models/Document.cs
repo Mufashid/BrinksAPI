@@ -24,7 +24,7 @@ namespace BrinksAPI.Models
         public byte[]? DocumentContent { get; set; }
 
         [Required]
-        public DocumentFormatType? DocumentFormat { get; set; }
+        public string? DocumentFormat { get; set; }
         [Required]
         [StringLength(255)]
         public string? DocumentDescription { get; set; }
