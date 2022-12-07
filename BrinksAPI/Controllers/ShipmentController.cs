@@ -166,35 +166,29 @@ namespace BrinksAPI.Controllers
                 OrganizationData? shipperOrganizationData = SearchOrgWithRegNo(shipment.shipperGlobalCustomerCode);
                 OrganizationAddress shipperAddress = new OrganizationAddress();
                 shipperAddress.AddressType = "ConsignorDocumentaryAddress";
-                if (shipperOrganizationData.OrgHeader == null)
+                if (shipperOrganizationData?.OrgHeader == null)
                 {
-                    // Create Org
-                    shipperAddress.AddressOverrideSpecified = true;
-                    shipperAddress.AddressOverride = true;
-                    
-                    shipperAddress.CompanyName = shipment.shipperName;
-                    shipperAddress.Address1 = shipment.shipperAddress1;
-                    shipperAddress.Address2 = shipment.shipperAddress2;
-                    shipperAddress.AdditionalAddressInformation = shipment.shipperAddress3 + shipment.shipperAddress4;
-                    shipperAddress.City = shipment.shipperCity;
-                    OrganizationAddressState shipperState = new OrganizationAddressState();
-                    shipperState.Value = shipment.shipperProvinceCode;
-                    shipperAddress.State = shipperState;
-                    Country shipperCountry = new Country();
-                    shipperCountry.Code = shipment.shipperCountryCode;
-                    shipperAddress.Country = shipperCountry;
-                    shipperAddress.Postcode = shipment.shipperPostalCode;
-                    shipperAddress.Contact = shipment.shipperContactName;
-                    shipperAddress.Phone = shipment.shipperPhoneNumber;
-                    shipperAddress.Mobile = shipment.shipperMobileNumber;
-                    List<RegistrationNumber> shipperRegistrationNumbers = new List<RegistrationNumber>();
-                    RegistrationNumber shipperRegistrationNumber = new RegistrationNumber();
-                    RegistrationNumberType shipperRegistrationNumberType = new RegistrationNumberType();
-                    shipperRegistrationNumberType.Code = "LSC";
-                    shipperRegistrationNumber.Type = shipperRegistrationNumberType;
-                    shipperRegistrationNumber.Value = shipment.shipperGlobalCustomerCode;
-                    shipperRegistrationNumbers.Add(shipperRegistrationNumber);
-                    shipperAddress.RegistrationNumberCollection = shipperRegistrationNumbers.ToArray();
+                    // Create organization if not exist
+                    Organization organization = new Organization()
+                    {
+                        isConsignor = true,
+                        isConsignee = true,
+                        CompanyName = shipment.shipperName,
+                        Address1 = shipment.shipperAddress1,
+                        Address2 = shipment.shipperAddress2,
+                        Address3 = shipment.shipperAddress3,
+                        Address4 = shipment.shipperAddress4,
+                        City = shipment.shipperCity,
+                        ProviceCode = shipment.shipperProvinceCode,
+                        Postcode = shipment.shipperPostalCode,
+                        Phone = shipment.shipperPhoneNumber,
+                        Mobile = shipment.shipperMobileNumber,
+                        Contact = shipment.shipperContactName,
+                        Country = shipment.shipperCountryCode,
+                        Unloco = loadingPort?.Country + loadingPort?.Airport,
+                        RegistrationNumber = shipment.shipperGlobalCustomerCode,
+                    };
+                    shipperAddress.OrganizationCode = CreateOrganization(organization);
 
                 }
                 else
@@ -210,31 +204,27 @@ namespace BrinksAPI.Controllers
                 consigneeAddress.AddressType = "ConsigneeDocumentaryAddress";
                 if (consigneeOrganizationData.OrgHeader == null)
                 {
-                    consigneeAddress.AddressOverrideSpecified = true;
-                    consigneeAddress.AddressOverride = true;
-                    consigneeAddress.CompanyName = shipment.consigneeName;
-                    consigneeAddress.Address1 = shipment.consigneeAddress1;
-                    consigneeAddress.Address2 = shipment.consigneeAddress2;
-                    consigneeAddress.AdditionalAddressInformation = shipment.consigneeAddress3 + shipment.consigneeAddress4;
-                    consigneeAddress.City = shipment.consigneeCity;
-                    OrganizationAddressState consigneeState = new OrganizationAddressState();
-                    consigneeState.Value = shipment.consigneeProvinceCode;
-                    consigneeAddress.State = consigneeState;
-                    Country consigneeCountry = new Country();
-                    consigneeCountry.Code = shipment.consigneeCountryCode;
-                    consigneeAddress.Country = consigneeCountry;
-                    consigneeAddress.Postcode = shipment.consigneePostalCode;
-                    consigneeAddress.Contact = shipment.consigneeContactName;
-                    consigneeAddress.Phone = shipment.consigneePhoneNumber;
-                    consigneeAddress.Mobile = shipment.consigneeMobileNumber;
-                    List<RegistrationNumber> consigneeRegistrationNumbers = new List<RegistrationNumber>();
-                    RegistrationNumber consigneeRegistrationNumber = new RegistrationNumber();
-                    RegistrationNumberType consigneeRegistrationNumberType = new RegistrationNumberType();
-                    consigneeRegistrationNumberType.Code = "LSC";
-                    consigneeRegistrationNumber.Type = consigneeRegistrationNumberType;
-                    consigneeRegistrationNumber.Value = shipment.consigneeGlobalCustomerCode;
-                    consigneeRegistrationNumbers.Add(consigneeRegistrationNumber);
-                    consigneeAddress.RegistrationNumberCollection = consigneeRegistrationNumbers.ToArray();
+                    // Create organization if not exist
+                    Organization organization = new Organization()
+                    {
+                        isConsignor = true,
+                        isConsignee = true,
+                        CompanyName = shipment.consigneeName,
+                        Address1 = shipment.consigneeAddress1,
+                        Address2 = shipment.consigneeAddress2,
+                        Address3 = shipment.consigneeAddress3,
+                        Address4 = shipment.consigneeAddress4,
+                        City = shipment.consigneeCity,
+                        ProviceCode = shipment.consigneeProvinceCode,
+                        Postcode = shipment.consigneePostalCode,
+                        Phone = shipment.consigneePhoneNumber,
+                        Mobile = shipment.consigneeMobileNumber,
+                        Contact = shipment.consigneeContactName,
+                        Country = shipment.consigneeCountryCode,
+                        Unloco = dischargePort?.Country + dischargePort?.Airport,
+                        RegistrationNumber = shipment.consigneeGlobalCustomerCode,
+                    };
+                    consigneeAddress.OrganizationCode = CreateOrganization(organization);
 
                 }
                 else
@@ -242,6 +232,135 @@ namespace BrinksAPI.Controllers
                     consigneeAddress.OrganizationCode = consigneeOrganizationData.OrgHeader.Code;
                 }
                 organizationAddresses.Add(consigneeAddress);
+                #endregion
+
+                #region PICKUP ADDRESS
+                OrganizationData? pickupOrganizationData = SearchOrgWithRegNo(firstShipmentItem.puGlobalCustomerCode);
+                OrganizationAddress puAddress = new OrganizationAddress();
+                puAddress.AddressType = "ConsignorPickupDeliveryAddress";
+                if (shipperOrganizationData.OrgHeader == null)
+                {
+                    // Create Org
+                    //puAddress.AddressOverrideSpecified = true;
+                    //puAddress.AddressOverride = true;
+
+                    //puAddress.CompanyName = firstShipmentItem.puName;
+                    //puAddress.Address1 = firstShipmentItem.puAddress1;
+                    //puAddress.Address2 = firstShipmentItem.puAddress2;
+                    //puAddress.AdditionalAddressInformation = firstShipmentItem.puAddress3 + firstShipmentItem.puAddress4;
+                    //puAddress.City = firstShipmentItem.puCity;
+                    //OrganizationAddressState pickupState = new OrganizationAddressState();
+                    //pickupState.Value = firstShipmentItem.puProvinceCode;
+                    //puAddress.State = pickupState;
+                    //Country pickupCountry = new Country();
+                    //pickupCountry.Code = firstShipmentItem.puCountryCode;
+                    //puAddress.Country = pickupCountry;
+                    //puAddress.Postcode = firstShipmentItem.puPostalCode;
+                    //puAddress.Contact = firstShipmentItem.puContactName;
+                    //puAddress.Phone = firstShipmentItem.puPhoneNumber;
+                    //puAddress.Mobile = firstShipmentItem.puMobileNumber;
+                    //List<RegistrationNumber> pickupRegistrationNumbers = new List<RegistrationNumber>();
+                    //RegistrationNumber pickupRegistrationNumber = new RegistrationNumber();
+                    //RegistrationNumberType pickupRegistrationNumberType = new RegistrationNumberType();
+                    //pickupRegistrationNumberType.Code = "LSC";
+                    //pickupRegistrationNumber.Type = pickupRegistrationNumberType;
+                    //pickupRegistrationNumber.Value = firstShipmentItem.puGlobalCustomerCode;
+                    //pickupRegistrationNumbers.Add(pickupRegistrationNumber);
+                    //puAddress.RegistrationNumberCollection = pickupRegistrationNumbers.ToArray();
+
+                    // Create organization if not exist
+                    var site = _context.sites.Where(s=>s.Country.ToLower() == firstShipmentItem.puCountryCode.ToLower()).FirstOrDefault();
+                    Organization organization = new Organization()
+                    {
+                        isConsignor = true,
+                        isConsignee = true,
+                        CompanyName = firstShipmentItem.puName,
+                        Address1 = firstShipmentItem.puAddress1,
+                        Address2 = firstShipmentItem.puAddress2,
+                        Address3 = firstShipmentItem.puAddress3,
+                        Address4 = firstShipmentItem.puAddress4,
+                        City = firstShipmentItem.puCity,
+                        ProviceCode = firstShipmentItem.puProvinceCode,
+                        Postcode = firstShipmentItem.puPostalCode,
+                        Phone = firstShipmentItem.puPhoneNumber,
+                        Mobile = firstShipmentItem.puMobileNumber,
+                        Contact = firstShipmentItem.puContactName,
+                        Country = firstShipmentItem.puCountryCode,
+                        Unloco = site?.Country + site?.Airport,
+                        RegistrationNumber = firstShipmentItem.puGlobalCustomerCode,
+                    };
+                    puAddress.OrganizationCode = CreateOrganization(organization);
+
+                }
+                else
+                {
+                    puAddress.OrganizationCode = shipperOrganizationData.OrgHeader.Code;
+                }
+                organizationAddresses.Add(puAddress);
+                #endregion
+
+                #region DELIVERY ADDRESS
+                OrganizationData? dlvOrganizationData = SearchOrgWithRegNo(firstShipmentItem.dlvGlobalCustomerCode);
+                OrganizationAddress dlvAddress = new OrganizationAddress();
+                dlvAddress.AddressType = "ConsigneePickupDeliveryAddress";
+                if (shipperOrganizationData.OrgHeader == null)
+                {
+                    // Create Org
+                    //dlvAddress.AddressOverrideSpecified = true;
+                    //dlvAddress.AddressOverride = true;
+
+                    //dlvAddress.CompanyName = firstShipmentItem.dlvName;
+                    //dlvAddress.Address1 = firstShipmentItem.dlvAddress1;
+                    //dlvAddress.Address2 = firstShipmentItem.dlvAddress2;
+                    //dlvAddress.AdditionalAddressInformation = firstShipmentItem.dlvAddress3 + firstShipmentItem.dlvAddress4;
+                    //dlvAddress.City = firstShipmentItem.dlvCity;
+                    //OrganizationAddressState dlvState = new OrganizationAddressState();
+                    //dlvState.Value = firstShipmentItem.dlvProvinceCode;
+                    //dlvAddress.State = dlvState;
+                    //Country dlvCountry = new Country();
+                    //dlvCountry.Code = firstShipmentItem.dlvCountryCode;
+                    //dlvAddress.Country = dlvCountry;
+                    //dlvAddress.Postcode = firstShipmentItem.dlvPostalCode;
+                    //dlvAddress.Contact = firstShipmentItem.dlvContactName;
+                    //dlvAddress.Phone = firstShipmentItem.dlvPhoneNumber;
+                    //dlvAddress.Mobile = firstShipmentItem.dlvMobileNumber;
+                    //List<RegistrationNumber> dlvRegistrationNumbers = new List<RegistrationNumber>();
+                    //RegistrationNumber dlvRegistrationNumber = new RegistrationNumber();
+                    //RegistrationNumberType dlvRegistrationNumberType = new RegistrationNumberType();
+                    //dlvRegistrationNumberType.Code = "LSC";
+                    //dlvRegistrationNumber.Type = dlvRegistrationNumberType;
+                    //dlvRegistrationNumber.Value = firstShipmentItem.dlvGlobalCustomerCode;
+                    //dlvRegistrationNumbers.Add(dlvRegistrationNumber);
+                    //dlvAddress.RegistrationNumberCollection = dlvRegistrationNumbers.ToArray();
+
+                    var site = _context.sites.Where(s => s.Country.ToLower() == firstShipmentItem.dlvCountryCode.ToLower()).FirstOrDefault();
+                    Organization organization = new Organization()
+                    {
+                        isConsignor = true,
+                        isConsignee = true,
+                        CompanyName = firstShipmentItem.dlvName,
+                        Address1 = firstShipmentItem.dlvAddress1,
+                        Address2 = firstShipmentItem.dlvAddress2,
+                        Address3 = firstShipmentItem.dlvAddress3,
+                        Address4 = firstShipmentItem.dlvAddress4,
+                        City = firstShipmentItem.dlvCity,
+                        ProviceCode = firstShipmentItem.dlvProvinceCode,
+                        Postcode = firstShipmentItem.dlvPostalCode,
+                        Phone = firstShipmentItem.dlvPhoneNumber,
+                        Mobile = firstShipmentItem.dlvMobileNumber,
+                        Contact = firstShipmentItem.dlvContactName,
+                        Country = firstShipmentItem.dlvCountryCode,
+                        Unloco = site?.Country + site?.Airport,
+                        RegistrationNumber = firstShipmentItem.dlvGlobalCustomerCode,
+                    };
+                    dlvAddress.OrganizationCode = CreateOrganization(organization);
+
+                }
+                else
+                {
+                    dlvAddress.OrganizationCode = shipperOrganizationData.OrgHeader.Code;
+                }
+                organizationAddresses.Add(dlvAddress);
                 #endregion
 
                 cwShipment.OrganizationAddressCollection = organizationAddresses.ToArray();
@@ -1288,130 +1407,138 @@ namespace BrinksAPI.Controllers
                 }
             }
             return organizationData;
-        } 
+        }
         #endregion
 
+        #region CREATE ORGANIZATION
         public string CreateOrganization(Organization organization)
         {
-            string orgCode = "";
+            string? organizationCode = "";
 
             NativeOrganization.Native native = new NativeOrganization.Native();
-            
-            NativeOrganization.NativeBody body = new NativeOrganization.NativeBody();
-            OrganizationData organizationData = new OrganizationData();
-            NativeOrganization.NativeOrganization nativeOrganization = new NativeOrganization.NativeOrganization();
-            nativeOrganization.FullName = organization.Name;
-            nativeOrganization.Language = "EN";
-            nativeOrganization.IsConsignorSpecified = organization.isConsignor;
-            nativeOrganization.IsConsignor = organization.isConsignor;
-            nativeOrganization.IsConsigneeSpecified = organization.isConsignee;
-            nativeOrganization.IsConsignee = organization.isConsignee;
 
-            #region RESGISTRATION
-            List<NativeOrganizationOrgCusCode> registrationCusCodes = new List<NativeOrganizationOrgCusCode>();
-            NativeOrganizationOrgCusCodeCodeCountry cusCodeCountry = new NativeOrganizationOrgCusCodeCodeCountry();
-            cusCodeCountry.Code = organization.CountryCode;
-
-            NativeOrganizationOrgCusCode globalCustomerRegistrationCusCode = new NativeOrganizationOrgCusCode();
-            //globalCustomerRegistrationCusCode.ActionSpecified = true;
-            //globalCustomerRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
-            globalCustomerRegistrationCusCode.CustomsRegNo = organization.Code;
-            globalCustomerRegistrationCusCode.CodeType = "LSC";
-            globalCustomerRegistrationCusCode.CodeCountry = cusCodeCountry;
-            registrationCusCodes.Add(globalCustomerRegistrationCusCode);
-
-            nativeOrganization.OrgCusCodeCollection = registrationCusCodes.ToArray();
+            #region HEADER
+            NativeHeader header = new NativeHeader();
+            NativeOrganization.DataContext dataContext = new NativeOrganization.DataContext();
+            NativeOrganization.Staff staff = new NativeOrganization.Staff();
+            staff.Code = "CW1";
+            dataContext.EventUser = staff;
+            header.DataContext = dataContext;
+            native.Header = header;
             #endregion
 
-            #region ORGANIZATION ADDRESS
-            string additionalAddress = organization.Address3 + " " + organization.Address4;
+            NativeOrganization.NativeBody body = new NativeOrganization.NativeBody();
+            OrganizationData organizationData = new OrganizationData();
+
+            #region BASIC
+            NativeOrganization.NativeOrganization nativeOrganization = new NativeOrganization.NativeOrganization();
+            nativeOrganization.ActionSpecified = true;
+            nativeOrganization.Action = NativeOrganization.Action.INSERT;
+            nativeOrganization.FullName = organization.CompanyName;
+            nativeOrganization.Language = "EN";
+            nativeOrganization.IsConsigneeSpecified = organization.isConsignee;
+            nativeOrganization.IsConsignee = organization.isConsignee;
+            nativeOrganization.IsConsignorSpecified = organization.isConsignor;
+            nativeOrganization.IsConsignor = organization.isConsignor;
+            #endregion
+
+            #region ADDRESS
             NativeOrganizationOrgAddress nativeOrgAddress = new NativeOrganizationOrgAddress();
             List<NativeOrganizationOrgAddress> nativeOrgAddresses = new List<NativeOrganizationOrgAddress>();
-            //nativeOrgAddress.ActionSpecified = true;
-            //nativeOrgAddress.Action = NativeOrganization.Action.INSERT;
-            nativeOrgAddress.IsActiveSpecified = true;
-            nativeOrgAddress.IsActive = true;
-            nativeOrgAddress.Code = organization.Address1?.Substring(0, Math.Min(organization.Address1.Length, 24));
+            nativeOrgAddress.ActionSpecified = true;
+            nativeOrgAddress.Action = NativeOrganization.Action.INSERT;
             nativeOrgAddress.Address1 = organization.Address1;
             nativeOrgAddress.Address2 = organization.Address2;
+            string additionalAddress = organization.Address3 + " " + organization.Address4;
             nativeOrgAddress.AdditionalAddressInformation = additionalAddress?.Substring(0, Math.Min(additionalAddress.Length, 50));
 
             nativeOrgAddress.City = organization.City;
-            nativeOrgAddress.PostCode = organization.PostalCode;
+            nativeOrgAddress.PostCode = organization.Postcode;
             nativeOrgAddress.State = organization.ProviceCode;
             NativeOrganizationOrgAddressCountryCode nativeOrgCountryCode = new NativeOrganizationOrgAddressCountryCode();
             nativeOrgCountryCode.TableName = "RefCountry";
-            nativeOrgCountryCode.Code = organization.CountryCode;
+            nativeOrgCountryCode.Code = organization.Country;
             nativeOrgAddress.CountryCode = nativeOrgCountryCode;
-            NativeOrganizationOrgAddressRelatedPortCode nativeOrgAddressRelatedPortCode = new NativeOrganizationOrgAddressRelatedPortCode();
-            //nativeOrgAddressRelatedPortCode.TableName = "RefUNLOCO";
-            //nativeOrgAddressRelatedPortCode.Code = site?.Unloco;
 
-            nativeOrgAddress.Phone = organization.PhoneNumber;
-            nativeOrgAddress.Mobile = organization.MobileNumber;
+
+            nativeOrgAddress.Phone = organization.Phone;
+            nativeOrgAddress.Mobile = organization.Mobile;
             nativeOrgAddress.Fax = organization.Fax;
             nativeOrgAddress.Email = organization.Email;
             nativeOrgAddress.Language = "EN";
-            nativeOrgAddress.FCLEquipmentNeeded = "ANY";
-            nativeOrgAddress.LCLEquipmentNeeded = "ANY";
-            nativeOrgAddress.AIREquipmentNeeded = "ANY";
-            List<NativeOrganizationOrgAddressOrgAddressCapability> nativeOrgAddressCapabilities = new List<NativeOrganizationOrgAddressOrgAddressCapability>();
-            NativeOrganizationOrgAddressOrgAddressCapability nativeOrgAddressCapability = new NativeOrganizationOrgAddressOrgAddressCapability();
-            //nativeOrgAddressCapability.ActionSpecified = true;
-            //nativeOrgAddressCapability.Action = NativeOrganization.Action.INSERT;
-            nativeOrgAddressCapability.IsMainAddressSpecified = true;
-            nativeOrgAddressCapability.IsMainAddress = true;
-            nativeOrgAddressCapability.AddressType = "OFC";
-            nativeOrgAddressCapabilities.Add(nativeOrgAddressCapability);
-            nativeOrgAddress.OrgAddressCapabilityCollection = nativeOrgAddressCapabilities.ToArray();
+
             nativeOrgAddresses.Add(nativeOrgAddress);
             nativeOrganization.OrgAddressCollection = nativeOrgAddresses.ToArray();
             #endregion
 
+            #region PORT
+            NativeOrganizationClosestPort nativeOrganizationClosestPort = new NativeOrganizationClosestPort();
+            nativeOrganizationClosestPort.TableName = "RefUNLOCO";
+            nativeOrganizationClosestPort.Code = organization.Unloco;
+            nativeOrganization.ClosestPort = nativeOrganizationClosestPort;
+            #endregion
+
+            #region RESGISTRATION
+            List<NativeOrganizationOrgCusCode> registrationCusCodes = new List<NativeOrganizationOrgCusCode>();
+            NativeOrganizationOrgCusCode globalCustomerRegistrationCusCode = new NativeOrganizationOrgCusCode();
+            globalCustomerRegistrationCusCode.ActionSpecified = true;
+            globalCustomerRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
+            globalCustomerRegistrationCusCode.CodeType = "LSC";
+            globalCustomerRegistrationCusCode.CustomsRegNo = organization.RegistrationNumber;
+            NativeOrganizationOrgCusCodeCodeCountry cusCodeCountry = new NativeOrganizationOrgCusCodeCodeCountry();
+            cusCodeCountry.Code = organization.Country;
+            globalCustomerRegistrationCusCode.CodeCountry = cusCodeCountry;
+            registrationCusCodes.Add(globalCustomerRegistrationCusCode);
+            nativeOrganization.OrgCusCodeCollection = registrationCusCodes.ToArray();
+            #endregion
+
             organizationData.OrgHeader = nativeOrganization;
+
             var serilaziedBody = Utilities.SerializeToXmlElement(organizationData);
             List<XmlElement> xmlElements = new List<XmlElement>();
             xmlElements.Add(serilaziedBody);
             body.Any = xmlElements.ToArray();
             native.Body = body;
             string xml = Utilities.Serialize(native);
-            return orgCode;
+
+            var response = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+
+
+            if (response.Status == "SUCCESS" && response.Data.Status == "PRS" && response.Data.ProcessingLog != null)
+            {
+                using (TextReader reader = new StringReader(response.Data.Data.OuterXml))
+                {
+                    var serializer = new XmlSerializer(typeof(Events.UniversalEventData));
+                    Events.UniversalEventData? result = (Events.UniversalEventData?)serializer.Deserialize(reader);
+                    organizationCode = result.Event.ContextCollection.Where(c => c.Type.Value == "EntityLocalCode").FirstOrDefault()?.Value;
+                }
+            }
+
+            return organizationCode;
         }
+        #endregion
 
         public class Organization
         {
-            [Required]
-            [StringLength(25)]
-            public string? Code { get; set; }
-            [Required]
-            [StringLength(40)]
-            public string? Name { get; set; }
-            [Required]
-            [StringLength(30)]
-            public string? Address1 { get; set; }
-            [StringLength(30)]
-            public string? Address2 { get; set; }
-            [StringLength(30)]
-            public string? Address3 { get; set; }
-            [StringLength(30)]
-            public string? Address4 { get; set; }
-            [StringLength(25)]
-            public string? City { get; set; }
-            [StringLength(5)]
-            public string? ProviceCode { get; set; }
-            [StringLength(15)]
-            public string? PostalCode { get; set; }
-            [StringLength(3)]
-            public string? CountryCode { get; set; }
-            [StringLength(22)]
-            public string? MobileNumber { get; set; }
-            [StringLength(22)]
-            public string? PhoneNumber { get; set; }
-            public string? Fax { get; set; }
-            public string? Email { get; set; }
-            public string? ContactName { get; set; }
-            public bool isConsignor { get; set; }
-            public bool isConsignee { get; set; }
+            public bool isConsignor { get; set; } = false;
+            public bool isConsignee { get; set; } = false;
+            public string CompanyName { get; set; }
+            public string Address1 { get; set; }
+            public string Address2 { get; set; }
+            public string Address3 { get; set; }
+            public string Address4 { get; set; }
+            public string Unloco { get; set; }
+            public string City { get; set; }
+            public string ProviceCode { get; set; }
+            public string Postcode { get; set; }
+            public string Country { get; set; }
+            public string Contact { get; set; }
+            public string Mobile { get; set; }
+            public string Phone { get; set; }
+            public string Email { get; set; }
+            public string Fax { get; set; }
+            public string RegistrationNumber { get; set; }
+
         }
     }
 }

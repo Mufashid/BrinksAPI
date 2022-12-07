@@ -286,9 +286,6 @@ namespace BrinksAPI.Controllers
             List<DataTarget> dataTargets = new List<DataTarget>();
             dataTargets.Add(dataTarget);
             dataContext.DataTargetCollection = dataTargets.ToArray();
-            //Company company = new Company();
-            //company.Code = _configuration.CompanyCode;
-            //dataContext.Company = company;
             dataContext.EnterpriseID = _configuration.EnterpriseId;
             dataContext.ServerID = _configuration.ServerId;
             shipment.DataContext = dataContext;
@@ -324,7 +321,6 @@ namespace BrinksAPI.Controllers
 
             return Utilities.Serialize(universalShipmentData);
         }
-
         public string CreateOrganizationDocumentXML(string orgCode, Document document)
         {
             return "";
