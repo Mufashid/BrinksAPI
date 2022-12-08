@@ -66,7 +66,7 @@ namespace BrinksAPI.Models
         public string? taxId { get; set; }
         [StringLength(2000)]
         public string? creditRiskNotes { get; set; }
-        public YesOrNo? knownShipper { get; set; }
+        public YesOrNo? knownShipper { get; set; } = YesOrNo.Y;
         [StringLength(10)]
         public string? customerGroupCode { get; set; }
         [StringLength(15)]
@@ -96,7 +96,7 @@ namespace BrinksAPI.Models
         public string? kycOpeningStation { get; set; }
         [StringLength(10)]
         public string? lob { get; set; }
-        public YesOrNo? allowCollect { get; set; }
+        public YesOrNo? allowCollect { get; set; } = YesOrNo.Y;
         public YesOrNo? adyenPay { get; set; }
         [RequiredIf("adyenPay", YesOrNo.Y)]
  
