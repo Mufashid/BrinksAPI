@@ -1405,12 +1405,23 @@ namespace BrinksAPI.Controllers
             nativeOrgCountryCode.Code = organization.Country;
             nativeOrgAddress.CountryCode = nativeOrgCountryCode;
 
-
             nativeOrgAddress.Phone = organization.Phone;
             nativeOrgAddress.Mobile = organization.Mobile;
             nativeOrgAddress.Fax = organization.Fax;
             nativeOrgAddress.Email = organization.Email;
             nativeOrgAddress.Language = "EN";
+            nativeOrgAddress.FCLEquipmentNeeded = "ANY";
+            nativeOrgAddress.LCLEquipmentNeeded = "ANY";
+            nativeOrgAddress.AIREquipmentNeeded = "ANY";
+            List<NativeOrganizationOrgAddressOrgAddressCapability> nativeOrgAddressCapabilities = new List<NativeOrganizationOrgAddressOrgAddressCapability>();
+            NativeOrganizationOrgAddressOrgAddressCapability nativeOrgAddressCapability = new NativeOrganizationOrgAddressOrgAddressCapability();
+            nativeOrgAddressCapability.ActionSpecified = true;
+            nativeOrgAddressCapability.Action = NativeOrganization.Action.INSERT;
+            nativeOrgAddressCapability.IsMainAddressSpecified = true;
+            nativeOrgAddressCapability.IsMainAddress = true;
+            nativeOrgAddressCapability.AddressType = "OFC";
+            nativeOrgAddressCapabilities.Add(nativeOrgAddressCapability);
+            nativeOrgAddress.OrgAddressCapabilityCollection = nativeOrgAddressCapabilities.ToArray();
 
             nativeOrgAddresses.Add(nativeOrgAddress);
             nativeOrganization.OrgAddressCollection = nativeOrgAddresses.ToArray();
