@@ -275,7 +275,7 @@ namespace BrinksAPI.Controllers
                 OrganizationData? dlvOrganizationData = SearchOrgWithRegNo(firstShipmentItem.dlvGlobalCustomerCode);
                 OrganizationAddress dlvAddress = new OrganizationAddress();
                 dlvAddress.AddressType = "ConsigneePickupDeliveryAddress";
-                if (shipperOrganizationData.OrgHeader == null)
+                if (dlvOrganizationData.OrgHeader == null)
                 {
                     // Create Org
                     var site = _context.sites.Where(s => s.Country.ToLower() == firstShipmentItem.dlvCountryCode.ToLower()).FirstOrDefault();
@@ -303,7 +303,7 @@ namespace BrinksAPI.Controllers
                 }
                 else
                 {
-                    dlvAddress.OrganizationCode = shipperOrganizationData.OrgHeader.Code;
+                    dlvAddress.OrganizationCode = dlvOrganizationData.OrgHeader.Code;
                 }
                 organizationAddresses.Add(dlvAddress);
                 #endregion
