@@ -240,34 +240,6 @@ namespace BrinksAPI.Controllers
                 puAddress.AddressType = "ConsignorPickupDeliveryAddress";
                 if (shipperOrganizationData.OrgHeader == null)
                 {
-                    // Create Org
-                    //puAddress.AddressOverrideSpecified = true;
-                    //puAddress.AddressOverride = true;
-
-                    //puAddress.CompanyName = firstShipmentItem.puName;
-                    //puAddress.Address1 = firstShipmentItem.puAddress1;
-                    //puAddress.Address2 = firstShipmentItem.puAddress2;
-                    //puAddress.AdditionalAddressInformation = firstShipmentItem.puAddress3 + firstShipmentItem.puAddress4;
-                    //puAddress.City = firstShipmentItem.puCity;
-                    //OrganizationAddressState pickupState = new OrganizationAddressState();
-                    //pickupState.Value = firstShipmentItem.puProvinceCode;
-                    //puAddress.State = pickupState;
-                    //Country pickupCountry = new Country();
-                    //pickupCountry.Code = firstShipmentItem.puCountryCode;
-                    //puAddress.Country = pickupCountry;
-                    //puAddress.Postcode = firstShipmentItem.puPostalCode;
-                    //puAddress.Contact = firstShipmentItem.puContactName;
-                    //puAddress.Phone = firstShipmentItem.puPhoneNumber;
-                    //puAddress.Mobile = firstShipmentItem.puMobileNumber;
-                    //List<RegistrationNumber> pickupRegistrationNumbers = new List<RegistrationNumber>();
-                    //RegistrationNumber pickupRegistrationNumber = new RegistrationNumber();
-                    //RegistrationNumberType pickupRegistrationNumberType = new RegistrationNumberType();
-                    //pickupRegistrationNumberType.Code = "LSC";
-                    //pickupRegistrationNumber.Type = pickupRegistrationNumberType;
-                    //pickupRegistrationNumber.Value = firstShipmentItem.puGlobalCustomerCode;
-                    //pickupRegistrationNumbers.Add(pickupRegistrationNumber);
-                    //puAddress.RegistrationNumberCollection = pickupRegistrationNumbers.ToArray();
-
                     // Create organization if not exist
                     var site = _context.sites.Where(s=>s.Country.ToLower() == firstShipmentItem.puCountryCode.ToLower()).FirstOrDefault();
                     Organization organization = new Organization()
@@ -306,33 +278,6 @@ namespace BrinksAPI.Controllers
                 if (shipperOrganizationData.OrgHeader == null)
                 {
                     // Create Org
-                    //dlvAddress.AddressOverrideSpecified = true;
-                    //dlvAddress.AddressOverride = true;
-
-                    //dlvAddress.CompanyName = firstShipmentItem.dlvName;
-                    //dlvAddress.Address1 = firstShipmentItem.dlvAddress1;
-                    //dlvAddress.Address2 = firstShipmentItem.dlvAddress2;
-                    //dlvAddress.AdditionalAddressInformation = firstShipmentItem.dlvAddress3 + firstShipmentItem.dlvAddress4;
-                    //dlvAddress.City = firstShipmentItem.dlvCity;
-                    //OrganizationAddressState dlvState = new OrganizationAddressState();
-                    //dlvState.Value = firstShipmentItem.dlvProvinceCode;
-                    //dlvAddress.State = dlvState;
-                    //Country dlvCountry = new Country();
-                    //dlvCountry.Code = firstShipmentItem.dlvCountryCode;
-                    //dlvAddress.Country = dlvCountry;
-                    //dlvAddress.Postcode = firstShipmentItem.dlvPostalCode;
-                    //dlvAddress.Contact = firstShipmentItem.dlvContactName;
-                    //dlvAddress.Phone = firstShipmentItem.dlvPhoneNumber;
-                    //dlvAddress.Mobile = firstShipmentItem.dlvMobileNumber;
-                    //List<RegistrationNumber> dlvRegistrationNumbers = new List<RegistrationNumber>();
-                    //RegistrationNumber dlvRegistrationNumber = new RegistrationNumber();
-                    //RegistrationNumberType dlvRegistrationNumberType = new RegistrationNumberType();
-                    //dlvRegistrationNumberType.Code = "LSC";
-                    //dlvRegistrationNumber.Type = dlvRegistrationNumberType;
-                    //dlvRegistrationNumber.Value = firstShipmentItem.dlvGlobalCustomerCode;
-                    //dlvRegistrationNumbers.Add(dlvRegistrationNumber);
-                    //dlvAddress.RegistrationNumberCollection = dlvRegistrationNumbers.ToArray();
-
                     var site = _context.sites.Where(s => s.Country.ToLower() == firstShipmentItem.dlvCountryCode.ToLower()).FirstOrDefault();
                     Organization organization = new Organization()
                     {
@@ -551,7 +496,7 @@ namespace BrinksAPI.Controllers
                 CustomizedField originShipmentIdCF = new CustomizedField();
                 originShipmentIdCF.DataType = CustomizedFieldDataType.String;
                 originShipmentIdCF.Key = "Origin Shipment ID";
-                originShipmentIdCF.Value = originShipmentId.ToString();
+                originShipmentIdCF.Value = shipment.originShipmentId.ToString();
                 shipmentCustomizedFields.Add(originShipmentIdCF);
 
                 shipmentCustomizedFields.RemoveAll(s => s.Value == null);

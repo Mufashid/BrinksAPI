@@ -42,6 +42,8 @@ namespace BrinksAPI.Models
         [Required]
         [StringLength(11)]
         public string? hawbNum { get; set; }
+
+        public int originShipmentId { get; set; }
         [Required]
         [StringLength(2)]
         public string? serviceType { get; set; }
