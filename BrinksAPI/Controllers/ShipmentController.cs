@@ -238,7 +238,7 @@ namespace BrinksAPI.Controllers
                 OrganizationData? pickupOrganizationData = SearchOrgWithRegNo(firstShipmentItem.puGlobalCustomerCode);
                 OrganizationAddress puAddress = new OrganizationAddress();
                 puAddress.AddressType = "ConsignorPickupDeliveryAddress";
-                if (shipperOrganizationData.OrgHeader == null)
+                if (pickupOrganizationData.OrgHeader == null)
                 {
                     // Create organization if not exist
                     var site = _context.sites.Where(s=>s.Country.ToLower() == firstShipmentItem.puCountryCode.ToLower()).FirstOrDefault();
@@ -266,7 +266,7 @@ namespace BrinksAPI.Controllers
                 }
                 else
                 {
-                    puAddress.OrganizationCode = shipperOrganizationData.OrgHeader.Code;
+                    puAddress.OrganizationCode = pickupOrganizationData.OrgHeader.Code;
                 }
                 organizationAddresses.Add(puAddress);
                 #endregion
