@@ -88,6 +88,7 @@ namespace BrinksAPI.Controllers
                 string? shipmentId = GetShipmentNumberByHawb(shipment.hawbNum);
 
                 Random random = new Random();
+                string test = "";
                 long originShipmentId = random.Next(30000000, 39999999);// 30 million
 
                 #region Data Context
