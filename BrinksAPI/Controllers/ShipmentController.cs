@@ -88,7 +88,6 @@ namespace BrinksAPI.Controllers
                 string? shipmentId = GetShipmentNumberByHawb(shipment.hawbNum);
 
                 Random random = new Random();
-                string test = "";
                 long originShipmentId = random.Next(30000000, 39999999);// 30 million
 
                 #region Data Context
@@ -963,22 +962,33 @@ namespace BrinksAPI.Controllers
                             string? shipmentId = GetShipmentNumberByHawb(history.HawbNumber);
                             if (shipmentId != null)
                             {
-                                //string? responseMessage = "";
-
-                                int serverId = Int32.Parse(history.ServerId);
-                                Site? site = _context.sites.Where(s => s.ServerID == serverId).FirstOrDefault();
-                                string? companyCode = site?.CompanyCode;
-                                if (site != null)
+                                string companyCode = null;
+                                if(history.ServerId !=null)
+                                {
+                                    int serverId = Int32.Parse(history.ServerId);
+                                    Site? site = _context.sites.Where(s => s.ServerID == serverId).FirstOrDefault();
+                                    companyCode = site?.CompanyCode;
+                                }
+                                if (history.SiteCode != null)
+                                {
+                                    int siteCode = Int32.Parse(history.SiteCode);
+                                    Site? site = _context.sites.Where(s => s.SiteCode == siteCode).FirstOrDefault();
+                                    companyCode = site?.CompanyCode;
+                                }
+                                //int serverId = Int32.Parse(history.ServerId);
+                                //Site? site = _context.sites.Where(s => s.ServerID == serverId).FirstOrDefault();
+                                //string? companyCode = site?.CompanyCode;
+                                if (companyCode != null)
                                 {
                                     ActionType? actionTypeObj = _context.actionTypes.Where(a => a.BrinksCode.ToLower() == history.ActionType.ToLower()).FirstOrDefault();
                                     string? eventType = actionTypeObj is null ? "Z00" : actionTypeObj.EventType;
 
-                                    if (history.SiteCode != null)// Extra 
-                                    {
-                                        int siteCode = Int32.Parse(history.SiteCode);
-                                        site = _context.sites.Where(s => s.SiteCode == siteCode).FirstOrDefault();
-                                        companyCode = site?.CompanyCode!= null?site?.CompanyCode:companyCode;
-                                    }
+                                    //if (history.SiteCode != null)// Extra 
+                                    //{
+                                    //    int siteCode = Int32.Parse(history.SiteCode);
+                                    //    site = _context.sites.Where(s => s.SiteCode == siteCode).FirstOrDefault();
+                                    //    companyCode = site?.CompanyCode!= null?site?.CompanyCode:companyCode;
+                                    //}
                                     Events.UniversalEventData universalEvent = new Events.UniversalEventData();
 
                                     #region DataContext
@@ -993,9 +1003,9 @@ namespace BrinksAPI.Controllers
 
                                     Events.Company company = new Events.Company();
                                     company.Code = companyCode;
-                                    Events.Country country = new Events.Country();
-                                    country.Code = site.Country;
-                                    company.Country = country;
+                                    //Events.Country country = new Events.Country();
+                                    //country.Code = site.Country;
+                                    //company.Country = country;
                                     dataContext.Company = company;
 
                                     dataContext.EnterpriseID = _configuration.EnterpriseId;
@@ -1130,7 +1140,7 @@ namespace BrinksAPI.Controllers
                                 else
                                 {
                                     dataResponse.Status = "ERROR";
-                                    dataResponse.Message = "Server ID " + history.ServerId + " is not found in mapping DB.";
+                                    dataResponse.Message = "Please provide a valid Server ID or Site ID.";
                                 }
 
                             }

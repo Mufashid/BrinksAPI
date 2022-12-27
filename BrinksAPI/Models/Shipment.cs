@@ -24,7 +24,7 @@ namespace BrinksAPI.Models
         public string? HistoryDate { get; set; }
         [StringLength(4)]
         public string? SiteCode { get; set; }
-        [Required]
+        //[Required]
         [StringLength(5)]
         public string? ServerId { get; set; }
         [StringLength(11)]
