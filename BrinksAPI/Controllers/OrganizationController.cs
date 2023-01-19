@@ -494,7 +494,6 @@ namespace BrinksAPI.Controllers
                     #endregion
 
                     #region ORGANIZATION ADDRESS
-                    string additionalAddress = organization.address3 + " " + organization.address4;
                     NativeOrganizationOrgAddress nativeOrgAddress = new NativeOrganizationOrgAddress();
                     List<NativeOrganizationOrgAddress> nativeOrgAddresses = new List<NativeOrganizationOrgAddress>();
                     nativeOrgAddress.ActionSpecified = true;
@@ -504,7 +503,24 @@ namespace BrinksAPI.Controllers
                     nativeOrgAddress.Code = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24));
                     nativeOrgAddress.Address1 = organization.address1;
                     nativeOrgAddress.Address2 = organization.address2;
-                    nativeOrgAddress.AdditionalAddressInformation = additionalAddress?.Substring(0, Math.Min(additionalAddress.Length, 50));
+                    nativeOrgAddress.AdditionalAddressInformation = organization?.address3;
+
+                    List<NativeOrganizationOrgAddressOrgAddressAdditionalInfo> additionalInfoAddresses = new List<NativeOrganizationOrgAddressOrgAddressAdditionalInfo>();
+                    NativeOrganizationOrgAddressOrgAddressAdditionalInfo additionalInfoAddress3 = new NativeOrganizationOrgAddressOrgAddressAdditionalInfo();
+                    additionalInfoAddress3.ActionSpecified = true;
+                    additionalInfoAddress3.Action = NativeOrganization.Action.INSERT;
+                    additionalInfoAddress3.IsPrimarySpecified = true;
+                    additionalInfoAddress3.IsPrimary = true;
+                    additionalInfoAddress3.AdditionalInfo = organization?.address3;
+                    additionalInfoAddresses.Add(additionalInfoAddress3);
+
+                    NativeOrganizationOrgAddressOrgAddressAdditionalInfo additionalInfoAddress4 = new NativeOrganizationOrgAddressOrgAddressAdditionalInfo();
+                    additionalInfoAddress4.ActionSpecified = true;
+                    additionalInfoAddress4.Action = NativeOrganization.Action.INSERT;
+                    additionalInfoAddress4.AdditionalInfo = organization?.address4;
+                    additionalInfoAddresses.Add(additionalInfoAddress4);
+
+                    nativeOrgAddress.OrgAddressAdditionalInfoCollection = additionalInfoAddresses.ToArray();
 
                     nativeOrgAddress.City = organization.city;
                     nativeOrgAddress.PostCode = organization.postalCode;
@@ -1214,13 +1230,24 @@ namespace BrinksAPI.Controllers
                     #endregion
 
                     #region ORGANIZATION ADDRESS
-                    string additionalAddress = organization.address3 + " " + organization.address4;
                     organizationData.OrgHeader.OrgAddressCollection[0].ActionSpecified = true;
                     organizationData.OrgHeader.OrgAddressCollection[0].Action = NativeOrganization.Action.UPDATE;
                     organizationData.OrgHeader.OrgAddressCollection[0].Code = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24));
                     organizationData.OrgHeader.OrgAddressCollection[0].Address1 = organization.address1;
                     organizationData.OrgHeader.OrgAddressCollection[0].Address2 = organization.address2;
-                    organizationData.OrgHeader.OrgAddressCollection[0].AdditionalAddressInformation = additionalAddress?.Substring(0, Math.Min(additionalAddress.Length, 50));
+                    organizationData.OrgHeader.OrgAddressCollection[0].AdditionalAddressInformation = organization?.address3;
+
+                    if (organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection.Count() > 1)
+                    {
+                        organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[0].ActionSpecified = true;
+                        organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[0].Action = NativeOrganization.Action.UPDATE;
+                        organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[0].AdditionalInfo = organization.address3;
+
+                        organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[1].ActionSpecified = true;
+                        organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[1].Action = NativeOrganization.Action.UPDATE;
+                        organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[1].AdditionalInfo = organization.address4;
+                    }
+
 
                     organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.ActionSpecified = true;
                     organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.Action = NativeOrganization.Action.UPDATE;
