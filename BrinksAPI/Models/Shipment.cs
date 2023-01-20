@@ -116,7 +116,6 @@ namespace BrinksAPI.Models
         [StringLength(3)]
         public string? consigneeCountryCode { get; set; }
         public string? consigneeContactName { get; set; }
-        [Required]
         [StringLength(22)]
         public string? consigneePhoneNumber { get; set; }
         public string? consigneeMobileNumber { get; set; }
