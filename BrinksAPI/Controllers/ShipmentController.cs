@@ -1407,8 +1407,29 @@ namespace BrinksAPI.Controllers
             nativeOrgAddress.Action = NativeOrganization.Action.INSERT;
             nativeOrgAddress.Address1 = organization.Address1;
             nativeOrgAddress.Address2 = organization.Address2;
-            string additionalAddress = organization.Address3 + " " + organization.Address4;
-            nativeOrgAddress.AdditionalAddressInformation = additionalAddress?.Substring(0, Math.Min(additionalAddress.Length, 50));
+            nativeOrgAddress.AdditionalAddressInformation = organization?.Address3;
+
+            
+            List<NativeOrganizationOrgAddressOrgAddressAdditionalInfo> additionalInfoAddresses = new List<NativeOrganizationOrgAddressOrgAddressAdditionalInfo>();
+            if (organization.Address3 != null && organization.Address3 != "")
+            {
+                NativeOrganizationOrgAddressOrgAddressAdditionalInfo additionalInfoAddress3 = new NativeOrganizationOrgAddressOrgAddressAdditionalInfo();
+                additionalInfoAddress3.ActionSpecified = true;
+                additionalInfoAddress3.Action = NativeOrganization.Action.INSERT;
+                additionalInfoAddress3.IsPrimarySpecified = true;
+                additionalInfoAddress3.IsPrimary = true;
+                additionalInfoAddress3.AdditionalInfo = organization?.Address3;
+                additionalInfoAddresses.Add(additionalInfoAddress3);
+            }
+            if (organization.Address4 != null && organization.Address4 != "")
+            {
+                NativeOrganizationOrgAddressOrgAddressAdditionalInfo additionalInfoAddress4 = new NativeOrganizationOrgAddressOrgAddressAdditionalInfo();
+                additionalInfoAddress4.ActionSpecified = true;
+                additionalInfoAddress4.Action = NativeOrganization.Action.INSERT;
+                additionalInfoAddress4.AdditionalInfo = organization?.Address4;
+                additionalInfoAddresses.Add(additionalInfoAddress4);
+            }
+            nativeOrgAddress.OrgAddressAdditionalInfoCollection = additionalInfoAddresses.ToArray();
 
             nativeOrgAddress.City = organization.City;
             nativeOrgAddress.PostCode = organization.Postcode;

@@ -506,20 +506,24 @@ namespace BrinksAPI.Controllers
                     nativeOrgAddress.AdditionalAddressInformation = organization?.address3;
 
                     List<NativeOrganizationOrgAddressOrgAddressAdditionalInfo> additionalInfoAddresses = new List<NativeOrganizationOrgAddressOrgAddressAdditionalInfo>();
-                    NativeOrganizationOrgAddressOrgAddressAdditionalInfo additionalInfoAddress3 = new NativeOrganizationOrgAddressOrgAddressAdditionalInfo();
-                    additionalInfoAddress3.ActionSpecified = true;
-                    additionalInfoAddress3.Action = NativeOrganization.Action.INSERT;
-                    additionalInfoAddress3.IsPrimarySpecified = true;
-                    additionalInfoAddress3.IsPrimary = true;
-                    additionalInfoAddress3.AdditionalInfo = organization?.address3;
-                    additionalInfoAddresses.Add(additionalInfoAddress3);
-
-                    NativeOrganizationOrgAddressOrgAddressAdditionalInfo additionalInfoAddress4 = new NativeOrganizationOrgAddressOrgAddressAdditionalInfo();
-                    additionalInfoAddress4.ActionSpecified = true;
-                    additionalInfoAddress4.Action = NativeOrganization.Action.INSERT;
-                    additionalInfoAddress4.AdditionalInfo = organization?.address4;
-                    additionalInfoAddresses.Add(additionalInfoAddress4);
-
+                    if (organization.address3 != null && organization.address3 != "")
+                    {
+                        NativeOrganizationOrgAddressOrgAddressAdditionalInfo additionalInfoAddress3 = new NativeOrganizationOrgAddressOrgAddressAdditionalInfo();
+                        additionalInfoAddress3.ActionSpecified = true;
+                        additionalInfoAddress3.Action = NativeOrganization.Action.INSERT;
+                        additionalInfoAddress3.IsPrimarySpecified = true;
+                        additionalInfoAddress3.IsPrimary = true;
+                        additionalInfoAddress3.AdditionalInfo = organization?.address3;
+                        additionalInfoAddresses.Add(additionalInfoAddress3);
+                    }
+                    if (organization.address4 != null && organization.address4 != "")
+                    {
+                        NativeOrganizationOrgAddressOrgAddressAdditionalInfo additionalInfoAddress4 = new NativeOrganizationOrgAddressOrgAddressAdditionalInfo();
+                        additionalInfoAddress4.ActionSpecified = true;
+                        additionalInfoAddress4.Action = NativeOrganization.Action.INSERT;
+                        additionalInfoAddress4.AdditionalInfo = organization?.address4;
+                        additionalInfoAddresses.Add(additionalInfoAddress4);
+                    }
                     nativeOrgAddress.OrgAddressAdditionalInfoCollection = additionalInfoAddresses.ToArray();
 
                     nativeOrgAddress.City = organization.city;
