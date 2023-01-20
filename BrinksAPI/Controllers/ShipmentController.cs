@@ -1074,11 +1074,15 @@ namespace BrinksAPI.Controllers
                                                     if (isConsol)
                                                     {
                                                         shipment = shipment.SubShipmentCollection.Where(s => s.DataContext.DataSourceCollection.Any(k => k.Key == shipmentId)).FirstOrDefault();
+                                                        if(shipment == null)
+                                                        {
+                                                            shipment = universalShipmentData?.Shipment;
+                                                        }
                                                     }
 
                                                     if (actionTypeObj is not null)
                                                     {
-                                                        PackingLine? packingLineObject = shipment.PackingLineCollection.PackingLine.Where(p => p.ReferenceNumber == history.TrackingNumber).FirstOrDefault();
+                                                        PackingLine? packingLineObject = shipment.PackingLineCollection?.PackingLine?.Where(p => p?.ReferenceNumber == history.TrackingNumber).FirstOrDefault();
                                                         if (packingLineObject is not null)
                                                         {
                                                             // Adding new customized field to packing line
