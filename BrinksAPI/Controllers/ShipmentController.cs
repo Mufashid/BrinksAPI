@@ -1066,7 +1066,7 @@ namespace BrinksAPI.Controllers
                                                 #region UPDATING THE PACKAGE LINE USING TRACKING NUMBER
 
                                                 UniversalShipmentData? universalShipmentData = GetShipmentById(shipmentId);
-                                                if (universalShipmentData is not null)
+                                                if (universalShipmentData?.Shipment is not null)
                                                 {
                                                     Shipment? shipment = universalShipmentData?.Shipment;
 
@@ -1096,11 +1096,20 @@ namespace BrinksAPI.Controllers
                                                             // Updating existing packing line
                                                             else
                                                             {
-                                                                packingLineObject
+
+                                                                var updatePackLine = packingLineObject
                                                                     .CustomizedFieldCollection
                                                                     .Where(c => c.Key == actionTypeObj.CWCode)
-                                                                    .FirstOrDefault()
-                                                                    .Value = history.HistoryDate;
+                                                                    .FirstOrDefault();
+                                                                if (updatePackLine is not null)
+                                                                {
+                                                                    packingLineObject
+                                                                    .CustomizedFieldCollection
+                                                                    .Where(c => c.Key == actionTypeObj.CWCode)
+                                                                    .FirstOrDefault().Value = history.HistoryDate;
+
+                                                                }
+                                                                    
                                                             }
                                                         }
                                                         else
@@ -1208,10 +1217,16 @@ namespace BrinksAPI.Controllers
             var shipmentRequestResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
             if (shipmentRequestResponse.Status == "SUCCESS")
             {
-                using (var reader = new StringReader(shipmentRequestResponse.Data.Data.OuterXml))
+                string outerXml = shipmentRequestResponse.Data.Data.OuterXml;
+                string replace = "<Date><Type>DeliveryDueDate</Type><IsEstimate>false</IsEstimate><Value></Value></Date>";
+                outerXml = outerXml.Replace(replace, "");
+                if (!outerXml.Contains("MessageNumberCollection"))
                 {
-                    var serializer = new XmlSerializer(typeof(UniversalShipmentData));
-                    response = (UniversalShipmentData?)serializer.Deserialize(reader);
+                    using (var reader = new StringReader(outerXml))
+                    {
+                        var serializer = new XmlSerializer(typeof(UniversalShipmentData));
+                        response = (UniversalShipmentData?)serializer.Deserialize(reader);
+                    }
                 }
             }
 
