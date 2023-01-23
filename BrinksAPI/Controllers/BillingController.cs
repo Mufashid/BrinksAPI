@@ -7,6 +7,7 @@ using NativeOrganization;
 using NativeRequest;
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using System.Xml.Serialization;
 
 namespace BrinksAPI.Controllers
@@ -76,8 +77,21 @@ namespace BrinksAPI.Controllers
                         var isValid = Validator.TryValidateObject(revenue, validationContext, validationResults);
                         if (isValid)
                         {
-                            string shipmentId = GetShipmentNumberByHawb(revenue?.hawb_number);
-                      
+                            //string shipmentId = GetShipmentNumberByHawb(revenue?.hawb_number);
+
+                            var shipmentDetails = GetShipmentNumberByHawb(revenue?.hawb_number);
+                            string shipmentId = "";
+                            string departmentCode = "";
+                            if (shipmentDetails != null)
+                            {
+                                shipmentId = shipmentDetails.ShipmentNo;
+
+                            }
+
+                            UniversalTransaction.Department department = new UniversalTransaction.Department();
+                            department.Code = departmentCode;
+
+
                             if (shipmentId != null && shipmentId != "")
                             {
                                 UniversalShipmentData shipmentData = GetShipmentById(shipmentId);
@@ -91,13 +105,13 @@ namespace BrinksAPI.Controllers
                                     string? destinationPort = "";
                                     if (shipmentData.Shipment.PortOfDestination != null)
                                     {
-                                       destinationCountry = shipmentData.Shipment.PortOfDestination?.Code.Substring(0, 2);
-                                       destinationPort = shipmentData.Shipment.PortOfDestination?.Code.Substring(2, 3);
-                                        
+                                        destinationCountry = shipmentData.Shipment.PortOfDestination?.Code.Substring(0, 2);
+                                        destinationPort = shipmentData.Shipment.PortOfDestination?.Code.Substring(2, 3);
+
                                     }
                                     else
                                     {
-                                        if(shipmentData.Shipment.SubShipmentCollection != null)
+                                        if (shipmentData.Shipment.SubShipmentCollection != null)
                                         {
                                             destinationCountry = shipmentData.Shipment.SubShipmentCollection[0].PortOfDestination?.Code.Substring(0, 2);
                                             destinationPort = shipmentData.Shipment.SubShipmentCollection[0].PortOfDestination?.Code.Substring(2, 3);
@@ -121,7 +135,9 @@ namespace BrinksAPI.Controllers
                                     {
                                         companyCode = _context.sites.Where(s => s.SiteCode == Convert.ToInt32(revenue.site_id)).FirstOrDefault()?.CompanyCode;
                                     }
-                                    
+
+
+
                                     Company company = new Company();
                                     company.Code = companyCode;
                                     dataContext.Company = company;
@@ -130,18 +146,28 @@ namespace BrinksAPI.Controllers
                                     shipment.DataContext = dataContext;
                                     #endregion
 
+
+
+
                                     List<ChargeLine> chargeLines = new List<ChargeLine>();
                                     ChargeLine chargeLine = new ChargeLine();
+
+                                    //waiting for confirmation to add department code in revenue -- renz 11/01/2023
+                                    //var sDetails = GetShipmentByIdAndCompanyCode(shipmentId, dataContext.EnterpriseID, dataContext.ServerID, dataContext.Company.Code);
+                                    //if (sDetails != null)
+                                    //{
+                                    //    if (sDetails.Shipment.DataContext.DataSourceCollection.Any(y => y.Type == "ForwardingConsol"))
+                                    //        departmentCode = sDetails.Shipment.SubShipmentCollection.FirstOrDefault().JobCosting?.Department?.Code;
+                                    //    else
+                                    //        departmentCode = sDetails.Shipment?.JobCosting?.Department?.Code;
+                                    //}
+                                    ////chargeLine.Department = new Department { Code = departmentCode };
 
                                     string? chargeCodeCW = _context.Categories.Where(c => c.BrinksCode.ToLower() == revenue.category_code.ToLower())?.FirstOrDefault()?.CWCode;
 
                                     ImportMetaData importMetaData = new ImportMetaData();
-                                    importMetaData.Instruction = ImportMetaDataInstruction.UpdateAndInsertIfNotFound;
+                                    importMetaData.Instruction = ImportMetaDataInstruction.Insert;
                                     List<MatchingCriteria> matchingCriterias = new List<MatchingCriteria>();
-                                    MatchingCriteria matchingCriteria = new MatchingCriteria();
-                                    matchingCriteria.FieldName = "ChargeCode";
-                                    matchingCriteria.Value = chargeCodeCW;
-                                    matchingCriterias.Add(matchingCriteria);
                                     importMetaData.MatchingCriteriaCollection = matchingCriterias.ToArray();
                                     chargeLine.ImportMetaData = importMetaData;
 
@@ -159,11 +185,17 @@ namespace BrinksAPI.Controllers
                                     taxID.TaxCode = taxCodeCW;
                                     chargeLine.SellGSTVATID = taxID;
 
+                                    //renz 06/01/2023
+                                    if (debtor.Key.ToUpper() == "HERMESLTD")
+                                    {
+                                        chargeLine.SellInvoiceType = "CUD";
+                                    }
                                     chargeLine.Description = revenue.description;
                                     chargeLine.SellOSAmountSpecified = true;
                                     chargeLine.SellOSGSTVATAmountSpecified = true;
                                     chargeLine.SellOSAmount = revenue.invoice_amount;
                                     chargeLine.SellOSGSTVATAmount = revenue.invoice_tax_amount;
+
                                     chargeLines.Add(chargeLine);
 
                                     JobCosting jobCosting = new JobCosting();
@@ -183,7 +215,7 @@ namespace BrinksAPI.Controllers
                                             bool isError = responseEvent.Event.ContextCollection.Any(c => c.Type.Value.Contains("FailureReason"));
                                             if (isError)
                                             {
-                                                string errorMessage = responseEvent.Event.ContextCollection.Where(c => c.Type.Value == "FailureReason").FirstOrDefault().Value;          
+                                                string errorMessage = responseEvent.Event.ContextCollection.Where(c => c.Type.Value == "FailureReason").FirstOrDefault().Value;
                                                 if (errorMessage.Contains("hasn't saved it yet"))
                                                 {
                                                     dataResponse.Status = "RETRY";
@@ -209,7 +241,7 @@ namespace BrinksAPI.Controllers
 
                                         string errorMessage = billingResponse.Data.Data.FirstChild.InnerText;
                                         MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
-                                        string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y=>y.Key).ToArray();
+                                        string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
                                         dataResponse.Message = string.Join(",", groupedErrors);
                                     }
 
@@ -219,7 +251,7 @@ namespace BrinksAPI.Controllers
                                     dataResponse.Status = "ERROR";
                                     dataResponse.Message = "Unable to fetch the shipment from the CW.";
                                 }
-                        
+
                             }
                             else
                             {
@@ -351,7 +383,7 @@ namespace BrinksAPI.Controllers
                 transactionInfo.DataContext = dataContext;
                 #endregion
 
-               
+
                 transactionInfo.Ledger = "AP";
                 transactionInfo.TransactionType = UniversalTransaction.TransactionInfoTransactionType.INV;
                 UniversalTransaction.CodeDescriptionPair apAccountGroup = new UniversalTransaction.CodeDescriptionPair();
@@ -373,6 +405,13 @@ namespace BrinksAPI.Controllers
                 currency.Code = payableInvoice.currency_code;
                 transactionInfo.OSCurrency = currency;
 
+                //currency for hermes is always usd - renz 03/01/2023
+                if (invoiceOrgCode == "HERMESLTD")
+                {
+                    currency.Code = "USD";
+                    transactionInfo.OSCurrency = currency;
+
+                }
                 transactionInfo.ExchangeRateSpecified = true;
                 transactionInfo.ExchangeRate = Convert.ToDecimal(payableInvoice.exchange_rate);
 
@@ -380,18 +419,36 @@ namespace BrinksAPI.Controllers
                 branch.Code = branchCodeCW;
                 transactionInfo.Branch = branch;
 
-                UniversalTransaction.Department department = new UniversalTransaction.Department();
-                department.Code = "FES";
-                transactionInfo.Department = department;
+                //UniversalTransaction.Department department = new UniversalTransaction.Department();
+                //department.Code = "FES";
+                //transactionInfo.Department = department;
 
 
                 List<UniversalTransaction.PostingJournal> journals = new List<UniversalTransaction.PostingJournal>();
                 List<string> shipmentIds = new List<string>();
-               
+
                 foreach (var revenue in payableInvoice.revenues)
                 {
-                    string shipmentId = GetShipmentNumberByHawb(revenue?.revenue_hawb_number);
+                    var shipmentDetails = GetShipmentNumberByHawb(revenue?.revenue_hawb_number);
+                    string shipmentId = "";
+                    string departmentCode = "";
+                    if (shipmentDetails != null)
+                    {
+                        shipmentId = shipmentDetails.ShipmentNo;
 
+                        //removed due to class error on delilveryDuedate field -- renz 16/01/2023
+                        //var sDetails = GetShipmentByIdAndCompanyCode(shipmentId,dataContext.EnterpriseID,dataContext.ServerID, dataContext.Company.Code);
+                        //if (sDetails.Shipment.DataContext.DataSourceCollection.Any(y => y.Type == "ForwardingConsol"))
+                        //    departmentCode = sDetails.Shipment.SubShipmentCollection.FirstOrDefault().JobCosting?.Department?.Code;
+                        //else
+                        //    departmentCode = sDetails.Shipment.SubShipmentCollection.FirstOrDefault().JobCosting?.Department?.Code;
+
+                        var dept1 = GetDepartmentCodeByIdAndCompanyCode(shipmentId, dataContext.EnterpriseID, dataContext.ServerID, dataContext.Company.Code);
+                        departmentCode = dept1;
+                    }
+
+                    UniversalTransaction.Department department = new UniversalTransaction.Department();
+                    department.Code = departmentCode;
                     //int billFromSiteCode = Convert.ToInt32(revenue.billed_from_site_code);
                     //string? companyCodeCW = _context.sites.Where(s => s.SiteCode == billFromSiteCode).FirstOrDefault()?.CompanyCode;
 
@@ -407,15 +464,21 @@ namespace BrinksAPI.Controllers
                     UniversalTransaction.Currency osCurrency = new UniversalTransaction.Currency();
                     osCurrency.Code = revenue.invoice_currency;
                     journal.OSCurrency = osCurrency;
+                    //currency for hermes is always usd - renz 03/01/2023
+                    if (invoiceOrgCode == "HERMESLTD")
+                    {
+                        osCurrency.Code = "USD";
+                        journal.OSCurrency = osCurrency;
 
+                    }
                     journal.OSAmountSpecified = true;
                     journal.OSAmount = -Math.Abs(Convert.ToDecimal(revenue.invoice_amount));
 
                     journal.OSGSTVATAmountSpecified = true;
                     journal.OSGSTVATAmount = -Math.Abs(Convert.ToDecimal(revenue.invoice_tax_amount));
 
-                    journal.OSTotalAmountSpecified = true;
-                    journal.OSTotalAmount = -Math.Abs(Convert.ToDecimal(revenue.invoice_amount) + Convert.ToDecimal(revenue.invoice_tax_amount));
+                    //journal.OSTotalAmountSpecified = true;
+                    //journal.OSTotalAmount = -Math.Abs(Convert.ToDecimal(revenue.invoice_amount) + Convert.ToDecimal(revenue.invoice_tax_amount));
 
                     string? taxCodeCW = _context.TaxTypes.Where(t => t.BrinksCode == revenue.tax_code).FirstOrDefault()?.BrinksCode;
                     UniversalTransaction.TaxID taxID = new UniversalTransaction.TaxID();
@@ -438,9 +501,15 @@ namespace BrinksAPI.Controllers
 
                     journals.Add(journal);
                 }
+                //removed dont convert for OS - renz 03/01/2022
+                //decimal totalAmountExcludeTax = payableInvoice.revenues.Sum(s => Convert.ToDecimal(s.invoice_amount)) * Convert.ToDecimal(payableInvoice.exchange_rate);
+                //decimal totalAmountTax = payableInvoice.revenues.Sum(s => Convert.ToDecimal(s.invoice_tax_amount)) * Convert.ToDecimal(payableInvoice.exchange_rate);
 
-                decimal totalAmountExcludeTax = payableInvoice.revenues.Sum(s => Convert.ToDecimal(s.invoice_amount)) * Convert.ToDecimal(payableInvoice.exchange_rate);
-                decimal totalAmountTax = payableInvoice.revenues.Sum(s => Convert.ToDecimal(s.invoice_tax_amount)) * Convert.ToDecimal(payableInvoice.exchange_rate);
+
+                //removed the exchange rate since this is going to os amount
+                decimal totalAmountExcludeTax = payableInvoice.revenues.Sum(s => Convert.ToDecimal(s.invoice_amount));
+                decimal totalAmountTax = payableInvoice.revenues.Sum(s => Convert.ToDecimal(s.invoice_tax_amount));
+
 
                 transactionInfo.OSExGSTVATAmountSpecified = !IsNullOrEmpty(totalAmountExcludeTax.ToString()); ;
                 transactionInfo.OSExGSTVATAmount = -Math.Abs(totalAmountExcludeTax);
@@ -454,15 +523,17 @@ namespace BrinksAPI.Controllers
                 transactionInfo.PostingJournalCollection = journals.ToArray();
 
                 List<UniversalTransaction.Shipment> shipments = new List<UniversalTransaction.Shipment>();
-                UniversalTransaction.Shipment shipment = new UniversalTransaction.Shipment();
-                UniversalTransaction.DataContext shipmentDataContext = new UniversalTransaction.DataContext();
+
 
                 shipmentIds = shipmentIds.Distinct().ToList();
 
-                List<UniversalTransaction.DataSource> shipmentDataSources = new List<UniversalTransaction.DataSource>();
-                List<UniversalTransaction.DataTarget> shipmentDataTargets = new List<UniversalTransaction.DataTarget>();
+
                 foreach (var shipmentId in shipmentIds)
                 {
+                    UniversalTransaction.Shipment shipment = new UniversalTransaction.Shipment();
+                    UniversalTransaction.DataContext shipmentDataContext = new UniversalTransaction.DataContext();
+                    List<UniversalTransaction.DataSource> shipmentDataSources = new List<UniversalTransaction.DataSource>();
+                    List<UniversalTransaction.DataTarget> shipmentDataTargets = new List<UniversalTransaction.DataTarget>();
 
                     UniversalTransaction.DataSource shipmentDataSource = new UniversalTransaction.DataSource();
                     shipmentDataSource.Type = "ForwardingShipment";
@@ -473,14 +544,17 @@ namespace BrinksAPI.Controllers
                     shipmentDataTarget.Type = "ForwardingShipment";
                     shipmentDataTarget.Key = shipmentId;
                     shipmentDataTargets.Add(shipmentDataTarget);
+
+                    shipmentDataContext.DataSourceCollection = shipmentDataSources.ToArray();
+                    shipmentDataContext.DataTargetCollection = shipmentDataTargets.ToArray();
+                    shipment.DataContext = shipmentDataContext;
+                    shipments.Add(shipment);
                 }
+                if (shipments.Count() > 0)
+                    transactionInfo.ShipmentCollection = shipments.ToArray();
 
 
-                shipmentDataContext.DataSourceCollection = shipmentDataSources.ToArray();
-                shipmentDataContext.DataTargetCollection = shipmentDataTargets.ToArray();
-                shipment.DataContext = shipmentDataContext;
-                shipments.Add(shipment);
-                transactionInfo.ShipmentCollection = shipments.ToArray();
+
 
 
                 universalTransactionData.TransactionInfo = transactionInfo;
@@ -530,9 +604,10 @@ namespace BrinksAPI.Controllers
             return Ok(dataResponse);
         }
         #endregion
-        public string GetShipmentNumberByHawb(string hawb)
+        public ShipmentDetails GetShipmentNumberByHawb(string hawb)
         {
             string? shipmentNumber = null;
+            ShipmentDetails s = new ShipmentDetails();
             try
             {
                 Events.UniversalEventData universalEvent = new Events.UniversalEventData();
@@ -573,16 +648,20 @@ namespace BrinksAPI.Controllers
                     using (var reader = new StringReader(shipmentRequestResponse.Data.Data.OuterXml))
                     {
                         var serializer = new XmlSerializer(typeof(Events.UniversalEventData));
-                        Events.UniversalEventData? eventResponse = (Events.UniversalEventData)serializer.Deserialize(reader);
+                        Events.UniversalEventData eventResponse = (Events.UniversalEventData)serializer.Deserialize(reader);
                         shipmentNumber = eventResponse?.Event?.DataContext?.DataSourceCollection?.Where(d => d.Type == "ForwardingShipment")?.FirstOrDefault()?.Key;
+
+                        s.ShipmentNo = shipmentNumber;
+
+
                     }
                 }
             }
             catch (Exception ex)
             {
-                throw ex;
+
             }
-            return shipmentNumber;
+            return s;
         }
 
         public UniversalShipmentData GetShipmentById(string shipmentId)
@@ -611,6 +690,96 @@ namespace BrinksAPI.Controllers
                     var serializer = new XmlSerializer(typeof(UniversalShipmentData));
                     response = (UniversalShipmentData?)serializer.Deserialize(reader);
                 }
+            }
+
+            return response;
+        }
+
+        public UniversalShipmentData GetShipmentByIdAndCompanyCode(string shipmentId, string enterpriseId, string serverId, string companyCode)
+        {
+            UniversalShipmentData? response = new UniversalShipmentData();
+
+            ShipmentRequest.UniversalShipmentRequestData dataRequest = new ShipmentRequest.UniversalShipmentRequestData();
+            ShipmentRequest.ShipmentRequest shipmentRequest = new ShipmentRequest.ShipmentRequest();
+            ShipmentRequest.DataContext requestDataContext = new ShipmentRequest.DataContext();
+            List<ShipmentRequest.DataTarget> dataTargets = new List<ShipmentRequest.DataTarget>();
+            ShipmentRequest.DataTarget dataTarget = new ShipmentRequest.DataTarget();
+
+            dataTarget.Type = "ForwardingShipment";
+            dataTarget.Key = shipmentId;
+
+            dataTargets.Add(dataTarget);
+            requestDataContext.DataTargetCollection = dataTargets.ToArray();
+            shipmentRequest.DataContext = requestDataContext;
+            requestDataContext.EnterpriseID = enterpriseId;
+            requestDataContext.ServerID = serverId;
+            requestDataContext.Company = new ShipmentRequest.Company { Code = companyCode };
+            dataRequest.ShipmentRequest = shipmentRequest;
+
+            string xml = Utilities.Serialize(dataRequest);
+            var shipmentRequestResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+            if (shipmentRequestResponse.Status == "SUCCESS")
+            {
+
+                using (var reader = new StringReader(shipmentRequestResponse.Data.Data.OuterXml))
+                {
+                    var serializer = new XmlSerializer(typeof(UniversalShipmentData));
+                    response = (UniversalShipmentData?)serializer.Deserialize(reader);
+                }
+            }
+
+            return response;
+        }
+
+        public string GetDepartmentCodeByIdAndCompanyCode(string shipmentId, string enterpriseId, string serverId, string companyCode)
+        {
+            string? response = "";
+
+            ShipmentRequest.UniversalShipmentRequestData dataRequest = new ShipmentRequest.UniversalShipmentRequestData();
+            ShipmentRequest.ShipmentRequest shipmentRequest = new ShipmentRequest.ShipmentRequest();
+            ShipmentRequest.DataContext requestDataContext = new ShipmentRequest.DataContext();
+            List<ShipmentRequest.DataTarget> dataTargets = new List<ShipmentRequest.DataTarget>();
+            ShipmentRequest.DataTarget dataTarget = new ShipmentRequest.DataTarget();
+
+            dataTarget.Type = "ForwardingShipment";
+            dataTarget.Key = shipmentId;
+
+            dataTargets.Add(dataTarget);
+            requestDataContext.DataTargetCollection = dataTargets.ToArray();
+            shipmentRequest.DataContext = requestDataContext;
+            requestDataContext.EnterpriseID = enterpriseId;
+            requestDataContext.ServerID = serverId;
+            requestDataContext.Company = new ShipmentRequest.Company { Code = companyCode };
+            dataRequest.ShipmentRequest = shipmentRequest;
+
+            string xml = Utilities.Serialize(dataRequest);
+            var shipmentRequestResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+            if (shipmentRequestResponse.Status == "SUCCESS")
+            {
+                XDocument doc;
+                XNamespace ns = XNamespace.Get("http://www.cargowise.com/Schemas/Universal/2011/11");
+                doc = XDocument.Parse(shipmentRequestResponse.Data.Data.OuterXml);
+                var xmldocu = doc.Descendants();
+                var jobcosting = xmldocu.Elements(ns + "JobCosting").FirstOrDefault();
+                if (jobcosting != null)
+                {
+                    var dept = jobcosting.Element(ns + "Department");
+                    if (dept != null)
+                        response = dept.Element(ns + "Code").Value;
+
+                }
+                //foreach (var item in xmldocu.Elements(ns + "Shipment"))
+                //{
+
+                //}
+
+
+                //using (var reader = new StringReader(shipmentRequestResponse.Data.Data.OuterXml))
+                //{
+
+                //    var serializer = new XmlSerializer(typeof(UniversalShipmentData));
+                //    response = (UniversalShipmentData?)serializer.Deserialize(reader);
+                //}
             }
 
             return response;
@@ -679,5 +848,11 @@ namespace BrinksAPI.Controllers
         {
             return value == null || value.Length == 0 || value == "";
         }
+    }
+
+    public class ShipmentDetails
+    {
+        public string ShipmentNo { get; set; }
+        public string DepartmentCode { get; set; }
     }
 }
