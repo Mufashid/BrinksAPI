@@ -725,7 +725,7 @@ namespace BrinksAPI.Controllers
                     {
                         if (organizationData.OrgHeader.OrgCompanyDataCollection is not null)
                         {
-                            var filterOrgCompanyData = organizationData.OrgHeader.OrgCompanyDataCollection.FirstOrDefault();
+                            var filterOrgCompanyData = organizationData.OrgHeader.OrgCompanyDataCollection.FirstOrDefault(x => x.GlbCompany.Code == site.CWBranchCode);
                             if (filterOrgCompanyData != null)
                             {
                                 filterOrgCompanyData.ActionSpecified = true;
@@ -771,6 +771,8 @@ namespace BrinksAPI.Controllers
                                     }
                                     filterOrgCompanyData.ARExternalDebtorCode = organization.arAccountNumber;
                                     filterOrgCompanyData.ARDDefltCurrency.Code = organization.preferredCurrency;
+                                    filterOrgCompanyData.ARDDefltCurrency.PK = null;
+                                    filterOrgCompanyData.ARDDefltCurrency.Action = NativeOrganization.Action.UPDATE;
                                 }
                                 if (organization.apAccountNumber != null)
                                 {
@@ -778,6 +780,8 @@ namespace BrinksAPI.Controllers
                                     filterOrgCompanyData.IsCreditor = true;
                                     filterOrgCompanyData.APExternalCreditorCode = organization.apAccountNumber;
                                     filterOrgCompanyData.APDefltCurrency.Code = organization.preferredCurrency;
+                                    filterOrgCompanyData.APDefltCurrency.PK = null;
+                                    filterOrgCompanyData.APDefltCurrency.Action = NativeOrganization.Action.UPDATE;
                                 }
                             }
                             else
