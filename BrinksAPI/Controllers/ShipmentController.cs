@@ -112,7 +112,6 @@ namespace BrinksAPI.Controllers
                 #endregion
 
                 #region PORT
-
                 var loadingPort = _context.sites.Where(s => s.Airport == shipment.pickupAirportCode).FirstOrDefault();
                 loadingPort = loadingPort == null ? _context.sites.Where(s => s.SiteCode.ToString() == shipment.pickupSiteCode).FirstOrDefault() : loadingPort;
                 loadingPort = loadingPort == null ? _context.sites.Where(s => s.Country.ToLower() == shipment.shipperCountryCode.ToLower()).FirstOrDefault() : loadingPort;
@@ -145,6 +144,13 @@ namespace BrinksAPI.Controllers
                 markAndNumberNote.NoteContext = new NoteContext() { Code = "AAA" };
                 markAndNumberNote.Visibility = new CodeDescriptionPair() { Code = "PUB" };
                 notes.Add(markAndNumberNote);
+
+                Note shipmentInfo = new Note();
+                shipmentInfo.Description = "Shipment Imported";
+                shipmentInfo.NoteText = "Y";
+                shipmentInfo.NoteContext = new NoteContext() { Code = "AAA" };
+                shipmentInfo.Visibility = new CodeDescriptionPair() { Code = "PUB" };
+                notes.Add(shipmentInfo);
 
                 Note pickUpNote = new Note();
                 pickUpNote.Description = "Pickup Note";
