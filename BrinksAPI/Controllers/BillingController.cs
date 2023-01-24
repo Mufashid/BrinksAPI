@@ -852,7 +852,7 @@ namespace BrinksAPI.Controllers
 
     public class ShipmentDetails
     {
-        public string ShipmentNo { get; set; }
-        public string DepartmentCode { get; set; }
+        public string? ShipmentNo { get; set; }
+        public string? DepartmentCode { get; set; }
     }
 }
