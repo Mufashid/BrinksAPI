@@ -725,8 +725,9 @@ namespace BrinksAPI.Controllers
                     {
                         if (organizationData.OrgHeader.OrgCompanyDataCollection is not null)
                         {
-                            //var filterOrgCompanyData = organizationData.OrgHeader.OrgCompanyDataCollection.FirstOrDefault(x => x.GlbCompany.Code == site.CWBranchCode);
-                            var filterOrgCompanyData = organizationData.OrgHeader.OrgCompanyDataCollection.FirstOrDefault();
+                            var filterOrgCompanyData = organizationData.OrgHeader.OrgCompanyDataCollection.FirstOrDefault(x => x.GlbCompany.Code == site.CWBranchCode);
+                            //filterOrgCompanyData = filterOrgCompanyData == null?organizationData.OrgHeader.OrgCompanyDataCollection.FirstOrDefault():filterOrgCompanyData;
+
                             if (filterOrgCompanyData != null)
                             {
                                 filterOrgCompanyData.ActionSpecified = true;
@@ -795,8 +796,14 @@ namespace BrinksAPI.Controllers
                                 if (organization.siteCode != null)
                                      companyCode = _context.organizationSites.Where(s => s.SiteCode == organization.siteCode).FirstOrDefault().CWBranchCode;
 
+                                if(companyCode == null)
+                                {
+                                    dataResponse.Status = "ERROR";
+                                    dataResponse.Message = "Not a valid company code in DB. Please check the site code.";
+                                    return Ok(dataResponse);
+                                }
                                 NativeOrganizationOrgCompanyDataGlbCompany company = new NativeOrganizationOrgCompanyDataGlbCompany();
-                                company.Code = companyCode!=null?companyCode:"DXB";
+                                company.Code = companyCode;
                                 orgCompanyData.GlbCompany = company;
                                 if (organization.arAccountNumber != null)
                                 {
