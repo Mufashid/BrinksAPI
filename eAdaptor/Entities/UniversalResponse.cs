@@ -20,56 +20,160 @@ using System.Xml.Serialization;
 [System.SerializableAttribute()]
 [System.Diagnostics.DebuggerStepThroughAttribute()]
 [System.ComponentModel.DesignerCategoryAttribute("code")]
-[System.Xml.Serialization.XmlTypeAttribute(Namespace="http://www.cargowise.com/Schemas/Universal/2011/11")]
-[System.Xml.Serialization.XmlRootAttribute("UniversalResponse", Namespace="http://www.cargowise.com/Schemas/Universal/2011/11", IsNullable=false)]
-public partial class UniversalResponseData {
-    
+[System.Xml.Serialization.XmlTypeAttribute(Namespace = "http://www.cargowise.com/Schemas/Universal/2011/11")]
+[System.Xml.Serialization.XmlRootAttribute("UniversalResponse", Namespace = "http://www.cargowise.com/Schemas/Universal/2011/11", IsNullable = false)]
+public partial class UniversalResponseData
+{
+
     private string statusField;
-    
+
     private System.Xml.XmlElement dataField;
-    
+
+    private UniversalResponseDataMessageNumber[] messageNumberCollectionField;
+
     private string processingLogField;
-    
+
     private string versionField;
-    
+
     /// <remarks/>
-    public string Status {
-        get {
+    public string Status
+    {
+        get
+        {
             return this.statusField;
         }
-        set {
+        set
+        {
             this.statusField = value;
         }
     }
-    
+
     /// <remarks/>
-    public System.Xml.XmlElement Data {
-        get {
+    public System.Xml.XmlElement Data
+    {
+        get
+        {
             return this.dataField;
         }
-        set {
+        set
+        {
             this.dataField = value;
         }
     }
-    
+
     /// <remarks/>
-    public string ProcessingLog {
-        get {
+    [System.Xml.Serialization.XmlArrayItemAttribute("MessageNumber", IsNullable = false)]
+    public UniversalResponseDataMessageNumber[] MessageNumberCollection
+    {
+        get
+        {
+            return this.messageNumberCollectionField;
+        }
+        set
+        {
+            this.messageNumberCollectionField = value;
+        }
+    }
+
+    /// <remarks/>
+    public string ProcessingLog
+    {
+        get
+        {
             return this.processingLogField;
         }
-        set {
+        set
+        {
             this.processingLogField = value;
         }
     }
-    
+
     /// <remarks/>
-    [System.Xml.Serialization.XmlAttributeAttribute(DataType="token")]
-    public string version {
-        get {
+    [System.Xml.Serialization.XmlAttributeAttribute(DataType = "token")]
+    public string version
+    {
+        get
+        {
             return this.versionField;
         }
-        set {
+        set
+        {
             this.versionField = value;
         }
     }
+}
+
+/// <remarks/>
+[System.CodeDom.Compiler.GeneratedCodeAttribute("xsd", "4.8.3928.0")]
+[System.SerializableAttribute()]
+[System.Diagnostics.DebuggerStepThroughAttribute()]
+[System.ComponentModel.DesignerCategoryAttribute("code")]
+[System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true, Namespace = "http://www.cargowise.com/Schemas/Universal/2011/11")]
+public partial class UniversalResponseDataMessageNumber
+{
+
+    private MessageNumberType typeField;
+
+    private bool typeFieldSpecified;
+
+    private string valueField;
+
+    /// <remarks/>
+    [System.Xml.Serialization.XmlAttributeAttribute()]
+    public MessageNumberType Type
+    {
+        get
+        {
+            return this.typeField;
+        }
+        set
+        {
+            this.typeField = value;
+        }
+    }
+
+    /// <remarks/>
+    [System.Xml.Serialization.XmlIgnoreAttribute()]
+    public bool TypeSpecified
+    {
+        get
+        {
+            return this.typeFieldSpecified;
+        }
+        set
+        {
+            this.typeFieldSpecified = value;
+        }
+    }
+
+    /// <remarks/>
+    [System.Xml.Serialization.XmlTextAttribute()]
+    public string Value
+    {
+        get
+        {
+            return this.valueField;
+        }
+        set
+        {
+            this.valueField = value;
+        }
+    }
+}
+
+/// <remarks/>
+[System.CodeDom.Compiler.GeneratedCodeAttribute("xsd", "4.8.3928.0")]
+[System.SerializableAttribute()]
+[System.Xml.Serialization.XmlTypeAttribute(Namespace = "http://www.cargowise.com/Schemas/Universal/2011/11")]
+public enum MessageNumberType
+{
+
+    /// <remarks/>
+    TrackingID,
+
+    /// <remarks/>
+    InterchangeNumber,
+
+    /// <remarks/>
+    MessageNumber,
 }

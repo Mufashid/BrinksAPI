@@ -35,7 +35,7 @@ namespace eAdaptor
                                 var serializer = new XmlSerializer(typeof(UniversalResponseData));
                                 UniversalResponseData result = (UniversalResponseData)serializer.Deserialize(reader);
 
-                                bool isError = result.Data.InnerText.Contains("Error");
+                                bool isError = result.Data.InnerText.Contains("Error") || result.Status!= "PRS";
                                 responseData.Status = isError ? "ERROR" : "SUCCESS";
                                 responseData.Message = isError ? "Please fix the errors." : "Successfull";
                                 responseData.Data = result;

@@ -9,10 +9,7 @@
   <ItemGroup>
     <Compile Remove="CargoWiseConfig.cs" />
     <Compile Remove="IConfigManager.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Models\" />
+    <Compile Remove="Models\UniversalResponse - Old.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -725,7 +725,8 @@ namespace BrinksAPI.Controllers
                     {
                         if (organizationData.OrgHeader.OrgCompanyDataCollection is not null)
                         {
-                            var filterOrgCompanyData = organizationData.OrgHeader.OrgCompanyDataCollection.FirstOrDefault(x => x.GlbCompany.Code == site.CWBranchCode);
+                            //var filterOrgCompanyData = organizationData.OrgHeader.OrgCompanyDataCollection.FirstOrDefault(x => x.GlbCompany.Code == site.CWBranchCode);
+                            var filterOrgCompanyData = organizationData.OrgHeader.OrgCompanyDataCollection.FirstOrDefault();
                             if (filterOrgCompanyData != null)
                             {
                                 filterOrgCompanyData.ActionSpecified = true;
@@ -795,7 +796,7 @@ namespace BrinksAPI.Controllers
                                      companyCode = _context.organizationSites.Where(s => s.SiteCode == organization.siteCode).FirstOrDefault().CWBranchCode;
 
                                 NativeOrganizationOrgCompanyDataGlbCompany company = new NativeOrganizationOrgCompanyDataGlbCompany();
-                                company.Code = companyCode!=""?companyCode:"DXB";
+                                company.Code = companyCode!=null?companyCode:"DXB";
                                 orgCompanyData.GlbCompany = company;
                                 if (organization.arAccountNumber != null)
                                 {
@@ -1245,7 +1246,7 @@ namespace BrinksAPI.Controllers
                     organizationData.OrgHeader.OrgAddressCollection[0].Address2 = organization.address2;
                     organizationData.OrgHeader.OrgAddressCollection[0].AdditionalAddressInformation = organization?.address3;
 
-                    if (organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection.Count() > 1)
+                    if (organizationData.OrgHeader.OrgAddressCollection[0]?.OrgAddressAdditionalInfoCollection?.Count() > 1)
                     {
                         organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[0].ActionSpecified = true;
                         organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[0].Action = NativeOrganization.Action.UPDATE;
@@ -1255,7 +1256,29 @@ namespace BrinksAPI.Controllers
                         organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[1].Action = NativeOrganization.Action.UPDATE;
                         organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[1].AdditionalInfo = organization.address4;
                     }
-
+                    else
+                    {
+                        List<NativeOrganizationOrgAddressOrgAddressAdditionalInfo> additionalInfoAddresses = new List<NativeOrganizationOrgAddressOrgAddressAdditionalInfo>();
+                        if (organization.address3 != null && organization.address3 != "")
+                        {
+                            NativeOrganizationOrgAddressOrgAddressAdditionalInfo additionalInfoAddress3 = new NativeOrganizationOrgAddressOrgAddressAdditionalInfo();
+                            additionalInfoAddress3.ActionSpecified = true;
+                            additionalInfoAddress3.Action = NativeOrganization.Action.INSERT;
+                            additionalInfoAddress3.IsPrimarySpecified = true;
+                            additionalInfoAddress3.IsPrimary = true;
+                            additionalInfoAddress3.AdditionalInfo = organization?.address3;
+                            additionalInfoAddresses.Add(additionalInfoAddress3);
+                        }
+                        if (organization.address4 != null && organization.address4 != "")
+                        {
+                            NativeOrganizationOrgAddressOrgAddressAdditionalInfo additionalInfoAddress4 = new NativeOrganizationOrgAddressOrgAddressAdditionalInfo();
+                            additionalInfoAddress4.ActionSpecified = true;
+                            additionalInfoAddress4.Action = NativeOrganization.Action.INSERT;
+                            additionalInfoAddress4.AdditionalInfo = organization?.address4;
+                            additionalInfoAddresses.Add(additionalInfoAddress4);
+                        }
+                        organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection = additionalInfoAddresses.ToArray();
+                    }
 
                     organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.ActionSpecified = true;
                     organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.Action = NativeOrganization.Action.UPDATE;
@@ -1370,7 +1393,7 @@ namespace BrinksAPI.Controllers
             {
                 dataResponse.Status = "ERROR";
                 dataResponse.Message = ex.Message;
-                return Ok(ex.Message);
+                return Ok(dataResponse);
             }
         }
         #endregion
