@@ -480,7 +480,7 @@ namespace BrinksAPI.Controllers
                     //journal.OSTotalAmountSpecified = true;
                     //journal.OSTotalAmount = -Math.Abs(Convert.ToDecimal(revenue.invoice_amount) + Convert.ToDecimal(revenue.invoice_tax_amount));
 
-                    string? taxCodeCW = _context.TaxTypes.Where(t => t.BrinksCode == revenue.tax_code).FirstOrDefault()?.BrinksCode;
+                    string? taxCodeCW = _context.TaxTypes.Where(t => t.BrinksCode == revenue.tax_code).FirstOrDefault()?.CWCode;
                     UniversalTransaction.TaxID taxID = new UniversalTransaction.TaxID();
                     taxID.TaxCode = DefaultValue(taxCodeCW, "FREEVAT");
                     journal.VATTaxID = taxID;
