@@ -412,8 +412,8 @@ namespace BrinksAPI.Controllers
                     transactionInfo.OSCurrency = currency;
 
                 }
-                transactionInfo.ExchangeRateSpecified = true;
-                transactionInfo.ExchangeRate = Convert.ToDecimal(payableInvoice.exchange_rate);
+                //transactionInfo.ExchangeRateSpecified = true;
+                //transactionInfo.ExchangeRate = Convert.ToDecimal(payableInvoice.exchange_rate);
 
                 UniversalTransaction.Branch branch = new UniversalTransaction.Branch();
                 branch.Code = branchCodeCW;
@@ -507,8 +507,8 @@ namespace BrinksAPI.Controllers
 
 
                 //removed the exchange rate since this is going to os amount
-                decimal totalAmountExcludeTax = payableInvoice.revenues.Sum(s => Convert.ToDecimal(s.invoice_amount));
-                decimal totalAmountTax = payableInvoice.revenues.Sum(s => Convert.ToDecimal(s.invoice_tax_amount));
+                decimal totalAmountExcludeTax = journals.Sum(x => x.OSAmount);
+                decimal totalAmountTax = journals.Sum(x => x.OSGSTVATAmount);
 
 
                 transactionInfo.OSExGSTVATAmountSpecified = !IsNullOrEmpty(totalAmountExcludeTax.ToString()); ;

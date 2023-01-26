@@ -900,7 +900,7 @@ namespace BrinksAPI.Controllers
                 dataResponse.Message = successMessage + ex.Message;
                 return StatusCode(StatusCodes.Status500InternalServerError, dataResponse);
             }
-            _logger.LogError("Success:{@Request}",shipment);
+            _logger.LogInformation("Success:{@Request}",shipment);
             return Ok(dataResponse);
         }
         #endregion
