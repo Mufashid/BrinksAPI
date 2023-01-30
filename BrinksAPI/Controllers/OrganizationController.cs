@@ -16,13 +16,15 @@ namespace BrinksAPI.Controllers
     [Authorize]
     public class OrganizationController : Controller
     {
+        private readonly ILogger<OrganizationController> _logger;
         private readonly IConfigManager _configuration;
         private readonly ApplicationDbContext _context;
 
-        public OrganizationController(IConfigManager configuaration,ApplicationDbContext context)
+        public OrganizationController(IConfigManager configuaration,ApplicationDbContext context, ILogger<OrganizationController> logger)
         {
             _configuration = configuaration;
             _context = context;
+            _logger = logger;
         }
 
 
@@ -256,7 +258,7 @@ namespace BrinksAPI.Controllers
                     {
                         orgCompanyData.IsDebtorSpecified = true;
                         orgCompanyData.IsDebtor = true;
-                        orgCompanyData.ARExternalDebtorCode = organization.arAccountNumber;
+                        //orgCompanyData.ARExternalDebtorCode = organization.arAccountNumber;
                         if (organization.RiskCodeDescription != null)
                         {
                             var riskCodeDescription = _context.riskCodeDescriptions.Where(r=>r.BrinksCode == organization.RiskCodeDescription).FirstOrDefault();
@@ -301,7 +303,7 @@ namespace BrinksAPI.Controllers
                     {
                         orgCompanyData.IsCreditorSpecified = true;
                         orgCompanyData.IsCreditor = true;
-                        orgCompanyData.APExternalCreditorCode = organization.apAccountNumber;
+                        //orgCompanyData.APExternalCreditorCode = organization.apAccountNumber;
                         NativeOrganizationOrgCompanyDataAPDefltCurrency apDefltCurrency = new NativeOrganizationOrgCompanyDataAPDefltCurrency();
                         apDefltCurrency.TableName = "RefCurrency";
                         apDefltCurrency.Code = organization.preferredCurrency;
@@ -368,7 +370,26 @@ namespace BrinksAPI.Controllers
                         taxRegistrationCusCode.CodeCountry = cusCodeCountry;
                         registrationCusCodes.Add(taxRegistrationCusCode);
                     }
-
+                    if (organization.arAccountNumber != null)
+                    {
+                        NativeOrganizationOrgCusCode arRegistrationCusCode = new NativeOrganizationOrgCusCode();
+                        arRegistrationCusCode.ActionSpecified = true;
+                        arRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
+                        arRegistrationCusCode.CustomsRegNo = organization.arAccountNumber;
+                        arRegistrationCusCode.CodeType = "EDR";
+                        arRegistrationCusCode.CodeCountry = cusCodeCountry;
+                        registrationCusCodes.Add(arRegistrationCusCode);
+                    }
+                    if (organization.apAccountNumber != null)
+                    {
+                        NativeOrganizationOrgCusCode apRegistrationCusCode = new NativeOrganizationOrgCusCode();
+                        apRegistrationCusCode.ActionSpecified = true;
+                        apRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
+                        apRegistrationCusCode.CustomsRegNo = organization.apAccountNumber;
+                        apRegistrationCusCode.CodeType = "ECR";
+                        apRegistrationCusCode.CodeCountry = cusCodeCountry;
+                        registrationCusCodes.Add(apRegistrationCusCode);
+                    }
                     nativeOrganization.OrgCusCodeCollection = registrationCusCodes.ToArray();
                     #endregion
 
@@ -771,7 +792,7 @@ namespace BrinksAPI.Controllers
                                             }
                                         }
                                     }
-                                    filterOrgCompanyData.ARExternalDebtorCode = organization.arAccountNumber;
+                                    //filterOrgCompanyData.ARExternalDebtorCode = organization.arAccountNumber;
                                     filterOrgCompanyData.ARDDefltCurrency.Code = organization.preferredCurrency;
                                     filterOrgCompanyData.ARDDefltCurrency.PK = null;
                                     filterOrgCompanyData.ARDDefltCurrency.Action = NativeOrganization.Action.UPDATE;
@@ -780,7 +801,7 @@ namespace BrinksAPI.Controllers
                                 {
                                     filterOrgCompanyData.IsCreditorSpecified = true;
                                     filterOrgCompanyData.IsCreditor = true;
-                                    filterOrgCompanyData.APExternalCreditorCode = organization.apAccountNumber;
+                                    //filterOrgCompanyData.APExternalCreditorCode = organization.apAccountNumber;
                                     filterOrgCompanyData.APDefltCurrency.Code = organization.preferredCurrency;
                                     filterOrgCompanyData.APDefltCurrency.PK = null;
                                     filterOrgCompanyData.APDefltCurrency.Action = NativeOrganization.Action.UPDATE;
@@ -837,7 +858,7 @@ namespace BrinksAPI.Controllers
                                     }
                                     orgCompanyData.IsDebtorSpecified = true;
                                     orgCompanyData.IsDebtor = true;
-                                    orgCompanyData.ARExternalDebtorCode = organization.arAccountNumber;
+                                    //orgCompanyData.ARExternalDebtorCode = organization.arAccountNumber;
                                     NativeOrganizationOrgCompanyDataARDDefltCurrency arDefltCurrency = new NativeOrganizationOrgCompanyDataARDDefltCurrency();
                                     arDefltCurrency.TableName = "RefCurrency";
                                     arDefltCurrency.Code = organization.preferredCurrency;
@@ -852,7 +873,7 @@ namespace BrinksAPI.Controllers
                                 {
                                     orgCompanyData.IsCreditorSpecified = true;
                                     orgCompanyData.IsCreditor = true;
-                                    orgCompanyData.APExternalCreditorCode = organization.apAccountNumber;
+                                    //orgCompanyData.APExternalCreditorCode = organization.apAccountNumber;
                                     NativeOrganizationOrgCompanyDataAPDefltCurrency apDefltCurrency = new NativeOrganizationOrgCompanyDataAPDefltCurrency();
                                     apDefltCurrency.TableName = "RefCurrency";
                                     apDefltCurrency.Code = organization.preferredCurrency;
@@ -955,20 +976,23 @@ namespace BrinksAPI.Controllers
                     #endregion
 
                     #region RESGISTRATION
-                    if (organization.taxId != null)
+
+                    if (organizationData.OrgHeader.OrgCusCodeCollection is not null)
                     {
-                        if(organizationData.OrgHeader.OrgCusCodeCollection is not null)
+                        List<NativeOrganizationOrgCusCode> registrationCusCodes = new List<NativeOrganizationOrgCusCode>();
+                        if (organization.taxId != null)
                         {
-                            List<NativeOrganizationOrgCusCode> registrationCusCodes = new List<NativeOrganizationOrgCusCode>();
-                            var filterTaxRegistrationCusCode = organizationData.OrgHeader.OrgCusCodeCollection.Where(cus=>cus.CodeType == "VAT").FirstOrDefault();
-                            if (filterTaxRegistrationCusCode !=null)
+                            var filterTaxRegistrationCusCode = organizationData.OrgHeader.OrgCusCodeCollection.Where(cus => cus.CodeType == "VAT").FirstOrDefault();
+                            if (filterTaxRegistrationCusCode != null)
                             {
                                 filterTaxRegistrationCusCode.ActionSpecified = true;
                                 filterTaxRegistrationCusCode.Action = NativeOrganization.Action.UPDATE;
+                                filterTaxRegistrationCusCode.PK = filterTaxRegistrationCusCode.PK;
                                 filterTaxRegistrationCusCode.CustomsRegNo = organization.taxId;
+                                registrationCusCodes.Add(filterTaxRegistrationCusCode);
                             }
                             else
-                            {           
+                            {
                                 NativeOrganizationOrgCusCodeCodeCountry cusCodeCountry = new NativeOrganizationOrgCusCodeCodeCountry();
                                 cusCodeCountry.Code = organization.countryCode;
                                 NativeOrganizationOrgCusCode taxRegistrationCusCode = new NativeOrganizationOrgCusCode();
@@ -978,11 +1002,63 @@ namespace BrinksAPI.Controllers
                                 taxRegistrationCusCode.CodeType = "VAT";
                                 taxRegistrationCusCode.CodeCountry = cusCodeCountry;
                                 registrationCusCodes.Add(taxRegistrationCusCode);
-                                organizationData.OrgHeader.OrgCusCodeCollection = registrationCusCodes.ToArray();
+                                //organizationData.OrgHeader.OrgCusCodeCollection = registrationCusCodes.ToArray();
                             }
                         }
+                        if (organization.arAccountNumber != null)
+                        {
+                            var filterArRegistrationCusCode = organizationData.OrgHeader.OrgCusCodeCollection.Where(cus => cus.CodeType == "ECR").FirstOrDefault();
+                            if (filterArRegistrationCusCode != null)
+                            {
+                                filterArRegistrationCusCode.ActionSpecified = true;
+                                filterArRegistrationCusCode.Action = NativeOrganization.Action.UPDATE;
+                                filterArRegistrationCusCode.PK = filterArRegistrationCusCode.PK;
+                                filterArRegistrationCusCode.CustomsRegNo = organization.arAccountNumber;
+                                registrationCusCodes.Add(filterArRegistrationCusCode);
+                            }
+                            else
+                            {
+                                NativeOrganizationOrgCusCodeCodeCountry cusCodeCountry = new NativeOrganizationOrgCusCodeCodeCountry();
+                                cusCodeCountry.Code = organization.countryCode;
+                                NativeOrganizationOrgCusCode arRegistrationCusCode = new NativeOrganizationOrgCusCode();
+                                arRegistrationCusCode.ActionSpecified = true;
+                                arRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
+                                arRegistrationCusCode.CustomsRegNo = organization.arAccountNumber;
+                                arRegistrationCusCode.CodeType = "ECR";
+                                arRegistrationCusCode.CodeCountry = cusCodeCountry;
+                                registrationCusCodes.Add(arRegistrationCusCode);
 
+                            }
+                        }
+                        if (organization.apAccountNumber != null)
+                        {
+                            var filterApRegistrationCusCode = organizationData.OrgHeader.OrgCusCodeCollection.Where(cus => cus.CodeType == "EDR").FirstOrDefault();
+                            if (filterApRegistrationCusCode != null)
+                            {
+                                filterApRegistrationCusCode.ActionSpecified = true;
+                                filterApRegistrationCusCode.Action = NativeOrganization.Action.UPDATE;
+                                filterApRegistrationCusCode.PK = filterApRegistrationCusCode.PK;
+                                filterApRegistrationCusCode.CustomsRegNo = organization.apAccountNumber;
+                                registrationCusCodes.Add(filterApRegistrationCusCode);
+                            }
+                            else
+                            {
+                                NativeOrganizationOrgCusCodeCodeCountry cusCodeCountry = new NativeOrganizationOrgCusCodeCodeCountry();
+                                cusCodeCountry.Code = organization.countryCode;
+                                NativeOrganizationOrgCusCode apRegistrationCusCode = new NativeOrganizationOrgCusCode();
+                                apRegistrationCusCode.ActionSpecified = true;
+                                apRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
+                                apRegistrationCusCode.CustomsRegNo = organization.apAccountNumber;
+                                apRegistrationCusCode.CodeType = "EDR";
+                                apRegistrationCusCode.CodeCountry = cusCodeCountry;
+                                registrationCusCodes.Add(apRegistrationCusCode);
+
+                            }
+                        }
+                        organizationData.OrgHeader.OrgCusCodeCollection = registrationCusCodes.ToArray();
                     }
+
+                    
                     #endregion
 
                     #region RELATED PARTIES
@@ -1389,6 +1465,7 @@ namespace BrinksAPI.Controllers
                     MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
                     string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
                     dataResponse.Message = string.Join(",", groupedErrors);
+                    _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, organization);
                     return Ok(dataResponse);
                 }
 
