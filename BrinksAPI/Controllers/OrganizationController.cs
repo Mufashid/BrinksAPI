@@ -1468,13 +1468,14 @@ namespace BrinksAPI.Controllers
                     _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, organization);
                     return Ok(dataResponse);
                 }
-
+                _logger.LogInformation("Success: {@Success} Request: {@Request}", dataResponse.Message, organization);
                 dataResponse.Status = "SUCCESS";
                 dataResponse.Message = successMessage;
                 return Ok(dataResponse);
             }
             catch (Exception ex)
             {
+                _logger.LogError("Error: {@Error} Request: {@Request}", ex.Message, organization);
                 dataResponse.Status = "ERROR";
                 dataResponse.Message = ex.Message;
                 return Ok(dataResponse);
