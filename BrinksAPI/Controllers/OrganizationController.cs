@@ -40,7 +40,7 @@ namespace BrinksAPI.Controllers
         ///     POST /api/organization/
         ///		{
         ///		   "requestId":"12345678",
-        ///        "RiskCodeDescription": "Good",
+        ///        "RiskCodeDescription": "CR1",
         ///        "name": "CENGLOBAL",
         ///        "address1": "Office 15",
         ///        "address2": "15th Floor",
@@ -1329,7 +1329,13 @@ namespace BrinksAPI.Controllers
                     organizationData.OrgHeader.OrgAddressCollection[0].Address2 = organization.address2;
                     organizationData.OrgHeader.OrgAddressCollection[0].AdditionalAddressInformation = organization?.address3;
 
-                    if (organizationData.OrgHeader.OrgAddressCollection[0]?.OrgAddressAdditionalInfoCollection?.Count() > 1)
+                    if (organizationData.OrgHeader.OrgAddressCollection[0]?.OrgAddressAdditionalInfoCollection?.Count() == 1)
+                    {
+                        organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[0].ActionSpecified = true;
+                        organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[0].Action = NativeOrganization.Action.UPDATE;
+                        organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[0].AdditionalInfo = organization.address3;
+                    }
+                    if (organizationData.OrgHeader.OrgAddressCollection[0]?.OrgAddressAdditionalInfoCollection?.Count() == 2)
                     {
                         organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[0].ActionSpecified = true;
                         organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[0].Action = NativeOrganization.Action.UPDATE;
@@ -1383,12 +1389,12 @@ namespace BrinksAPI.Controllers
                     Dictionary<string, string> customValues = new Dictionary<string, string>();
                     //customValues.Add("siteCode", organization.siteCode);
                     customValues.Add("locationVerifiedDate", organization.locationVerifiedDate);
-                    customValues.Add("kycCreatedPrior2018", organization.kycCreatedPrior2018.ToString());
-                    customValues.Add("kycOpenProcCompleted", organization.kycOpenProcCompleted.ToString());
-                    customValues.Add("kycRefNbr", organization.kycRefNbr);
-                    customValues.Add("kycVerifDate", organization.kycVerifDate);
-                    customValues.Add("kycApprovedBy", organization.kycApprovedBy);
-                    customValues.Add("kycOpeningStation", organization.kycOpeningStation);
+                    //customValues.Add("kycCreatedPrior2018", organization.kycCreatedPrior2018.ToString());
+                    //customValues.Add("kycOpenProcCompleted", organization.kycOpenProcCompleted.ToString());
+                    //customValues.Add("kycRefNbr", organization.kycRefNbr);
+                    //customValues.Add("kycVerifDate", organization.kycVerifDate);
+                    //customValues.Add("kycApprovedBy", organization.kycApprovedBy);
+                    //customValues.Add("kycOpeningStation", organization.kycOpeningStation);
                     customValues.Add("lob", organization.lob);
                     customValues.Add("adyenPay", organization.adyenPay.ToString());
                     customValues.Add("adyenPayPreference", organization.adyenPayPreference);
