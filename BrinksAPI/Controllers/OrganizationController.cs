@@ -975,7 +975,7 @@ namespace BrinksAPI.Controllers
 
                     #endregion
 
-                    #region RESGISTRATION
+                    #region REGISTRATION
 
                     if (organizationData.OrgHeader.OrgCusCodeCollection is not null)
                     {
@@ -1331,17 +1331,17 @@ namespace BrinksAPI.Controllers
 
                     if (organizationData.OrgHeader.OrgAddressCollection[0]?.OrgAddressAdditionalInfoCollection?.Count() == 1)
                     {
-                        organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[0].ActionSpecified = true;
+                        organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[0].ActionSpecified = !String.IsNullOrEmpty(organization.address3);
                         organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[0].Action = NativeOrganization.Action.UPDATE;
                         organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[0].AdditionalInfo = organization.address3;
                     }
                     if (organizationData.OrgHeader.OrgAddressCollection[0]?.OrgAddressAdditionalInfoCollection?.Count() == 2)
                     {
-                        organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[0].ActionSpecified = true;
+                        organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[0].ActionSpecified = !String.IsNullOrEmpty(organization.address3);
                         organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[0].Action = NativeOrganization.Action.UPDATE;
                         organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[0].AdditionalInfo = organization.address3;
 
-                        organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[1].ActionSpecified = true;
+                        organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[1].ActionSpecified = !String.IsNullOrEmpty(organization.address4);
                         organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[1].Action = NativeOrganization.Action.UPDATE;
                         organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection[1].AdditionalInfo = organization.address4;
                     }
