@@ -211,18 +211,26 @@ namespace BrinksAPI.Controllers
                     }
                     #endregion
 
-                    #region CONSIGNOR OR CONSIGNEE
-                    if (organization.knownShipper == YesOrNo.Y)
-                    {
-                        nativeOrganization.IsConsigneeSpecified = true;
-                        nativeOrganization.IsConsignee = true;
-                    }
 
-                    if (organization.allowCollect == YesOrNo.Y)
-                    {
-                        nativeOrganization.IsConsignorSpecified = true;
-                        nativeOrganization.IsConsignor = true;
-                    }
+
+                    #region CONSIGNOR OR CONSIGNEE
+
+                    nativeOrganization.IsConsigneeSpecified = true;
+                    nativeOrganization.IsConsignee = true;
+                    nativeOrganization.IsConsignorSpecified = true;
+                    nativeOrganization.IsConsignor = true;
+
+                    //if (organization.knownShipper == YesOrNo.Y)
+                    //{
+                    //    nativeOrganization.IsConsigneeSpecified = true;
+                    //    nativeOrganization.IsConsignee = true;
+                    //}
+
+                    //if (organization.allowCollect == YesOrNo.Y)
+                    //{
+                    //    nativeOrganization.IsConsignorSpecified = true;
+                    //    nativeOrganization.IsConsignor = true;
+                    //}
                     #endregion
 
                     #region ORGANIZATION COUNTRY DATA TSA
@@ -692,15 +700,17 @@ namespace BrinksAPI.Controllers
                     #region CONSIGNOR OR CONSIGNEE
                     organizationData.OrgHeader.IsConsigneeSpecified = true;
                     organizationData.OrgHeader.IsConsignorSpecified = true;
-                    if (organization.knownShipper == YesOrNo.Y)
-                        organizationData.OrgHeader.IsConsignee = true;
-                    if (organization.knownShipper == YesOrNo.N)
-                        organizationData.OrgHeader.IsConsignee = false;
+                    organizationData.OrgHeader.IsConsignee = true;
+                    organizationData.OrgHeader.IsConsignor = true;
+                    //if (organization.knownShipper == YesOrNo.Y)
+                    //    organizationData.OrgHeader.IsConsignee = true;
+                    //if (organization.knownShipper == YesOrNo.N)
+                    //    organizationData.OrgHeader.IsConsignee = false;
 
-                    if (organization.allowCollect == YesOrNo.Y)
-                        organizationData.OrgHeader.IsConsignor = true;
-                    if (organization.allowCollect == YesOrNo.N)
-                        organizationData.OrgHeader.IsConsignor = false;
+                    //if (organization.allowCollect == YesOrNo.Y)
+                    //    organizationData.OrgHeader.IsConsignor = true;
+                    //if (organization.allowCollect == YesOrNo.N)
+                    //    organizationData.OrgHeader.IsConsignor = false;
                     #endregion
 
                     #region ORGANIZATION COUNTRY DATA TSA

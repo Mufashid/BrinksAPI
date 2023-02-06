@@ -954,7 +954,6 @@ namespace BrinksAPI.Controllers
 
             try
             {
-
                 foreach (ShipmentHistory history in histories)
                 {
                     Response dataResponse = new Response();
@@ -983,20 +982,10 @@ namespace BrinksAPI.Controllers
                                     Site? site = _context.sites.Where(s => s.SiteCode == siteCode).FirstOrDefault();
                                     companyCode = site?.CompanyCode;
                                 }
-                                //int serverId = Int32.Parse(history.ServerId);
-                                //Site? site = _context.sites.Where(s => s.ServerID == serverId).FirstOrDefault();
-                                //string? companyCode = site?.CompanyCode;
                                 if (companyCode != null)
                                 {
                                     ActionType? actionTypeObj = _context.actionTypes.Where(a => a.BrinksCode.ToLower() == history.ActionType.ToLower()).FirstOrDefault();
                                     string? eventType = actionTypeObj is null ? "Z00" : actionTypeObj.EventType;
-
-                                    //if (history.SiteCode != null)// Extra 
-                                    //{
-                                    //    int siteCode = Int32.Parse(history.SiteCode);
-                                    //    site = _context.sites.Where(s => s.SiteCode == siteCode).FirstOrDefault();
-                                    //    companyCode = site?.CompanyCode!= null?site?.CompanyCode:companyCode;
-                                    //}
                                     Events.UniversalEventData universalEvent = new Events.UniversalEventData();
 
                                     #region DataContext
@@ -1011,9 +1000,6 @@ namespace BrinksAPI.Controllers
 
                                     Events.Company company = new Events.Company();
                                     company.Code = companyCode;
-                                    //Events.Country country = new Events.Country();
-                                    //country.Code = site.Country;
-                                    //company.Country = country;
                                     dataContext.Company = company;
 
                                     dataContext.EnterpriseID = _configuration.EnterpriseId;
