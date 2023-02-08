@@ -146,9 +146,6 @@ namespace BrinksAPI.Controllers
                                     shipment.DataContext = dataContext;
                                     #endregion
 
-
-
-
                                     List<ChargeLine> chargeLines = new List<ChargeLine>();
                                     ChargeLine chargeLine = new ChargeLine();
 
@@ -195,7 +192,7 @@ namespace BrinksAPI.Controllers
                                     chargeLine.SellOSGSTVATAmountSpecified = true;
                                     chargeLine.SellOSAmount = revenue.invoice_amount;
                                     chargeLine.SellOSGSTVATAmount = revenue.invoice_tax_amount;
-
+                                    chargeLine.SellReference = "API";
                                     chargeLines.Add(chargeLine);
 
                                     JobCosting jobCosting = new JobCosting();

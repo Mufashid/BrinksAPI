@@ -211,8 +211,6 @@ namespace BrinksAPI.Controllers
                     }
                     #endregion
 
-
-
                     #region CONSIGNOR OR CONSIGNEE
 
                     nativeOrganization.IsConsigneeSpecified = true;
@@ -491,6 +489,19 @@ namespace BrinksAPI.Controllers
                         creditRiskNote.NoteText = organization.creditRiskNotes;
                         notes.Add(creditRiskNote);
                     }
+                    if(organization.siteCode != null)
+                    {
+                        NativeOrganizationStmNote siteCodeNote = new NativeOrganizationStmNote();
+                        siteCodeNote.ActionSpecified = true;
+                        siteCodeNote.Action = NativeOrganization.Action.INSERT;
+                        siteCodeNote.NoteContext = "ALL";
+                        siteCodeNote.IsCustomDescription = false;
+                        siteCodeNote.ForceRead = true;
+                        siteCodeNote.NoteType = "PUB";
+                        siteCodeNote.Description = "Site Code";
+                        siteCodeNote.NoteText = organization.siteCode;
+                        notes.Add(siteCodeNote);
+                    }
 
                     Dictionary<string, string> kycDict = new Dictionary<string, string>();
                     kycDict.Add("kycCreatedPrior2018", organization.kycCreatedPrior2018.ToString());
@@ -519,7 +530,7 @@ namespace BrinksAPI.Controllers
                         notes.Add(kycNote);
                     }
 
-                        nativeOrganization.StmNoteCollection = notes.ToArray();
+                    nativeOrganization.StmNoteCollection = notes.ToArray();
                     #endregion
 
                     #region ORGANIZATION ADDRESS
@@ -1234,7 +1245,45 @@ namespace BrinksAPI.Controllers
                             notes.Add(note);
                         }
                     }
-
+                    if (organization.siteCode != null)
+                    {
+                        NativeOrganizationStmNote note = new NativeOrganizationStmNote();
+                        if (organizationData.OrgHeader.StmNoteCollection is not null)
+                        {
+                            var filteredOrganizationNote = organizationData.OrgHeader.StmNoteCollection.Where(on => on.Description == "Site Code").FirstOrDefault();
+                            if (filteredOrganizationNote != null)
+                            {
+                                filteredOrganizationNote.ActionSpecified = true;
+                                filteredOrganizationNote.Action = NativeOrganization.Action.UPDATE;
+                                filteredOrganizationNote.NoteText = organization.siteCode;
+                                notes.Add(filteredOrganizationNote);
+                            }
+                            else
+                            {
+                                note.ActionSpecified = true;
+                                note.Action = NativeOrganization.Action.INSERT;
+                                //note.NoteContext = "A";
+                                note.IsCustomDescription = false;
+                                note.ForceRead = true;
+                                note.NoteType = "PUB";
+                                note.Description = "Site Code";
+                                note.NoteText = organization.siteCode;
+                                notes.Add(note);
+                            }
+                        }
+                        else
+                        {
+                            note.ActionSpecified = true;
+                            note.Action = NativeOrganization.Action.INSERT;
+                            //note.NoteContext = "A";
+                            note.IsCustomDescription = false;
+                            note.ForceRead = true;
+                            note.NoteType = "PUB";
+                            note.Description = "Site Code";
+                            note.NoteText = organization.siteCode;
+                            notes.Add(note);
+                        }
+                    }
                     if (organization.kycApprovedBy != null)
                     {
                         Dictionary<string, string> kycDict = new Dictionary<string, string>();
@@ -1287,7 +1336,6 @@ namespace BrinksAPI.Controllers
                             notes.Add(note);
                         }
                     }
-
                     if (organization.creditRiskNotes != null)
                     {
                         NativeOrganizationStmNote note = new NativeOrganizationStmNote();
