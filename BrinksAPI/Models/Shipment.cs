@@ -124,8 +124,8 @@ namespace BrinksAPI.Models
         [StringLength(1)]
         public string? modeOfTransport { get; set; }
 
-        [StringLength(15)]
-        public string? itn { get; set; }
+        //[StringLength(15)]
+        //public string? itn { get; set; }
         [Required]
         [StringLength(1)]
         public string? userChargesType { get; set; }
@@ -156,8 +156,8 @@ namespace BrinksAPI.Models
         public string? dateCreated { get; set; }
         public string? lastUpdated { get; set; }
         public string? notes { get; set; }
-        [StringLength(1)]
-        public string? showFlag { get; set; }
+        //[StringLength(1)]
+        //public string? showFlag { get; set; }
         [StringLength(1)]
         public string? holdFlag { get; set; }
         [StringLength(1)]
@@ -169,13 +169,13 @@ namespace BrinksAPI.Models
         public string? tracer { get; set; }
         [StringLength(3)]
         public string? uscsStatusCode { get; set; }
-        [StringLength(1)]
-        public string? amsSentFlag { get; set; }
-        public string? amsSentDate { get; set; }
+        //[StringLength(1)]
+        //public string? amsSentFlag { get; set; }
+        //public string? amsSentDate { get; set; }
         [StringLength(1)]
         public string? trackingStatus { get; set; }
-        public int toShowId { get; set; }
-        public int fromShowId { get; set; }
+        //public int toShowId { get; set; }
+        //public int fromShowId { get; set; }
     }
 
     public class ShipmentItem
@@ -213,7 +213,7 @@ namespace BrinksAPI.Models
         public float? chargableWeight { get; set; }
         public string? dimUOM { get; set; }
         public double customerWeight { get; set; }
-        public double codAmount { get; set; }
+        //public double codAmount { get; set; }
         public string? codTypeCode { get; set; }
         [StringLength(15)]
         public string? showSealNumber { get; set; }

@@ -475,12 +475,12 @@ namespace BrinksAPI.Controllers
                 userAmountCF.Value = shipment.userAmount.ToString();
                 shipmentCustomizedFields.Add(userAmountCF);
 
-                string showFlag = shipment.showFlag == "N" ? "No" : "S1";
-                CustomizedField showFlagCF = new CustomizedField();
-                showFlagCF.DataType = CustomizedFieldDataType.String;
-                showFlagCF.Key = "Show";
-                showFlagCF.Value = showFlag;
-                shipmentCustomizedFields.Add(showFlagCF);
+                //string showFlag = shipment.showFlag == "N" ? "No" : "S1";
+                //CustomizedField showFlagCF = new CustomizedField();
+                //showFlagCF.DataType = CustomizedFieldDataType.String;
+                //showFlagCF.Key = "Show";
+                //showFlagCF.Value = showFlag;
+                //shipmentCustomizedFields.Add(showFlagCF);
 
                 CustomizedField netWeightUnitCF = new CustomizedField();
                 netWeightUnitCF.DataType = CustomizedFieldDataType.String;

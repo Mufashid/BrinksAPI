@@ -160,7 +160,8 @@ namespace BrinksAPI.Controllers
                     nativeOrganization.Language = "EN";
 
 
-                    //DEFAULT SITE ID
+                    #region SITE CODE
+                    //DEFAULT SITE ID (Check sitecode first if not then check country code)
                     Entities.OrganizationSite? site = new Entities.OrganizationSite();
                     if (organization.countryCode != null)
                     {
@@ -186,7 +187,8 @@ namespace BrinksAPI.Controllers
                             dataResponse.Message = "siteCode " + organization.siteCode + " is not a valid mapping in the DB.";
                             return Ok(dataResponse);
                         }
-                    }
+                    } 
+                    #endregion
 
                     #region CLOSEST PORT
                     if (site?.Unloco != null)
@@ -212,23 +214,10 @@ namespace BrinksAPI.Controllers
                     #endregion
 
                     #region CONSIGNOR OR CONSIGNEE
-
                     nativeOrganization.IsConsigneeSpecified = true;
                     nativeOrganization.IsConsignee = true;
                     nativeOrganization.IsConsignorSpecified = true;
                     nativeOrganization.IsConsignor = true;
-
-                    //if (organization.knownShipper == YesOrNo.Y)
-                    //{
-                    //    nativeOrganization.IsConsigneeSpecified = true;
-                    //    nativeOrganization.IsConsignee = true;
-                    //}
-
-                    //if (organization.allowCollect == YesOrNo.Y)
-                    //{
-                    //    nativeOrganization.IsConsignorSpecified = true;
-                    //    nativeOrganization.IsConsignor = true;
-                    //}
                     #endregion
 
                     #region ORGANIZATION COUNTRY DATA TSA
@@ -242,10 +231,6 @@ namespace BrinksAPI.Controllers
                         orgCountryData.EXApprovalNumber = organization.tsaValidationId;
                         orgCountryData.EXExportPermissionDetails = organization.tsaType;
                         orgCountryData.EXApprovalExpiryDate = DateTime.ParseExact(organization.tsaDate, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy-MM-ddTmm:ss:ff");
-                        //NativeOrganizationOrgCountryDataApprovedLocation location = new NativeOrganizationOrgCountryDataApprovedLocation();
-                        //location.TableName = "OrgAddress";
-                        //location.Code = organization.address1?.Substring(0,25);
-                        //orgCountryData.ApprovedLocation = location;
                         orgCountryDatas.Add(orgCountryData);
                         nativeOrganization.OrgCountryDataCollection = orgCountryDatas.ToArray();
                     }
@@ -254,6 +239,7 @@ namespace BrinksAPI.Controllers
                     #region ORGANIZATION COMPANY DATA
                     List<NativeOrganizationOrgCompanyData> orgCompanyDatas = new List<NativeOrganizationOrgCompanyData>();
                     NativeOrganizationOrgCompanyData orgCompanyData = new NativeOrganizationOrgCompanyData();
+
                     orgCompanyData.ActionSpecified = true;
                     orgCompanyData.Action = NativeOrganization.Action.INSERT;
                     NativeOrganizationOrgCompanyDataGlbCompany company = new NativeOrganizationOrgCompanyDataGlbCompany();
@@ -264,7 +250,6 @@ namespace BrinksAPI.Controllers
                     {
                         orgCompanyData.IsDebtorSpecified = true;
                         orgCompanyData.IsDebtor = true;
-                        //orgCompanyData.ARExternalDebtorCode = organization.arAccountNumber;
                         if (organization.RiskCodeDescription != null)
                         {
                             var riskCodeDescription = _context.riskCodeDescriptions.Where(r=>r.BrinksCode == organization.RiskCodeDescription).FirstOrDefault();
@@ -309,7 +294,6 @@ namespace BrinksAPI.Controllers
                     {
                         orgCompanyData.IsCreditorSpecified = true;
                         orgCompanyData.IsCreditor = true;
-                        //orgCompanyData.APExternalCreditorCode = organization.apAccountNumber;
                         NativeOrganizationOrgCompanyDataAPDefltCurrency apDefltCurrency = new NativeOrganizationOrgCompanyDataAPDefltCurrency();
                         apDefltCurrency.TableName = "RefCurrency";
                         apDefltCurrency.Code = organization.preferredCurrency;
@@ -336,6 +320,7 @@ namespace BrinksAPI.Controllers
                         billingContact.Title = "Billing Attention";
                         billingContact.NotifyMode = "DND";
                         billingContact.ContactName = organization.billingAttention;
+                        billingContact.Email = organization.emailAddress;
                         contacts.Add(billingContact);
                     }
                     if (organization.accountOwner != null)
@@ -546,7 +531,7 @@ namespace BrinksAPI.Controllers
                     nativeOrgAddress.AdditionalAddressInformation = organization?.address3;
 
                     List<NativeOrganizationOrgAddressOrgAddressAdditionalInfo> additionalInfoAddresses = new List<NativeOrganizationOrgAddressOrgAddressAdditionalInfo>();
-                    if (organization.address3 != null && organization.address3 != "")
+                    if (!String.IsNullOrEmpty(organization.address3))
                     {
                         NativeOrganizationOrgAddressOrgAddressAdditionalInfo additionalInfoAddress3 = new NativeOrganizationOrgAddressOrgAddressAdditionalInfo();
                         additionalInfoAddress3.ActionSpecified = true;
@@ -556,7 +541,7 @@ namespace BrinksAPI.Controllers
                         additionalInfoAddress3.AdditionalInfo = organization?.address3;
                         additionalInfoAddresses.Add(additionalInfoAddress3);
                     }
-                    if (organization.address4 != null && organization.address4 != "")
+                    if (!String.IsNullOrEmpty(organization.address4))
                     {
                         NativeOrganizationOrgAddressOrgAddressAdditionalInfo additionalInfoAddress4 = new NativeOrganizationOrgAddressOrgAddressAdditionalInfo();
                         additionalInfoAddress4.ActionSpecified = true;
@@ -598,21 +583,14 @@ namespace BrinksAPI.Controllers
                     nativeOrganization.OrgAddressCollection = nativeOrgAddresses.ToArray();
                     #endregion
 
-                    #region CUSTOM VALUES
+                    #region DOCUMENT VALUES
                     Dictionary<string, string> customValues = new Dictionary<string, string>();
-                    //customValues.Add("siteCode", organization?.siteCode);
                     customValues.Add("locationVerifiedDate", organization.locationVerifiedDate);
-                    //customValues.Add("kycCreatedPrior2018", organization.kycCreatedPrior2018.ToString());
-                    //customValues.Add("kycOpenProcCompleted", organization.kycOpenProcCompleted.ToString());
-                    //customValues.Add("kycRefNbr", organization.kycRefNbr);
-                    //customValues.Add("kycVerifDate", organization.kycVerifDate);
-                    //customValues.Add("kycApprovedBy", organization.kycApprovedBy);
-                    //customValues.Add("kycOpeningStation", organization.kycOpeningStation);
                     customValues.Add("Lob", organization.lob);
-                    customValues.Add("adyenPay", organization.adyenPay?.ToString());
-                    customValues.Add("adyenPayPreference", organization.adyenPayPreference);
-                    customValues.Add("adyenTokenId", organization.adyenTokenId);
-                    customValues.Add("adyenPayByLinkId", organization.adyenPayByLinkId);
+                    //customValues.Add("adyenPay", organization.adyenPay?.ToString());
+                    //customValues.Add("adyenPayPreference", organization.adyenPayPreference);
+                    //customValues.Add("adyenTokenId", organization.adyenTokenId);
+                    //customValues.Add("adyenPayByLinkId", organization.adyenPayByLinkId);
                     customValues = customValues.Where(c => c.Value != null && c.Value != "").ToDictionary(x => x.Key, x => x.Value);
                     List<NativeOrganizationJobRequiredDocument> documents = new List<NativeOrganizationJobRequiredDocument>();
                     int count = 0;
@@ -927,6 +905,7 @@ namespace BrinksAPI.Controllers
                                 filteredBillingContact.Action = NativeOrganization.Action.UPDATE;
                                 filteredBillingContact.PK = filteredBillingContact.PK;
                                 filteredBillingContact.ContactName = organization.billingAttention;
+                                billingContact.Email = organization.emailAddress;
                                 contacts.Add(filteredBillingContact);
                             }
                             else
@@ -937,6 +916,7 @@ namespace BrinksAPI.Controllers
                                 billingContact.Title = "Billing Attention";
                                 billingContact.NotifyMode = "DND";
                                 billingContact.ContactName = organization.billingAttention;
+                                billingContact.Email = organization.emailAddress;
                                 contacts.Add(billingContact);
                             }
                         }
@@ -948,6 +928,7 @@ namespace BrinksAPI.Controllers
                             billingContact.Title = "Billing Attention";
                             billingContact.NotifyMode = "DND";
                             billingContact.ContactName = organization.billingAttention;
+                            billingContact.Email = organization.emailAddress;
                             contacts.Add(billingContact);
                         }
                     }
@@ -1443,21 +1424,14 @@ namespace BrinksAPI.Controllers
 
                     #endregion
 
-                    #region CUSTOM VALUES
+                    #region DOCUMENT VALUES
                     Dictionary<string, string> customValues = new Dictionary<string, string>();
-                    //customValues.Add("siteCode", organization.siteCode);
                     customValues.Add("locationVerifiedDate", organization.locationVerifiedDate);
-                    //customValues.Add("kycCreatedPrior2018", organization.kycCreatedPrior2018.ToString());
-                    //customValues.Add("kycOpenProcCompleted", organization.kycOpenProcCompleted.ToString());
-                    //customValues.Add("kycRefNbr", organization.kycRefNbr);
-                    //customValues.Add("kycVerifDate", organization.kycVerifDate);
-                    //customValues.Add("kycApprovedBy", organization.kycApprovedBy);
-                    //customValues.Add("kycOpeningStation", organization.kycOpeningStation);
-                    customValues.Add("lob", organization.lob);
-                    customValues.Add("adyenPay", organization.adyenPay.ToString());
-                    customValues.Add("adyenPayPreference", organization.adyenPayPreference);
-                    customValues.Add("adyenTokenId", organization.adyenTokenId);
-                    customValues.Add("adyenPayByLinkId", organization.adyenPayByLinkId);
+                    customValues.Add("Lob", organization.lob);
+                    //customValues.Add("adyenPay", organization.adyenPay.ToString());
+                    //customValues.Add("adyenPayPreference", organization.adyenPayPreference);
+                    //customValues.Add("adyenTokenId", organization.adyenTokenId);
+                    //customValues.Add("adyenPayByLinkId", organization.adyenPayByLinkId);
                     customValues = customValues.Where(c => c.Value != null && c.Value !="").ToDictionary(x => x.Key, x => x.Value);
                     List<NativeOrganizationJobRequiredDocument> documents = new List<NativeOrganizationJobRequiredDocument>();
                     int count = 0;
@@ -1684,7 +1658,6 @@ namespace BrinksAPI.Controllers
                 {
                     using (TextReader reader = new StringReader(documentResponse.Data.Data.OuterXml))
                     {
-
                         var serializer = new XmlSerializer(typeof(NativeOrganization.Native));
                         NativeOrganization.Native result = (NativeOrganization.Native)serializer.Deserialize(reader);
                         string unloco = result.Body.Any[0].OuterXml;
