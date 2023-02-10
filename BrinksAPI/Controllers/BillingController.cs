@@ -90,8 +90,6 @@ namespace BrinksAPI.Controllers
 
                             UniversalTransaction.Department department = new UniversalTransaction.Department();
                             department.Code = departmentCode;
-
-
                             if (shipmentId != null && shipmentId != "")
                             {
                                 UniversalShipmentData shipmentData = GetShipmentById(shipmentId);
@@ -224,22 +222,24 @@ namespace BrinksAPI.Controllers
                                                 MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
                                                 string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
                                                 dataResponse.Message = string.Join(",", groupedErrors);
+                                                _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, revenue);
                                             }
                                             else
                                             {
                                                 dataResponse.Status = "SUCCESS";
                                                 dataResponse.Message = "Revenue Created Sucessfully";
+                                                _logger.LogInformation("Success: {@Success} Request: {@Request}", dataResponse.Message, revenue);
                                             }
                                         }
                                     }
                                     else
                                     {
                                         dataResponse.Status = "ERROR";
-
                                         string errorMessage = billingResponse.Data.Data.FirstChild.InnerText;
                                         MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
                                         string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
                                         dataResponse.Message = string.Join(",", groupedErrors);
+                                        _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, revenue);
                                     }
 
                                 }
@@ -247,6 +247,7 @@ namespace BrinksAPI.Controllers
                                 {
                                     dataResponse.Status = "ERROR";
                                     dataResponse.Message = "Unable to fetch the shipment from the CW.";
+                                    _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, revenue);
                                 }
 
                             }
@@ -254,6 +255,7 @@ namespace BrinksAPI.Controllers
                             {
                                 dataResponse.Status = "NOTFOUND";
                                 dataResponse.Message = String.Format("{0} Not Found.", revenue?.hawb_number);
+                                _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, revenue);
                             }
                         }
                         else
@@ -270,6 +272,7 @@ namespace BrinksAPI.Controllers
                     {
                         dataResponse.Status = "ERROR";
                         dataResponse.Message = ex.Message;
+                        _logger.LogError("Error: {@Error}", dataResponse.Message);
                         dataResponses.Add(dataResponse);
                         continue;
                     }
@@ -282,6 +285,7 @@ namespace BrinksAPI.Controllers
                 dataResponse.Status = "ERROR";
                 dataResponse.Message = ex.Message;
                 dataResponses.Add(dataResponse);
+                _logger.LogError("Error: {@Error}", dataResponse.Message);
                 return StatusCode(StatusCodes.Status500InternalServerError, dataResponses);
             }
         }
@@ -550,10 +554,6 @@ namespace BrinksAPI.Controllers
                 if (shipments.Count() > 0)
                     transactionInfo.ShipmentCollection = shipments.ToArray();
 
-
-
-
-
                 universalTransactionData.TransactionInfo = transactionInfo;
 
                 string xml = Utilities.Serialize(universalTransactionData);
@@ -574,11 +574,13 @@ namespace BrinksAPI.Controllers
                             MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
                             string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
                             dataResponse.Message = string.Join(",", groupedErrors);
+                            _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, payableInvoice);
                         }
                         else
                         {
                             dataResponse.Status = "SUCCESS";
                             dataResponse.Message = "Invoice Created Sucessfully";
+                            _logger.LogError("Success: {@Success} Request: {@Request}", dataResponse.Message, payableInvoice);
                         }
                     }
                 }
@@ -589,6 +591,7 @@ namespace BrinksAPI.Controllers
                     MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
                     string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
                     dataResponse.Message = string.Join(",", groupedErrors);
+                    _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, payableInvoice);
                 }
 
             }
@@ -596,6 +599,7 @@ namespace BrinksAPI.Controllers
             {
                 dataResponse.Status = "ERROR";
                 dataResponse.Message = ex.Message;
+                _logger.LogError("Error: {@Error}", dataResponse.Message);
                 return StatusCode(StatusCodes.Status500InternalServerError, dataResponse);
             }
             return Ok(dataResponse);

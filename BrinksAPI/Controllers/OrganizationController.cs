@@ -40,7 +40,7 @@ namespace BrinksAPI.Controllers
         ///     POST /api/organization/
         ///		{
         ///		   "requestId":"12345678",
-        ///        "RiskCodeDescription": "CR1",
+        ///        "RiskCodeDescription": "1",
         ///        "name": "CENGLOBAL",
         ///        "address1": "Office 15",
         ///        "address2": "15th Floor",
@@ -221,16 +221,34 @@ namespace BrinksAPI.Controllers
                     #endregion
 
                     #region ORGANIZATION COUNTRY DATA TSA
-                    if (organization.tsaValidationId != null && organization.tsaDate != null)
+                    if (!String.IsNullOrEmpty(organization.tsaValidationId) && !String.IsNullOrEmpty(organization.locationVerifiedDate) && organization.countryCode?.ToLower() == "us")
                     {
                         List<NativeOrganizationOrgCountryData> orgCountryDatas = new List<NativeOrganizationOrgCountryData>();
                         NativeOrganizationOrgCountryData orgCountryData = new NativeOrganizationOrgCountryData();
                         orgCountryData.ActionSpecified = true;
                         orgCountryData.Action = NativeOrganization.Action.INSERT;
-                        orgCountryData.EXApprovedOrMajorExporter = "KC";
+                        orgCountryData.EXApprovedOrMajorExporter = "NO";
                         orgCountryData.EXApprovalNumber = organization.tsaValidationId;
                         orgCountryData.EXExportPermissionDetails = organization.tsaType;
-                        orgCountryData.EXApprovalExpiryDate = DateTime.ParseExact(organization.tsaDate, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy-MM-ddTmm:ss:ff");
+                        orgCountryData.EXSiteInspectionDate = DateTime.ParseExact(organization.locationVerifiedDate, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy-MM-ddTmm:ss:ff");
+                        //orgCountryData.EXSiteInspectionDate = DateTime.ParseExact(organization.locationVerifiedDate, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy-MM-ddTmm:ss:ff");
+
+                        NativeOrganizationOrgCountryDataClientCountryRelation clientCountryRelation = new NativeOrganizationOrgCountryDataClientCountryRelation();
+                        clientCountryRelation.TableName = "RefCountry";
+                        clientCountryRelation.Code = organization.countryCode;
+                        orgCountryData.ClientCountryRelation = clientCountryRelation;
+
+                        string approvedLocation = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24));
+                        NativeOrganizationOrgCountryDataApprovedLocation dataApprovedLocation = new NativeOrganizationOrgCountryDataApprovedLocation();
+                        dataApprovedLocation.TableName = "OrgAddress";
+                        dataApprovedLocation.Code = approvedLocation;
+                        orgCountryData.ApprovedLocation = dataApprovedLocation;
+
+                        NativeOrganizationOrgCountryDataIssuingAuthorityCountry authorityCountry = new NativeOrganizationOrgCountryDataIssuingAuthorityCountry();
+                        authorityCountry.TableName = "RefCountry";
+                        authorityCountry.Code = organization.countryCode;
+                        orgCountryData.IssuingAuthorityCountry = authorityCountry;
+
                         orgCountryDatas.Add(orgCountryData);
                         nativeOrganization.OrgCountryDataCollection = orgCountryDatas.ToArray();
                     }
@@ -480,7 +498,7 @@ namespace BrinksAPI.Controllers
                         siteCodeNote.ActionSpecified = true;
                         siteCodeNote.Action = NativeOrganization.Action.INSERT;
                         siteCodeNote.NoteContext = "ALL";
-                        siteCodeNote.IsCustomDescription = false;
+                        siteCodeNote.IsCustomDescription = true;
                         siteCodeNote.ForceRead = true;
                         siteCodeNote.NoteType = "PUB";
                         siteCodeNote.Description = "Site Code";
@@ -703,20 +721,19 @@ namespace BrinksAPI.Controllers
                     #endregion
 
                     #region ORGANIZATION COUNTRY DATA TSA
-                    if (organization.tsaValidationId != null && organization.tsaDate != null)
+                    string currentCountryCode = organizationData.OrgHeader.OrgAddressCollection.FirstOrDefault()?.CountryCode?.Code;
+                    if (organization.tsaValidationId != null && organization.locationVerifiedDate != null && organization.countryCode?.ToLower() == "us")
                     {
                         if (organizationData.OrgHeader.OrgCountryDataCollection is not null)
                         {
-                            if (organizationData.OrgHeader.OrgCountryDataCollection.Length > 0)
+                            NativeOrganizationOrgCountryData? filterdOrganizationCountryData = organizationData.OrgHeader.OrgCountryDataCollection.Where(o => o.ClientCountryRelation?.Code?.ToLower() == "us" && o.IssuingAuthorityCountry?.Code?.ToLower() == "us").FirstOrDefault();
+                            if (filterdOrganizationCountryData is not null)
                             {
-                                organizationData.OrgHeader.OrgCountryDataCollection[0].ActionSpecified = true;
-                                organizationData.OrgHeader.OrgCountryDataCollection[0].Action = NativeOrganization.Action.UPDATE;
-                                organizationData.OrgHeader.OrgCountryDataCollection[0].EXApprovedOrMajorExporter = "KC";
-                                organizationData.OrgHeader.OrgCountryDataCollection[0].EXApprovalNumber = organization.tsaValidationId;
-                                organizationData.OrgHeader.OrgCountryDataCollection[0].EXExportPermissionDetails = organization.tsaType;
-                                organizationData.OrgHeader.OrgCountryDataCollection[0].EXApprovalExpiryDate = DateTime.ParseExact(organization.tsaDate, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy-MM-ddTmm:ss:ff");
-                                //organizationData.OrgHeader.OrgCountryDataCollection[0].ApprovedLocation.TableName = "OrgAddress";
-                                //organizationData.OrgHeader.OrgCountryDataCollection[0].ApprovedLocation.Code = organization.address1?.Substring(0, 25);
+                                filterdOrganizationCountryData.ActionSpecified = true;
+                                filterdOrganizationCountryData.Action = NativeOrganization.Action.UPDATE;
+                                filterdOrganizationCountryData.EXApprovalNumber = organization.tsaValidationId;
+                                filterdOrganizationCountryData.EXExportPermissionDetails = organization.tsaType;
+                                filterdOrganizationCountryData.EXSiteInspectionDate = DateTime.ParseExact(organization.locationVerifiedDate, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy-MM-ddTmm:ss:ff");
                             }
                         }
                         else
@@ -725,14 +742,27 @@ namespace BrinksAPI.Controllers
                             NativeOrganizationOrgCountryData orgCountryData = new NativeOrganizationOrgCountryData();
                             orgCountryData.ActionSpecified = true;
                             orgCountryData.Action = NativeOrganization.Action.INSERT;
-                            orgCountryData.EXApprovedOrMajorExporter = "KC";
+                            orgCountryData.EXApprovedOrMajorExporter = "NO";
                             orgCountryData.EXApprovalNumber = organization.tsaValidationId;
                             orgCountryData.EXExportPermissionDetails = organization.tsaType;
-                            orgCountryData.EXApprovalExpiryDate = DateTime.ParseExact(organization.tsaDate, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy-MM-ddTmm:ss:ff");
-                            //NativeOrganizationOrgCountryDataApprovedLocation location = new NativeOrganizationOrgCountryDataApprovedLocation();
-                            //location.TableName = "OrgAddress";
-                            //location.Code = organization.address1?.Substring(0, 25);
-                            //orgCountryData.ApprovedLocation = location;
+                            orgCountryData.EXSiteInspectionDate = DateTime.ParseExact(organization.locationVerifiedDate, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy-MM-ddTmm:ss:ff");
+
+                            NativeOrganizationOrgCountryDataClientCountryRelation clientCountryRelation = new NativeOrganizationOrgCountryDataClientCountryRelation();
+                            clientCountryRelation.TableName = "RefCountry";
+                            clientCountryRelation.Code = organization.countryCode;
+                            orgCountryData.ClientCountryRelation = clientCountryRelation;
+
+                            string approvedLocation = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24));
+                            NativeOrganizationOrgCountryDataApprovedLocation dataApprovedLocation = new NativeOrganizationOrgCountryDataApprovedLocation();
+                            dataApprovedLocation.TableName = "OrgAddress";
+                            dataApprovedLocation.Code = approvedLocation;
+                            orgCountryData.ApprovedLocation = dataApprovedLocation;
+
+                            NativeOrganizationOrgCountryDataIssuingAuthorityCountry authorityCountry = new NativeOrganizationOrgCountryDataIssuingAuthorityCountry();
+                            authorityCountry.TableName = "RefCountry";
+                            authorityCountry.Code = organization.countryCode;
+                            orgCountryData.IssuingAuthorityCountry = authorityCountry;
+
                             orgCountryDatas.Add(orgCountryData);
                             organizationData.OrgHeader.OrgCountryDataCollection = orgCountryDatas.ToArray();
                         }
@@ -1244,7 +1274,7 @@ namespace BrinksAPI.Controllers
                                 note.ActionSpecified = true;
                                 note.Action = NativeOrganization.Action.INSERT;
                                 //note.NoteContext = "A";
-                                note.IsCustomDescription = false;
+                                note.IsCustomDescription = true;
                                 note.ForceRead = true;
                                 note.NoteType = "PUB";
                                 note.Description = "Site Code";
@@ -1257,7 +1287,7 @@ namespace BrinksAPI.Controllers
                             note.ActionSpecified = true;
                             note.Action = NativeOrganization.Action.INSERT;
                             //note.NoteContext = "A";
-                            note.IsCustomDescription = false;
+                            note.IsCustomDescription = true;
                             note.ForceRead = true;
                             note.NoteType = "PUB";
                             note.Description = "Site Code";
@@ -1295,7 +1325,6 @@ namespace BrinksAPI.Controllers
                             {
                                 note.ActionSpecified = true;
                                 note.Action = NativeOrganization.Action.INSERT;
-                                //note.NoteContext = "A";
                                 note.IsCustomDescription = false;
                                 note.ForceRead = true;
                                 note.NoteType = "PUB";
