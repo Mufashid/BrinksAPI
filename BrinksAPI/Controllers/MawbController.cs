@@ -15,13 +15,15 @@ namespace BrinksAPI.Controllers
     [Authorize]
     public class MawbController : Controller
     {
+        private readonly ILogger<MawbController> _logger;
         private readonly IConfigManager _configuration;
         private readonly ApplicationDbContext _context;
 
-        public MawbController(IConfigManager configuaration, ApplicationDbContext context)
+        public MawbController(IConfigManager configuaration, ApplicationDbContext context, ILogger<MawbController> logger)
         {
             _configuration = configuaration;
             _context = context;
+            _logger = logger;
         }
 
 
@@ -137,6 +139,7 @@ namespace BrinksAPI.Controllers
                                         {
                                             dataResponse.Status = "NOTFOUND";
                                             dataResponse.Message = String.Format("{0} Not Found.", mawb.mawbNumber);
+                                            _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, mawb);
                                         }
 
                                         else
@@ -145,6 +148,7 @@ namespace BrinksAPI.Controllers
                                             MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
                                             string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
                                             dataResponse.Message = string.Join(",", groupedErrors);
+                                            _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, mawb);
 
 
                                         }
@@ -153,6 +157,7 @@ namespace BrinksAPI.Controllers
                                     {
                                         dataResponse.Status = "SUCCESS";
                                         dataResponse.Message = "Mawb History Created Sucessfully";
+                                        _logger.LogInformation("Success: {@Success} Request: {@Request}", dataResponse.Message, mawb);
                                     }
                                 }
                             }
@@ -163,12 +168,14 @@ namespace BrinksAPI.Controllers
                                 string responseErrorMsg = documentResponse.Data.Data.FirstChild.InnerText;
                                 if (responseErrorMsg.Contains(notValidEventCodeMsg))
                                     dataResponse.Message = mawb.historyCode + " Is not a valid history code.";
+                                _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, mawb);
                                 else
                                 {
                                     MatchCollection matchedError = Regex.Matches(responseErrorMsg, "(Error)(.*)");
                                     string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
                                     dataResponse.Message = string.Join(",", groupedErrors);
-         
+                                    _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, mawb);
+
                                 }
                             }
 
@@ -189,6 +196,7 @@ namespace BrinksAPI.Controllers
                     {
                         dataResponse.Status = "ERROR";
                         dataResponse.Message = ex.Message;
+                        _logger.LogError("Error: {@Error} Request: {@Request}", ex.Message, mawb);
                         dataResponses.Add(dataResponse);
                         continue;
                     }
@@ -202,6 +210,7 @@ namespace BrinksAPI.Controllers
                 dataResponse.Status = "ERROR";
                 dataResponse.Message = ex.Message;
                 dataResponses.Add(dataResponse);
+                _logger.LogError("Error: {@Error}", dataResponse.Message);
                 return StatusCode(StatusCodes.Status500InternalServerError, dataResponses);
             }
         }

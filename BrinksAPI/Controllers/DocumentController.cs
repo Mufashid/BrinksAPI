@@ -101,7 +101,7 @@ namespace BrinksAPI.Controllers
                         }
                         else
                         {
-                            _logger.LogError(String.Format("House Bill {0} not found.", document.DocumentReferenceId));
+                            _logger.LogError(String.Format("House Bill {0} not found.Request {1}: ", document.DocumentReferenceId,document));
                             dataResponse.Status = "NOTFOUND";
                             dataResponse.Message = String.Format("{0} Not Found.", document?.DocumentReferenceId);
                             return Ok(dataResponse);
@@ -115,9 +115,9 @@ namespace BrinksAPI.Controllers
                         }
                         else
                         {
-                            _logger.LogError(String.Format("MAWB {0} not found.",document.DocumentReferenceId));
+                            _logger.LogError(String.Format("MAWB {0} not found.Request {1}: ", document.DocumentReferenceId, document));
                             dataResponse.Status = "NOTFOUND";
-                            dataResponse.Message = String.Format("{0} Not Found.", document?.DocumentReferenceId);
+                            dataResponse.Message = String.Format("{0} Not Found.Request {1}: ", document.DocumentReferenceId, document);
                             return Ok(dataResponse);
                         }
                         break;
@@ -130,7 +130,7 @@ namespace BrinksAPI.Controllers
                         }
                         else
                         {
-                            _logger.LogError(String.Format("Global Cuatomer Code {0} not found.", document.DocumentReferenceId));
+                            _logger.LogError(String.Format("Global Cuatomer Code {0} not found.Request {1}: ", document.DocumentReferenceId, document));
                             dataResponse.Status = "NOTFOUND";
                             dataResponse.Message = String.Format("{0} Not Found.", document?.DocumentReferenceId);
                             return Ok(dataResponse);
@@ -154,7 +154,7 @@ namespace BrinksAPI.Controllers
                     MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
                     string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
                     dataResponse.Message = string.Join(",", groupedErrors);
-                    _logger.LogError(string.Join(",", groupedErrors));
+                    _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, document);
 
                     return Ok(dataResponse);
                 } 

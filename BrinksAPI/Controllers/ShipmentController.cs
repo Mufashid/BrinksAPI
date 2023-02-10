@@ -596,7 +596,7 @@ namespace BrinksAPI.Controllers
                     string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
                     dataResponse.Message = string.Join(",", groupedErrors);
 
-                    _logger.LogError("Error: {@Error} Request: {@Request}", string.Join(",", groupedErrors), shipment);
+                    _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, shipment);
                     return Ok(dataResponse);
                 }
                 else
@@ -887,20 +887,19 @@ namespace BrinksAPI.Controllers
                     {
                         dataResponse.Status = "SUCCESS";
                         dataResponse.Message = successMessage;
-                        _logger.LogInformation(successMessage);
+                        _logger.LogInformation("Success: {@Success} Success: {@Request}", successMessage, shipment);
                     }
                     #endregion
-
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError("Error: {@Error} Request: {@Request}", ex.Message, shipment);
+                
                 dataResponse.Status = "ERROR";
                 dataResponse.Message = successMessage + ex.Message;
+                _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, shipment);
                 return StatusCode(StatusCodes.Status500InternalServerError, dataResponse);
             }
-            _logger.LogInformation("Success:{@Request}",shipment);
             return Ok(dataResponse);
         }
         #endregion
