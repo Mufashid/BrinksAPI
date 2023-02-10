@@ -167,8 +167,10 @@ namespace BrinksAPI.Controllers
                                 string notValidEventCodeMsg = "Cannot import XML Event unless it has a valid code.";
                                 string responseErrorMsg = documentResponse.Data.Data.FirstChild.InnerText;
                                 if (responseErrorMsg.Contains(notValidEventCodeMsg))
+                                {
                                     dataResponse.Message = mawb.historyCode + " Is not a valid history code.";
-                                _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, mawb);
+                                    _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, mawb);
+                                }
                                 else
                                 {
                                     MatchCollection matchedError = Regex.Matches(responseErrorMsg, "(Error)(.*)");
