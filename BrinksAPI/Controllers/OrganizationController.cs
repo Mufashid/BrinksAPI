@@ -40,7 +40,7 @@ namespace BrinksAPI.Controllers
         ///     POST /api/organization/
         ///		{
         ///		   "requestId":"12345678",
-        ///        "RiskCodeDescription": "1",
+        ///        "RiskCodeDescription": "Good",
         ///        "name": "CENGLOBAL",
         ///        "address1": "Office 15",
         ///        "address2": "15th Floor",
@@ -270,7 +270,7 @@ namespace BrinksAPI.Controllers
                         orgCompanyData.IsDebtor = true;
                         if (organization.RiskCodeDescription != null)
                         {
-                            var riskCodeDescription = _context.riskCodeDescriptions.Where(r=>r.BrinksCode == organization.RiskCodeDescription).FirstOrDefault();
+                            var riskCodeDescription = _context.riskCodeDescriptions.Where(r=>r.BrinksCode.ToLower() == organization.RiskCodeDescription.ToLower()).FirstOrDefault();
                             if (riskCodeDescription == null)
                             {
                                 dataResponse.Status = "ERROR";
@@ -795,7 +795,7 @@ namespace BrinksAPI.Controllers
 
                                     if (organization.RiskCodeDescription != null)
                                     {
-                                        var riskCodeDescription = _context.riskCodeDescriptions.Where(r => r.BrinksCode == organization.RiskCodeDescription).FirstOrDefault();
+                                        var riskCodeDescription = _context.riskCodeDescriptions.Where(r => r.BrinksCode.ToLower() == organization.RiskCodeDescription.ToLower()).FirstOrDefault();
                                         if (riskCodeDescription == null)
                                         {
                                             dataResponse.Status = "ERROR";
