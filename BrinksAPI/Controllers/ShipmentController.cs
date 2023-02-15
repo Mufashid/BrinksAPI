@@ -372,15 +372,6 @@ namespace BrinksAPI.Controllers
                     packingLine.Height = Convert.ToDecimal(shipmentItem.dimHeight);
                     packingLine.Volume = Convert.ToDecimal(shipmentItem.dimLength)* Convert.ToDecimal(shipmentItem.dimWidth)* Convert.ToDecimal(shipmentItem.dimHeight);
 
-                    //packingLine.OutturnedWeightSpecified = true;
-                    //packingLine.OutturnedLengthSpecified = true;
-                    //packingLine.OutturnedWidthSpecified = true;
-                    //packingLine.OutturnedHeightSpecified = true;
-                    //packingLine.OutturnedWeight = Convert.ToDecimal(shipmentItem.dimWeight);
-                    //packingLine.OutturnedLength = Convert.ToDecimal(shipmentItem.dimLength);
-                    //packingLine.OutturnedWidth = Convert.ToDecimal(shipmentItem.dimWidth);
-                    //packingLine.OutturnedHeight = Convert.ToDecimal(shipmentItem.dimHeight);
-
                     packingLine.ReferenceNumber = shipmentItem.barcode;
                     packingLine.MarksAndNos = shipmentItem.showSealNumber;
 
@@ -388,17 +379,16 @@ namespace BrinksAPI.Controllers
                     countryOforigin.Code = shipmentItem.originCountry;
                     packingLine.CountryOfOrigin = countryOforigin;
 
-
                     #region CUSTOMIZED FIELDS COLLECTION
                     List<CustomizedField> shipmentItemCustomizedFields = new List<CustomizedField>();
 
                     CustomizedField pickupDateCF = new CustomizedField();
-                    pickupDateCF.Key = "pickup_date";
+                    pickupDateCF.Key = "Actual Pickup";
                     pickupDateCF.Value = shipmentItem.puDate;
                     shipmentItemCustomizedFields.Add(pickupDateCF);
 
                     CustomizedField deliveryDateCF = new CustomizedField();
-                    deliveryDateCF.Key = "delivery_date";
+                    deliveryDateCF.Key = "Actual Delivery";
                     deliveryDateCF.Value = shipmentItem.dlvDate;
                     shipmentItemCustomizedFields.Add(deliveryDateCF);
 
@@ -581,6 +571,13 @@ namespace BrinksAPI.Controllers
                 Currency goodsCurrency = new Currency();
                 goodsCurrency.Code = firstShipmentItem?.customsCurrencyCode;
                 cwShipment.GoodsValueCurrency = goodsCurrency;
+
+                ShipmentLocalProcessing localProcessing = new ShipmentLocalProcessing();
+                localProcessing.EstimatedPickup = firstShipmentItem?.puEstDate;
+                localProcessing.PickupCartageCompleted = firstShipmentItem?.puDate;
+                localProcessing.EstimatedDelivery = firstShipmentItem?.dlvEstDate;
+                localProcessing.DeliveryCartageCompleted = firstShipmentItem?.dlvDate;
+                cwShipment.LocalProcessing = localProcessing;
                 #endregion
 
                 universalShipmentData.Shipment = cwShipment;
@@ -1047,8 +1044,6 @@ namespace BrinksAPI.Controllers
                                                 MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
                                                 string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
                                                 dataResponse.Message = string.Join(",", groupedErrors);
-                                    
-
                                             }
                                             else
                                             {
@@ -1079,7 +1074,6 @@ namespace BrinksAPI.Controllers
                                                             // Adding new customized field to packing line
                                                             if (packingLineObject.CustomizedFieldCollection is null)
                                                             {
-
                                                                 List<CustomizedField> customizedFields = new List<CustomizedField>();
                                                                 CustomizedField customizedField = new CustomizedField();
                                                                 customizedField.DataType = CustomizedFieldDataType.String;

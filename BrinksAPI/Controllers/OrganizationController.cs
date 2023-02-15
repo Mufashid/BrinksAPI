@@ -805,7 +805,6 @@ namespace BrinksAPI.Controllers
                                         filterOrgCompanyData.ARCreditRating = riskCodeDescription.CWCode;
                                     }
 
-                                    
                                     if (organization.invoiceType != null)
                                     {
                                         if (filterOrgCompanyData.OrgInvoiceTypeCollection is not null)

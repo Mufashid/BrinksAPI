@@ -223,6 +223,8 @@ namespace BrinksAPI.Models
         [Required]
         public string? puDate { get; set; }
         [Required]
+        public string? puEstDate { get; set; }
+        [Required]
         [StringLength(4)]
         public string? insurCurrencyCode { get; set; }
         public float customsLiability { get; set; }
