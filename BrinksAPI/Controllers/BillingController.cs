@@ -77,23 +77,12 @@ namespace BrinksAPI.Controllers
                         var isValid = Validator.TryValidateObject(revenue, validationContext, validationResults);
                         if (isValid)
                         {
-                            //string shipmentId = GetShipmentNumberByHawb(revenue?.hawb_number);
+                            var shipmentDetails = GetShipmentDetailByHawb(revenue?.hawb_number);
+                            string? shipmentId = shipmentDetails?.ShipmentNo;
 
-                            var shipmentDetails = GetShipmentNumberByHawb(revenue?.hawb_number);
-                            string shipmentId = "";
-                            string departmentCode = "";
-                            if (shipmentDetails != null)
-                            {
-                                shipmentId = shipmentDetails.ShipmentNo;
-
-                            }
-
-                            UniversalTransaction.Department department = new UniversalTransaction.Department();
-                            department.Code = departmentCode;
-                            if (shipmentId != null && shipmentId != "")
+                            if (!String.IsNullOrEmpty(shipmentId))
                             {
                                 UniversalShipmentData shipmentData = GetShipmentById(shipmentId);
-                                string del = Utilities.Serialize(shipmentData);
                                 if (shipmentData.Shipment != null)
                                 {
                                     Shipment shipment = new Shipment();
@@ -169,6 +158,8 @@ namespace BrinksAPI.Controllers
                                     ChargeCode chargeCode = new ChargeCode();
                                     chargeCode.Code = chargeCodeCW;
                                     chargeLine.ChargeCode = chargeCode;
+                                    string hermesCostId = revenue.hermesCostID.ToString() + "-" + revenue.description;
+                                    chargeLine.Description = hermesCostId;
 
                                     OrganizationReference debtor = new OrganizationReference();
                                     debtor.Type = "Organization";
@@ -185,7 +176,7 @@ namespace BrinksAPI.Controllers
                                     {
                                         chargeLine.SellInvoiceType = "CUD";
                                     }
-                                    chargeLine.Description = revenue.description;
+                                    //chargeLine.Description = revenue.description;
                                     chargeLine.SellOSAmountSpecified = true;
                                     chargeLine.SellOSGSTVATAmountSpecified = true;
                                     chargeLine.SellOSAmount = revenue.invoice_amount;
@@ -430,7 +421,7 @@ namespace BrinksAPI.Controllers
 
                 foreach (var revenue in payableInvoice.revenues)
                 {
-                    var shipmentDetails = GetShipmentNumberByHawb(revenue?.revenue_hawb_number);
+                    var shipmentDetails = GetShipmentDetailByHawb(revenue?.revenue_hawb_number);
                     string shipmentId = "";
                     string departmentCode = "";
                     if (shipmentDetails != null)
@@ -605,7 +596,7 @@ namespace BrinksAPI.Controllers
             return Ok(dataResponse);
         }
         #endregion
-        public ShipmentDetails GetShipmentNumberByHawb(string hawb)
+        public ShipmentDetails GetShipmentDetailByHawb(string hawb)
         {
             string? shipmentNumber = null;
             ShipmentDetails s = new ShipmentDetails();

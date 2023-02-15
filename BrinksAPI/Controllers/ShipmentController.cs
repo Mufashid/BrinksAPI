@@ -689,7 +689,7 @@ namespace BrinksAPI.Controllers
 
                         ShipmentPackingLineCollection transportPackingLineCollection = new ShipmentPackingLineCollection();
                         List<PackingLine> transportPackings = new List<PackingLine>();
-                        List<ShipmentInstruction> shipmentInstructions = new List<ShipmentInstruction>();
+                        //List<ShipmentInstruction> shipmentInstructions = new List<ShipmentInstruction>();
 
                         #region SHIPMENT ITEMS
                         int packlineCount = 0;
@@ -763,11 +763,11 @@ namespace BrinksAPI.Controllers
                             #endregion
 
                             #region INSTRUCTIONS
-                            ShipmentInstruction tbPickUpShipmentInstruction = new ShipmentInstruction();
+                            //ShipmentInstruction tbPickUpShipmentInstruction = new ShipmentInstruction();
 
-                            tbPickUpShipmentInstruction.SequenceSpecified = true;
-                            tbPickUpShipmentInstruction.Sequence = instructionCount;
-                            tbPickUpShipmentInstruction.Type = new CodeDescriptionPair() { Code = "PIC" };
+                            //tbPickUpShipmentInstruction.SequenceSpecified = true;
+                            //tbPickUpShipmentInstruction.Sequence = instructionCount;
+                            //tbPickUpShipmentInstruction.Type = new CodeDescriptionPair() { Code = "PIC" };
 
                             OrganizationAddress pickupAddress = new OrganizationAddress();
                             pickupAddress.AddressType = "LocalCartageExporter";
@@ -787,26 +787,26 @@ namespace BrinksAPI.Controllers
                             pickupRegistration.Value = shipmentItem.puGlobalCustomerCode;
                             pickupRegistrations.Add(pickupRegistration);
                             pickupAddress.RegistrationNumberCollection = pickupRegistrations.ToArray();
-                            tbPickUpShipmentInstruction.Address = pickupAddress;
+                            //tbPickUpShipmentInstruction.Address = pickupAddress;
 
-                            List<ShipmentInstructionInstructionPackingLineLink> pickupPackinglineLinks = new List<ShipmentInstructionInstructionPackingLineLink>();
-                            ShipmentInstructionInstructionPackingLineLink pickupPackinglineLink = new ShipmentInstructionInstructionPackingLineLink();
-                            pickupPackinglineLink.PackingLineLinkSpecified = true;
-                            pickupPackinglineLink.PackingLineLink = packlineCount;
-                            pickupPackinglineLink.QuantitySpecified = true;
-                            pickupPackinglineLink.Quantity = packlineCount + 1;
+                            //List<ShipmentInstructionInstructionPackingLineLink> pickupPackinglineLinks = new List<ShipmentInstructionInstructionPackingLineLink>();
+                            //ShipmentInstructionInstructionPackingLineLink pickupPackinglineLink = new ShipmentInstructionInstructionPackingLineLink();
+                            //pickupPackinglineLink.PackingLineLinkSpecified = true;
+                            //pickupPackinglineLink.PackingLineLink = packlineCount;
+                            //pickupPackinglineLink.QuantitySpecified = true;
+                            //pickupPackinglineLink.Quantity = packlineCount + 1;
 
-                            pickupPackinglineLinks.Add(pickupPackinglineLink);
-                            tbPickUpShipmentInstruction.InstructionPackingLineLinkCollection = pickupPackinglineLinks.ToArray();
+                            //pickupPackinglineLinks.Add(pickupPackinglineLink);
+                            //tbPickUpShipmentInstruction.InstructionPackingLineLinkCollection = pickupPackinglineLinks.ToArray();
 
-                            shipmentInstructions.Add(tbPickUpShipmentInstruction);
-                            instructionCount++;
+                            //shipmentInstructions.Add(tbPickUpShipmentInstruction);
+                            //instructionCount++;
 
-                            ShipmentInstruction tbDeliveryShipmentInstruction = new ShipmentInstruction();
+                            //ShipmentInstruction tbDeliveryShipmentInstruction = new ShipmentInstruction();
 
-                            tbDeliveryShipmentInstruction.SequenceSpecified = true;
-                            tbDeliveryShipmentInstruction.Sequence = instructionCount;
-                            tbDeliveryShipmentInstruction.Type = new CodeDescriptionPair() { Code = "DLV" };
+                            //tbDeliveryShipmentInstruction.SequenceSpecified = true;
+                            //tbDeliveryShipmentInstruction.Sequence = instructionCount;
+                            //tbDeliveryShipmentInstruction.Type = new CodeDescriptionPair() { Code = "DLV" };
 
                             OrganizationAddress deliveryAddress = new OrganizationAddress();
                             deliveryAddress.AddressType = "LocalCartageImporter";
@@ -819,24 +819,24 @@ namespace BrinksAPI.Controllers
                             deliveryAddress.Mobile = shipmentItem.dlvMobileNumber;
                             deliveryAddress.Postcode = shipmentItem.dlvPostalCode;
 
-                            List<RegistrationNumber> deliveryRegistrations = new List<RegistrationNumber>();
-                            RegistrationNumber deliveryRegistration = new RegistrationNumber();
-                            deliveryRegistration.Type = new RegistrationNumberType() { Code = "LSC" };
-                            deliveryRegistration.CountryOfIssue = new Country() { Code = shipmentItem.dlvCountryCode };
-                            deliveryRegistration.Value = shipmentItem.dlvGlobalCustomerCode;
-                            deliveryRegistrations.Add(deliveryRegistration);
-                            deliveryAddress.RegistrationNumberCollection = deliveryRegistrations.ToArray();
-                            tbDeliveryShipmentInstruction.Address = deliveryAddress;
+                            //List<RegistrationNumber> deliveryRegistrations = new List<RegistrationNumber>();
+                            //RegistrationNumber deliveryRegistration = new RegistrationNumber();
+                            //deliveryRegistration.Type = new RegistrationNumberType() { Code = "LSC" };
+                            //deliveryRegistration.CountryOfIssue = new Country() { Code = shipmentItem.dlvCountryCode };
+                            //deliveryRegistration.Value = shipmentItem.dlvGlobalCustomerCode;
+                            //deliveryRegistrations.Add(deliveryRegistration);
+                            //deliveryAddress.RegistrationNumberCollection = deliveryRegistrations.ToArray();
+                            //tbDeliveryShipmentInstruction.Address = deliveryAddress;
 
-                            List<ShipmentInstructionInstructionPackingLineLink> deliveryPackinglineLinks = new List<ShipmentInstructionInstructionPackingLineLink>();
-                            ShipmentInstructionInstructionPackingLineLink deliveryPackinglineLink = new ShipmentInstructionInstructionPackingLineLink();
-                            deliveryPackinglineLink.PackingLineLinkSpecified = true;
-                            deliveryPackinglineLink.PackingLineLink = packlineCount;
-                            deliveryPackinglineLink.QuantitySpecified = true;
-                            deliveryPackinglineLink.Quantity = packlineCount + 1;
-                            deliveryPackinglineLinks.Add(deliveryPackinglineLink);
-                            tbDeliveryShipmentInstruction.InstructionPackingLineLinkCollection = deliveryPackinglineLinks.ToArray();
-                            shipmentInstructions.Add(tbDeliveryShipmentInstruction);
+                            //List<ShipmentInstructionInstructionPackingLineLink> deliveryPackinglineLinks = new List<ShipmentInstructionInstructionPackingLineLink>();
+                            //ShipmentInstructionInstructionPackingLineLink deliveryPackinglineLink = new ShipmentInstructionInstructionPackingLineLink();
+                            //deliveryPackinglineLink.PackingLineLinkSpecified = true;
+                            //deliveryPackinglineLink.PackingLineLink = packlineCount;
+                            //deliveryPackinglineLink.QuantitySpecified = true;
+                            //deliveryPackinglineLink.Quantity = packlineCount + 1;
+                            //deliveryPackinglineLinks.Add(deliveryPackinglineLink);
+                            //tbDeliveryShipmentInstruction.InstructionPackingLineLinkCollection = deliveryPackinglineLinks.ToArray();
+                            //shipmentInstructions.Add(tbDeliveryShipmentInstruction);
                             instructionCount++;
                             #endregion
 
@@ -852,7 +852,7 @@ namespace BrinksAPI.Controllers
                         Shipment tbSubshipment = new Shipment();
                         tbSubshipment.DataContext = tbDataContext;
                         tbSubshipment.ContainerMode = new ContainerMode() { Code = "LSE" };
-                        tbSubshipment.InstructionCollection = shipmentInstructions.ToArray();
+                        //tbSubshipment.InstructionCollection = shipmentInstructions.ToArray();
                         tbSubshipments.Add(tbSubshipment);
                         tbShipment.SubShipmentCollection = tbSubshipments.ToArray();
                         #endregion

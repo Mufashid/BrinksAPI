@@ -29,6 +29,8 @@ namespace BrinksAPI.Models
             [Required]
             [StringLength(11)]
             public string? hawb_number { get; set; }
+            [RegularExpression(@"^\d{10}$", ErrorMessage = "The field must be a number with 10 digits.")]
+            public long hermesCostID { get; set; }
         }
 
         public class PayableInvoice
