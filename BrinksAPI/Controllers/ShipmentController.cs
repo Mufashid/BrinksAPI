@@ -87,8 +87,8 @@ namespace BrinksAPI.Controllers
                 ShipmentItem? firstShipmentItem = shipment.shipmentItems?.FirstOrDefault();
                 string? shipmentId = GetShipmentNumberByHawb(shipment.hawbNum);
 
-                Random random = new Random();
-                long originShipmentId = random.Next(30000000, 39999999);// 30 million
+                //Random random = new Random();
+                //long originShipmentId = random.Next(30000000, 39999999);// 30 million
 
                 #region Data Context
                 DataContext dataContext = new DataContext();
@@ -384,12 +384,12 @@ namespace BrinksAPI.Controllers
 
                     CustomizedField pickupDateCF = new CustomizedField();
                     pickupDateCF.Key = "Actual Pickup";
-                    pickupDateCF.Value = shipmentItem.puDate;
+                    pickupDateCF.Value = shipmentItem.puActDate;
                     shipmentItemCustomizedFields.Add(pickupDateCF);
 
                     CustomizedField deliveryDateCF = new CustomizedField();
                     deliveryDateCF.Key = "Actual Delivery";
-                    deliveryDateCF.Value = shipmentItem.dlvDate;
+                    deliveryDateCF.Value = shipmentItem.dlvActDate;
                     shipmentItemCustomizedFields.Add(deliveryDateCF);
 
                     CustomizedField packageLineNetWeightCF = new CustomizedField();
@@ -490,7 +490,6 @@ namespace BrinksAPI.Controllers
                 waiver.Value = shipment.waiverNumber;
                 shipmentCustomizedFields.Add(waiver);
 
-
                 CustomizedField originShipmentIdCF = new CustomizedField();
                 originShipmentIdCF.DataType = CustomizedFieldDataType.String;
                 originShipmentIdCF.Key = "Origin Shipment ID";
@@ -574,9 +573,9 @@ namespace BrinksAPI.Controllers
 
                 ShipmentLocalProcessing localProcessing = new ShipmentLocalProcessing();
                 localProcessing.EstimatedPickup = firstShipmentItem?.puEstDate;
-                localProcessing.PickupCartageCompleted = firstShipmentItem?.puDate;
+                localProcessing.PickupCartageCompleted = firstShipmentItem?.puActDate;
                 localProcessing.EstimatedDelivery = firstShipmentItem?.dlvEstDate;
-                localProcessing.DeliveryCartageCompleted = firstShipmentItem?.dlvDate;
+                localProcessing.DeliveryCartageCompleted = firstShipmentItem?.dlvActDate;
                 cwShipment.LocalProcessing = localProcessing;
                 #endregion
 

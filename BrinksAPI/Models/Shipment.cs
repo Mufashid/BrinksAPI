@@ -186,6 +186,7 @@ namespace BrinksAPI.Models
         public string? dlvDate { get; set; }
         [Required]
         public string? dlvEstDate { get; set; }
+        public string? dlvActDate { get; set; }
         [Required]
         [StringLength(4)]
         public string? globalCommodityCode { get; set; }
@@ -224,6 +225,7 @@ namespace BrinksAPI.Models
         public string? puDate { get; set; }
         [Required]
         public string? puEstDate { get; set; }
+        public string? puActDate { get; set; }
         [Required]
         [StringLength(4)]
         public string? insurCurrencyCode { get; set; }
