@@ -106,6 +106,7 @@ namespace BrinksAPI.Models
         public string? adyenTokenId { get; set; }
         [StringLength(50)]
         public string? adyenPayByLinkId { get; set; }
+        public string? eoriNumber { get; set; }
 
     }
 

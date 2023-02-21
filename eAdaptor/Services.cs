@@ -18,8 +18,8 @@ namespace eAdaptor
                 using (var sourceStream = new MemoryStream(Encoding.UTF8.GetBytes(xml)))
                 {
                     var response = client.Post(sourceStream);
-                    var responseStatus = response.StatusCode;
-                    if (responseStatus == HttpStatusCode.OK)
+                    //var responseStatus = response.StatusCode;
+                    if (response.IsSuccessStatusCode)
                     {
                         if (response.Content != null)
                         {
