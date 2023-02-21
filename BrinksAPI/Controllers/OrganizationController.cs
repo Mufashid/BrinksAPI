@@ -509,6 +509,7 @@ namespace BrinksAPI.Controllers
                         siteCodeNote.ActionSpecified = true;
                         siteCodeNote.Action = NativeOrganization.Action.INSERT;
                         siteCodeNote.NoteContext = "ALL";
+                        siteCodeNote.IsCustomDescriptionSpecified = true;
                         siteCodeNote.IsCustomDescription = true;
                         siteCodeNote.ForceRead = true;
                         siteCodeNote.NoteType = "PUB";
@@ -1309,6 +1310,7 @@ namespace BrinksAPI.Controllers
                                 note.ActionSpecified = true;
                                 note.Action = NativeOrganization.Action.INSERT;
                                 //note.NoteContext = "A";
+                                note.IsCustomDescriptionSpecified = true;
                                 note.IsCustomDescription = true;
                                 note.ForceRead = true;
                                 note.NoteType = "PUB";
@@ -1322,6 +1324,7 @@ namespace BrinksAPI.Controllers
                             note.ActionSpecified = true;
                             note.Action = NativeOrganization.Action.INSERT;
                             //note.NoteContext = "A";
+                            note.IsCustomDescriptionSpecified = true;
                             note.IsCustomDescription = true;
                             note.ForceRead = true;
                             note.NoteType = "PUB";
