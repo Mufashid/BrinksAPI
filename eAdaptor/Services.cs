@@ -1,6 +1,7 @@
 ﻿using eAdaptor.Entities;
 using System.IO.Compression;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Xml.Serialization;
 
@@ -30,11 +31,10 @@ namespace eAdaptor
                                 stream = new GZipStream(stream, CompressionMode.Decompress);
                             }
 
-                            using (var reader = new StreamReader(stream))
+                            XmlSerializer serializer = new XmlSerializer(typeof(UniversalResponseData));
+                            using (StreamReader reader = new StreamReader(stream))
                             {
-                                var serializer = new XmlSerializer(typeof(UniversalResponseData));
                                 UniversalResponseData result = (UniversalResponseData)serializer.Deserialize(reader);
-
                                 bool isError = result.Data.InnerText.Contains("Error") || result.Status!= "PRS";
                                 responseData.Status = isError ? "ERROR" : "SUCCESS";
                                 responseData.Message = isError ? "Please fix the errors." : "Successfull";
@@ -58,6 +58,59 @@ namespace eAdaptor
 
         }
         #endregion
+
+        #region CHAT GPT
+        public static async Task<XMLDataResponse> SendToCargowise3(string xml, string uri, string username, string password)
+        {
+            var responseData = new XMLDataResponse();
+            try
+            {
+                using (var handler = new HttpClientHandler())
+                {
+                    handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+
+                    using (var client = new HttpClient(handler))
+                    {
+                        client.BaseAddress = new Uri(uri);
+                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{username}:{password}")));
+
+                        using (var sourceStream = new MemoryStream(Encoding.UTF8.GetBytes(xml)))
+                        {
+                            var response = await client.PostAsync("", new StreamContent(sourceStream));
+
+                            if (response.IsSuccessStatusCode)
+                            {
+                                var contentStream = await response.Content.ReadAsStreamAsync();
+
+                                using (var reader = new StreamReader(contentStream))
+                                {
+                                    var serializer = new XmlSerializer(typeof(UniversalResponseData));
+                                    UniversalResponseData result = (UniversalResponseData)serializer.Deserialize(reader);
+
+                                    var isError = string.IsNullOrEmpty(result.Data.InnerText) || result.Data.InnerText.Contains("Error") || result.Status != "PRS";
+                                    responseData.Status = isError ? "ERROR" : "SUCCESS";
+                                    responseData.Message = isError ? "Please fix the errors." : "Successful";
+                                    responseData.Data = result;
+                                }
+                            }
+                            else
+                            {
+                                responseData.Status = "ERROR";
+                                responseData.Message = response.ReasonPhrase;
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                throw;
+            }
+
+            return responseData;
+        } 
+        #endregion
+
 
         #region Send XML to CW
         public static XMLDataResponse SendToCargowise2(string xml, string uri, string username, string password)

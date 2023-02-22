@@ -28,6 +28,7 @@ namespace BrinksAPI.Entities
         public string? FaxNumber { get; set; }
         [Required]
         public string? CompanyCode { get; set; }
+        public string? BranchCode { get; set; }
 
     }
 }
