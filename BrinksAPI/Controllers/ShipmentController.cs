@@ -231,6 +231,7 @@ namespace BrinksAPI.Controllers
                         Country = shipment.consigneeCountryCode,
                         Unloco = dischargePort?.Country + dischargePort?.Airport,
                         RegistrationNumber = shipment.consigneeGlobalCustomerCode,
+                        Eori = shipment.consigneeEori
                     };
                     consigneeAddress.OrganizationCode = CreateOrganization(organization);
 

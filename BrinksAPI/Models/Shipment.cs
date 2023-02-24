@@ -119,6 +119,9 @@ namespace BrinksAPI.Models
         [StringLength(22)]
         public string? consigneePhoneNumber { get; set; }
         public string? consigneeMobileNumber { get; set; }
+        [StringLength(25)]
+        public string? consigneeEori { get; set; }
+
         public string? readyAt { get; set; }
         [Required]
         [StringLength(1)]
