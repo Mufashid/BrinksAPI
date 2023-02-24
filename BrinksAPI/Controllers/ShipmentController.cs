@@ -1043,6 +1043,7 @@ namespace BrinksAPI.Controllers
                                                 MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
                                                 string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
                                                 dataResponse.Message = string.Join(",", groupedErrors);
+                                                _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, history);
                                             }
                                             else
                                             {
@@ -1123,6 +1124,7 @@ namespace BrinksAPI.Controllers
 
                                                 dataResponse.Status = "SUCCESS";
                                                 dataResponse.Message = message;
+                                                _logger.LogInformation("Success: {@Success} Request: {@Request}", message, history);
                                             }
                                         }
                                     }
@@ -1133,13 +1135,14 @@ namespace BrinksAPI.Controllers
                                         MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
                                         string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();
                                         dataResponse.Message = string.Join(",", groupedErrors);
-
+                                        _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, history);
                                     }
                                 }
                                 else
                                 {
                                     dataResponse.Status = "ERROR";
                                     dataResponse.Message = "Please provide a valid Server ID or Site ID.";
+                                    _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, history);
                                 }
 
                             }
@@ -1147,6 +1150,7 @@ namespace BrinksAPI.Controllers
                             {
                                 dataResponse.Status = "NOTFOUND";
                                 dataResponse.Message = String.Format("{0} Not Found.", history.HawbNumber);
+                                _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, history);
                             }
                             
                         }
@@ -1167,6 +1171,7 @@ namespace BrinksAPI.Controllers
                         dataResponse.Status = "ERROR";
                         dataResponse.Message = ex.Message;
                         dataResponses.Add(dataResponse);
+                        _logger.LogError("Error: {@Error} Request: {@Request}", dataResponse.Message, history);
                         continue;
                     }
                 }
@@ -1178,6 +1183,7 @@ namespace BrinksAPI.Controllers
                 dataResponse.Status = "ERROR";
                 dataResponse.Message = ex.Message;
                 dataResponses.Add(dataResponse);
+                _logger.LogError("Error: {@Error}", dataResponse.Message);
                 return StatusCode(StatusCodes.Status500InternalServerError, dataResponses);
             }
         }
@@ -1473,6 +1479,7 @@ namespace BrinksAPI.Controllers
 
             #region RESGISTRATION
             List<NativeOrganizationOrgCusCode> registrationCusCodes = new List<NativeOrganizationOrgCusCode>();
+
             NativeOrganizationOrgCusCode globalCustomerRegistrationCusCode = new NativeOrganizationOrgCusCode();
             globalCustomerRegistrationCusCode.ActionSpecified = true;
             globalCustomerRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
@@ -1482,6 +1489,15 @@ namespace BrinksAPI.Controllers
             cusCodeCountry.Code = organization.Country;
             globalCustomerRegistrationCusCode.CodeCountry = cusCodeCountry;
             registrationCusCodes.Add(globalCustomerRegistrationCusCode);
+
+            NativeOrganizationOrgCusCode eoriRegistrationCusCode = new NativeOrganizationOrgCusCode();
+            eoriRegistrationCusCode.ActionSpecified = !string.IsNullOrEmpty(organization?.Eori);
+            eoriRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
+            eoriRegistrationCusCode.CodeType = "EOR";
+            eoriRegistrationCusCode.CustomsRegNo = organization.Eori;
+            eoriRegistrationCusCode.CodeCountry = cusCodeCountry;
+            registrationCusCodes.Add(eoriRegistrationCusCode);
+
             nativeOrganization.OrgCusCodeCollection = registrationCusCodes.ToArray();
             #endregion
 
@@ -1515,22 +1531,23 @@ namespace BrinksAPI.Controllers
         {
             public bool isConsignor { get; set; } = false;
             public bool isConsignee { get; set; } = false;
-            public string CompanyName { get; set; }
-            public string Address1 { get; set; }
-            public string Address2 { get; set; }
-            public string Address3 { get; set; }
-            public string Address4 { get; set; }
-            public string Unloco { get; set; }
-            public string City { get; set; }
-            public string ProviceCode { get; set; }
-            public string Postcode { get; set; }
-            public string Country { get; set; }
-            public string Contact { get; set; }
-            public string Mobile { get; set; }
-            public string Phone { get; set; }
-            public string Email { get; set; }
-            public string Fax { get; set; }
-            public string RegistrationNumber { get; set; }
+            public string? CompanyName { get; set; }
+            public string? Address1 { get; set; }
+            public string? Address2 { get; set; }
+            public string? Address3 { get; set; }
+            public string? Address4 { get; set; }
+            public string? Unloco { get; set; }
+            public string? City { get; set; }
+            public string? ProviceCode { get; set; }
+            public string? Postcode { get; set; }
+            public string? Country { get; set; }
+            public string? Contact { get; set; }
+            public string? Mobile { get; set; }
+            public string? Phone { get; set; }
+            public string? Email { get; set; }
+            public string? Fax { get; set; }
+            public string? RegistrationNumber { get; set; }
+            public string? Eori { get; set; }
 
         }
     }
