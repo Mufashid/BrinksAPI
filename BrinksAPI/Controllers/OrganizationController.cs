@@ -705,6 +705,7 @@ namespace BrinksAPI.Controllers
                             return Ok(dataResponse);
                         }
                     }
+                    
                     #region CLOSEST PORT
                     if (site?.Unloco != null)
                     {
@@ -1476,7 +1477,7 @@ namespace BrinksAPI.Controllers
                         organizationData.OrgHeader.OrgAddressCollection[0].OrgAddressAdditionalInfoCollection = additionalInfoAddresses.ToArray();
                 }
 
-                organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.ActionSpecified = true;
+                    organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.ActionSpecified = true;
                     organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.Action = NativeOrganization.Action.UPDATE;
                     organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.PK = closestPortPK;
                     organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.Code = site?.Unloco;

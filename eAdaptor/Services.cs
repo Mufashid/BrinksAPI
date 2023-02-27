@@ -32,10 +32,12 @@ namespace eAdaptor
                             }
 
                             XmlSerializer serializer = new XmlSerializer(typeof(UniversalResponseData));
+
                             using (StreamReader reader = new StreamReader(stream))
                             {
+
                                 UniversalResponseData result = (UniversalResponseData)serializer.Deserialize(reader);
-                                bool isError = result.Data.InnerText.Contains("Error") || result.Status!= "PRS";
+                                bool isError = result.Data.InnerText.Contains("Error") || result.Status != "PRS";
                                 responseData.Status = isError ? "ERROR" : "SUCCESS";
                                 responseData.Message = isError ? "Please fix the errors." : "Successfull";
                                 responseData.Data = result;

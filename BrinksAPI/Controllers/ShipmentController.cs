@@ -87,9 +87,6 @@ namespace BrinksAPI.Controllers
                 ShipmentItem? firstShipmentItem = shipment.shipmentItems?.FirstOrDefault();
                 string? shipmentId = GetShipmentNumberByHawb(shipment.hawbNum);
 
-                //Random random = new Random();
-                //long originShipmentId = random.Next(30000000, 39999999);// 30 million
-
                 #region Data Context
                 DataContext dataContext = new DataContext();
                 DataTarget dataTarget = new DataTarget();
@@ -112,7 +109,7 @@ namespace BrinksAPI.Controllers
                 #endregion
 
                 #region PORT
-                var loadingPort = _context.sites.Where(s => s.Airport == shipment.pickupAirportCode).FirstOrDefault();
+                var loadingPort = _context.sites.Where(s => s.Airport.ToLower() == shipment.pickupAirportCode.ToLower()).FirstOrDefault();
                 loadingPort = loadingPort == null ? _context.sites.Where(s => s.SiteCode.ToString() == shipment.pickupSiteCode).FirstOrDefault() : loadingPort;
                 loadingPort = loadingPort == null ? _context.sites.Where(s => s.Country.ToLower() == shipment.shipperCountryCode.ToLower()).FirstOrDefault() : loadingPort;
                 UNLOCO portOfLoading = new UNLOCO();
@@ -120,7 +117,7 @@ namespace BrinksAPI.Controllers
                 cwShipment.PortOfOrigin = portOfLoading;
                 cwShipment.PortOfLoading = portOfLoading;
 
-                var dischargePort = _context.sites.Where(s => s.Airport == shipment.deliveryAirportCode).FirstOrDefault();
+                var dischargePort = _context.sites.Where(s => s.Airport.ToLower() == shipment.deliveryAirportCode.ToLower()).FirstOrDefault();
                 dischargePort = dischargePort == null ? _context.sites.Where(s => s.SiteCode.ToString() == shipment.deliverySiteCode).FirstOrDefault() : dischargePort;
                 dischargePort = dischargePort == null ? _context.sites.Where(s => s.Country.ToLower() == shipment.consigneeCountryCode.ToLower()).FirstOrDefault() : dischargePort;
                 UNLOCO portOfDischarge = new UNLOCO();

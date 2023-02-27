@@ -49,6 +49,7 @@ public partial class UniversalResponseData
     }
 
     /// <remarks/>
+    [System.Xml.Serialization.XmlElementAttribute(IsNullable = true)]
     public System.Xml.XmlElement Data
     {
         get
@@ -60,14 +61,6 @@ public partial class UniversalResponseData
             this.dataField = value;
         }
     }
-    //[System.Xml.Serialization.XmlIgnoreAttribute()]
-    //public bool DataSpecified
-    //{
-    //    get
-    //    {
-    //        return this.dataField != null && !string.IsNullOrEmpty(this.dataField.InnerXml);
-    //    }
-    //}
     /// <remarks/>
     [System.Xml.Serialization.XmlArrayItemAttribute("MessageNumber", IsNullable = false)]
     public UniversalResponseDataMessageNumber[] MessageNumberCollection
@@ -83,6 +76,7 @@ public partial class UniversalResponseData
     }
 
     /// <remarks/>
+    [System.Xml.Serialization.XmlElementAttribute(IsNullable = false)]
     public string ProcessingLog
     {
         get
