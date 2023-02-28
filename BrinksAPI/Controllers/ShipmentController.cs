@@ -109,7 +109,7 @@ namespace BrinksAPI.Controllers
                 #endregion
 
                 #region PORT
-                var loadingPort = _context.sites.Where(s => s.Airport.ToLower() == shipment.pickupAirportCode.ToLower()).FirstOrDefault();
+                var loadingPort = _context.sites.Where(s => s.Airport == shipment.pickupAirportCode).FirstOrDefault();
                 loadingPort = loadingPort == null ? _context.sites.Where(s => s.SiteCode.ToString() == shipment.pickupSiteCode).FirstOrDefault() : loadingPort;
                 loadingPort = loadingPort == null ? _context.sites.Where(s => s.Country.ToLower() == shipment.shipperCountryCode.ToLower()).FirstOrDefault() : loadingPort;
                 UNLOCO portOfLoading = new UNLOCO();
@@ -117,7 +117,7 @@ namespace BrinksAPI.Controllers
                 cwShipment.PortOfOrigin = portOfLoading;
                 cwShipment.PortOfLoading = portOfLoading;
 
-                var dischargePort = _context.sites.Where(s => s.Airport.ToLower() == shipment.deliveryAirportCode.ToLower()).FirstOrDefault();
+                var dischargePort = _context.sites.Where(s => s.Airport == shipment.deliveryAirportCode).FirstOrDefault();
                 dischargePort = dischargePort == null ? _context.sites.Where(s => s.SiteCode.ToString() == shipment.deliverySiteCode).FirstOrDefault() : dischargePort;
                 dischargePort = dischargePort == null ? _context.sites.Where(s => s.Country.ToLower() == shipment.consigneeCountryCode.ToLower()).FirstOrDefault() : dischargePort;
                 UNLOCO portOfDischarge = new UNLOCO();
@@ -597,7 +597,7 @@ namespace BrinksAPI.Controllers
                 {
 
                     #region TRANSPORT BOOKING
-                    string responseShipmentId = Utilities.ReadUniversalEvent(documentResponse.Data.Data.OuterXml).Event.DataContext.DataSourceCollection.Where(s => s.Type == "ForwardingShipment").FirstOrDefault().Key;
+                    string? responseShipmentId = Utilities.ReadUniversalEvent(documentResponse.Data.Data.OuterXml).Event.DataContext.DataSourceCollection.Where(s => s.Type == "ForwardingShipment").FirstOrDefault()?.Key;
                     var tranportBookingObj = _context.transportBookings.Where(t => t.HawbNumber == shipment.hawbNum).FirstOrDefault();
                     string? transportBooking = "";
 
@@ -613,9 +613,18 @@ namespace BrinksAPI.Controllers
                         // Wait 15 sec for cw trigger to generate tranportbooking XML in the SFTP outbound service.
                         Thread.Sleep(15000);
                         string localDirectory = Path.Join(AppDomain.CurrentDomain.BaseDirectory, "tbProcessingFiles");
+
                         if (!Directory.Exists(localDirectory))
                             Directory.CreateDirectory(localDirectory);
-                        GetFilesFromSFTP(_configuration.SftpUri, _configuration.SftpUsername, _configuration.SftpPassword, _configuration.SftpOutboundFolder, localDirectory);
+
+                        if (!String.IsNullOrEmpty(_configuration.SftpUri))
+                        {
+                            GetFilesFromSFTP(_configuration.SftpUri, _configuration.SftpUsername, _configuration.SftpPassword, _configuration.SftpOutboundFolder, localDirectory);
+                        }
+                        else
+                        {
+                            GetFilesFromLocalServer(_configuration.SftpOutboundFolder, localDirectory);
+                        }
                         string[] filePaths = Directory.GetFiles(localDirectory, "*.xml", SearchOption.TopDirectoryOnly);
                         foreach (var file in filePaths)
                         {
@@ -638,13 +647,19 @@ namespace BrinksAPI.Controllers
                                         _context.Add(dbTransportBooking);
                                         _context.SaveChanges();
 
-                                        // Backup to server
-                                        string sourcePath = Path.Join(_configuration.SftpOutboundFolder, Path.GetFileName(file));
-                                        //string destinationPath = Path.Join(_configuration.SftpBackupFolder, Path.GetFileName(file));
-                                        MoveFileFTP(_configuration.SftpUri, _configuration.SftpUsername, _configuration.SftpPassword, sourcePath, _configuration.SftpBackupFolder);
+                                        if(!String.IsNullOrEmpty(_configuration.SftpUri))
+                                        {
+                                            // Backup to server
+                                            string sourcePath = Path.Join(_configuration.SftpOutboundFolder, Path.GetFileName(file));
+                                            MoveFileFTP(_configuration.SftpUri, _configuration.SftpUsername, _configuration.SftpPassword, sourcePath, _configuration.SftpBackupFolder);
+                                        }
+                                        else
+                                        {
+                                            string backupPath = Path.Join(_configuration.SftpBackupFolder, Path.GetFileName(file));
+                                            System.IO.File.Move(file, backupPath);
+                                        }
                                     }
                                 }
-
                             }
                             catch (Exception ex)
                             {
@@ -717,23 +732,14 @@ namespace BrinksAPI.Controllers
                             packingLine.PackQty = Convert.ToInt64(shipmentItem.numberOfItems);
                             packingLine.Weight = Convert.ToDecimal(shipmentItem.grossWeight);
 
-                            //packingLine.LengthSpecified = true;
-                            //packingLine.WeightSpecified = true;
-                            //packingLine.WidthSpecified = true;
-                            //packingLine.HeightSpecified = true;
-                            //packingLine.Length = Convert.ToDecimal(shipmentItem.dimLength);
-                            //packingLine.Weight = Convert.ToDecimal(shipmentItem.dimWeight);
-                            //packingLine.Width = Convert.ToDecimal(shipmentItem.dimWidth);
-                            //packingLine.Height = Convert.ToDecimal(shipmentItem.dimLength);
-
-                            packingLine.OutturnedWeightSpecified = true;
-                            packingLine.OutturnedLengthSpecified = true;
-                            packingLine.OutturnedWidthSpecified = true;
-                            packingLine.OutturnedHeightSpecified = true;
-                            packingLine.OutturnedWeight = Convert.ToDecimal(shipmentItem.dimWeight);
-                            packingLine.OutturnedLength = Convert.ToDecimal(shipmentItem.dimLength);
-                            packingLine.OutturnedWidth = Convert.ToDecimal(shipmentItem.dimWidth);
-                            packingLine.OutturnedHeight = Convert.ToDecimal(shipmentItem.dimHeight);
+                            packingLine.LengthSpecified = true;
+                            packingLine.WeightSpecified = true;
+                            packingLine.WidthSpecified = true;
+                            packingLine.HeightSpecified = true;
+                            packingLine.Length = Convert.ToDecimal(shipmentItem.dimLength);
+                            packingLine.Weight = Convert.ToDecimal(shipmentItem.dimWeight);
+                            packingLine.Width = Convert.ToDecimal(shipmentItem.dimWidth);
+                            packingLine.Height = Convert.ToDecimal(shipmentItem.dimLength);
 
                             packingLine.ReferenceNumber = shipmentItem.barcode;
 
@@ -1299,6 +1305,26 @@ namespace BrinksAPI.Controllers
             }
         }
         #endregion
+
+        public static void GetFilesFromLocalServer(string inboundFolder,string outboundFolder)
+        {
+            DateTime thresholdValue = DateTime.Now.AddMinutes(-3);
+            DirectoryInfo directoryInfo = new DirectoryInfo(inboundFolder);
+            FileInfo[] files = directoryInfo.GetFiles().Where(i => i.LastWriteTime >= thresholdValue).ToArray();
+            foreach (FileInfo file in files)
+            {
+                try
+                {
+                    string outputPath = Path.Combine(outboundFolder, file.Name);
+                    System.IO.File.Copy(file.FullName, outputPath,true);
+                }
+                catch (Exception ex)
+                {
+                    continue;
+                }
+
+            }
+        }
 
         #region MOVE FILE FROM SFTP FOLDER
         public static void MoveFileFTP(string hostname, string username, string password, string sourcePath, string destinationPath)
