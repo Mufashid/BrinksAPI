@@ -656,7 +656,8 @@ namespace BrinksAPI.Controllers
                                         {
                                             // Backup to server
                                             string sourcePath = _configuration.SftpOutboundFolder + "/"+ Path.GetFileName(file);
-                                            MoveFileFTP(_configuration.SftpUri, _configuration.SftpUsername, _configuration.SftpPassword, sourcePath, _configuration.SftpBackupFolder);
+                                            string destinationPath = _configuration.SftpBackupFolder + "/"+ Path.GetFileName(file);
+                                            MoveFileFTP(_configuration.SftpUri, _configuration.SftpUsername, _configuration.SftpPassword, sourcePath, destinationPath);
                                         }
                                         else
                                         {
