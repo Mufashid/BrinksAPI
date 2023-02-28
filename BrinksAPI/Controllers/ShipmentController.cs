@@ -680,7 +680,7 @@ namespace BrinksAPI.Controllers
                     }
                     #endregion
 
-                    if (transportBooking == "123") // if (transportBooking != "")
+                    if (transportBooking != "") // if (transportBooking != "")
                     {
                         #region TRANPORT BOOKING SHIPMENT
                         UniversalShipmentData universalTransportData = new UniversalShipmentData();
@@ -699,172 +699,125 @@ namespace BrinksAPI.Controllers
                         tbDataContext.EnterpriseID = _configuration.EnterpriseId;
                         tbDataContext.ServerID = _configuration.ServerId;
                         tbDataContext.DataProvider = "TBAAPI";
+                        tbShipment.DataContext = tbDataContext;
                         #endregion
 
-                        tbShipment.DataContext = tbDataContext;
                         tbShipment.ShipmentType = new CodeDescriptionPair { Code = "BKG" };
 
-                        ShipmentPackingLineCollection transportPackingLineCollection = new ShipmentPackingLineCollection();
-                        List<PackingLine> transportPackings = new List<PackingLine>();
-                        ShipmentInstructionCollection shipmentInstructions = new ShipmentInstructionCollection();
+                        ShipmentInstructionCollection shipmentInstructionCollection = new ShipmentInstructionCollection();
+                        List<ShipmentInstructionCollectionInstruction> shipmentInstructions = new List<ShipmentInstructionCollectionInstruction>();
                         
-
                         #region SHIPMENT ITEMS
-                        int packlineCount = 0;
                         int instructionCount = 1;
                         foreach (var shipmentItem in shipment.shipmentItems)
                         {
-                            #region PACKING LINE
-
-                            //PackingLine packingLine = new PackingLine();
-
-                            //packingLine.LinkSpecified = true;
-                            //packingLine.Link = packlineCount;
-
-                            //Commodity commodity = new Commodity();
-                            //commodity.Code = shipmentItem.globalCommodityCode;
-                            //packingLine.Commodity = commodity;
-
-                            //packingLine.GoodsDescription = shipmentItem.commodityDescription;
-
-                            //string? packaheTypeCodeCW = _context.packageTypes.Where(p => p.BrinksCode == shipmentItem.packageTypeCd)?.FirstOrDefault()?.CWCode;
-                            //PackageType packageType = new PackageType();
-                            //packageType.Code = packaheTypeCodeCW;
-                            //packingLine.PackType = packageType;
-
-
-                            //packingLine.PackQtySpecified = true;
-                            //packingLine.WeightSpecified = true;
-                            //packingLine.PackQty = Convert.ToInt64(shipmentItem.numberOfItems);
-                            //packingLine.Weight = Convert.ToDecimal(shipmentItem.grossWeight);
-
-                            //packingLine.LengthSpecified = true;
-                            //packingLine.WeightSpecified = true;
-                            //packingLine.WidthSpecified = true;
-                            //packingLine.HeightSpecified = true;
-                            //packingLine.Length = Convert.ToDecimal(shipmentItem.dimLength);
-                            //packingLine.Weight = Convert.ToDecimal(shipmentItem.dimWeight);
-                            //packingLine.Width = Convert.ToDecimal(shipmentItem.dimWidth);
-                            //packingLine.Height = Convert.ToDecimal(shipmentItem.dimLength);
-
-                            //packingLine.ReferenceNumber = shipmentItem.barcode;
-
-                            //Country countryOforigin = new Country();
-                            //countryOforigin.Code = shipmentItem.originCountry;
-                            //packingLine.CountryOfOrigin = countryOforigin;
-
-                            //string? unitOfLengthBitsCode = shipmentItem.dimUOM == "in" ? "IN" : "CM";
-                            //UnitOfLength unitOfLength = new UnitOfLength();
-                            //unitOfLength.Code = unitOfLengthBitsCode;
-                            //packingLine.LengthUnit = unitOfLength;
-
-                            //string? unitOfVolumeBitsCode = shipmentItem.dimUOM == "in" ? "CI" : "CC";
-                            //UnitOfVolume unitOfVolume = new UnitOfVolume();
-                            //unitOfVolume.Code = unitOfVolumeBitsCode;
-                            //packingLine.VolumeUnit = unitOfVolume;
-
-                            //// Mapping
-                            //UnitOfWeight unitOfWeight = new UnitOfWeight();
-                            //unitOfWeight.Code = shipmentItem.uomCode;
-                            //packingLine.WeightUnit = unitOfWeight;
-
-                            //transportPackings.Add(packingLine);
-                            #endregion
 
                             #region INSTRUCTIONS
-                            ShipmentInstructionCollection shipmentInstruction = new ShipmentInstructionCollection();
-                            ShipmentInstructionCollectionInstruction shipmentInstructionCollectionInstruction = new ShipmentInstructionCollectionInstruction();
-                            //shipmentInstructionCollectionInstruction.Address = "";
-                            //shipmentInstruction.Instruction = shipmentInstructionCollectionInstruction;
-                            //tbPickUpShipmentInstruction.SequenceSpecified = true;
-                            //tbPickUpShipmentInstruction.Sequence = instructionCount;
-                            //tbPickUpShipmentInstruction.Type = new CodeDescriptionPair() { Code = "PIC" };
 
-                            OrganizationAddress pickupAddress = new OrganizationAddress();
-                            pickupAddress.AddressType = "LocalCartageExporter";
-                            pickupAddress.Address1 = shipmentItem.puAddress1;
-                            pickupAddress.Address2 = shipmentItem.puAddress2;
-                            pickupAddress.City = shipmentItem.puCity;
-                            pickupAddress.CompanyName = shipmentItem.puName;
-                            pickupAddress.Contact = shipmentItem.puContactName;
-                            pickupAddress.Country = new Country() { Code = shipmentItem.puCountryCode };
-                            pickupAddress.Mobile = shipmentItem.puMobileNumber;
-                            pickupAddress.Postcode = shipmentItem.puPostalCode;
-
-                            List<RegistrationNumber> pickupRegistrations = new List<RegistrationNumber>();
-                            RegistrationNumber pickupRegistration = new RegistrationNumber();
-                            pickupRegistration.Type = new RegistrationNumberType() { Code = "LSC" };
-                            pickupRegistration.CountryOfIssue = new Country() { Code = shipmentItem.puCountryCode };
-                            pickupRegistration.Value = shipmentItem.puGlobalCustomerCode;
-                            pickupRegistrations.Add(pickupRegistration);
-                            pickupAddress.RegistrationNumberCollection = pickupRegistrations.ToArray();
-                            //tbPickUpShipmentInstruction.Address = pickupAddress;
-
-                            //List<ShipmentInstructionInstructionPackingLineLink> pickupPackinglineLinks = new List<ShipmentInstructionInstructionPackingLineLink>();
-                            //ShipmentInstructionInstructionPackingLineLink pickupPackinglineLink = new ShipmentInstructionInstructionPackingLineLink();
-                            //pickupPackinglineLink.PackingLineLinkSpecified = true;
-                            //pickupPackinglineLink.PackingLineLink = packlineCount;
-                            //pickupPackinglineLink.QuantitySpecified = true;
-                            //pickupPackinglineLink.Quantity = packlineCount + 1;
-
-                            //pickupPackinglineLinks.Add(pickupPackinglineLink);
-                            //tbPickUpShipmentInstruction.InstructionPackingLineLinkCollection = pickupPackinglineLinks.ToArray();
-
-                            //shipmentInstructions.Add(tbPickUpShipmentInstruction);
-                            //instructionCount++;
-
-                            //ShipmentInstruction tbDeliveryShipmentInstruction = new ShipmentInstruction();
-
-                            //tbDeliveryShipmentInstruction.SequenceSpecified = true;
-                            //tbDeliveryShipmentInstruction.Sequence = instructionCount;
-                            //tbDeliveryShipmentInstruction.Type = new CodeDescriptionPair() { Code = "DLV" };
-
-                            OrganizationAddress deliveryAddress = new OrganizationAddress();
-                            deliveryAddress.AddressType = "LocalCartageImporter";
-                            deliveryAddress.Address1 = shipmentItem.dlvAddress1;
-                            deliveryAddress.Address2 = shipmentItem.dlvAddress2;
-                            deliveryAddress.City = shipmentItem.dlvCity;
-                            deliveryAddress.CompanyName = shipmentItem.dlvName;
-                            deliveryAddress.Contact = shipmentItem.dlvContactName;
-                            deliveryAddress.Country = new Country() { Code = shipmentItem.dlvCountryCode };
-                            deliveryAddress.Mobile = shipmentItem.dlvMobileNumber;
-                            deliveryAddress.Postcode = shipmentItem.dlvPostalCode;
-
-                            //List<RegistrationNumber> deliveryRegistrations = new List<RegistrationNumber>();
-                            //RegistrationNumber deliveryRegistration = new RegistrationNumber();
-                            //deliveryRegistration.Type = new RegistrationNumberType() { Code = "LSC" };
-                            //deliveryRegistration.CountryOfIssue = new Country() { Code = shipmentItem.dlvCountryCode };
-                            //deliveryRegistration.Value = shipmentItem.dlvGlobalCustomerCode;
-                            //deliveryRegistrations.Add(deliveryRegistration);
-                            //deliveryAddress.RegistrationNumberCollection = deliveryRegistrations.ToArray();
-                            //tbDeliveryShipmentInstruction.Address = deliveryAddress;
-
-                            //List<ShipmentInstructionInstructionPackingLineLink> deliveryPackinglineLinks = new List<ShipmentInstructionInstructionPackingLineLink>();
-                            //ShipmentInstructionInstructionPackingLineLink deliveryPackinglineLink = new ShipmentInstructionInstructionPackingLineLink();
-                            //deliveryPackinglineLink.PackingLineLinkSpecified = true;
-                            //deliveryPackinglineLink.PackingLineLink = packlineCount;
-                            //deliveryPackinglineLink.QuantitySpecified = true;
-                            //deliveryPackinglineLink.Quantity = packlineCount + 1;
-                            //deliveryPackinglineLinks.Add(deliveryPackinglineLink);
-                            //tbDeliveryShipmentInstruction.InstructionPackingLineLinkCollection = deliveryPackinglineLinks.ToArray();
-                            //shipmentInstructions.Add(tbDeliveryShipmentInstruction);
+                            #region PICKUP
+                            ShipmentInstructionCollectionInstruction pickupInstruction = new ShipmentInstructionCollectionInstruction();
+                            pickupInstruction.SequenceSpecified = true;
+                            pickupInstruction.Sequence = instructionCount;
                             instructionCount++;
+                            pickupInstruction.Type = new CodeDescriptionPair() { Code = "PIC" };
+                            pickupInstruction.Status = new CodeDescriptionPair() { Code = "AVL" };
+
+                            OrganizationData? tbPickupOrganizationData = SearchOrgWithRegNo(shipmentItem.puGlobalCustomerCode);
+                            OrganizationAddress tbPickupAddress = new OrganizationAddress();
+                            tbPickupAddress.AddressType = "LocalCartageCFS";
+                            if (tbPickupOrganizationData?.OrgHeader == null)
+                            {
+                                var site = _context.sites.Where(s => s.Country.ToLower() == shipmentItem.puCountryCode.ToLower()).FirstOrDefault();
+                                Organization organization = new Organization()
+                                {
+                                    isConsignor = true,
+                                    isConsignee = true,
+                                    CompanyName = shipmentItem.puName,
+                                    Address1 = shipmentItem.puAddress1,
+                                    Address2 = shipmentItem.puAddress2,
+                                    Address3 = shipmentItem.puAddress3,
+                                    Address4 = shipmentItem.puAddress4,
+                                    City = shipmentItem.puCity,
+                                    ProviceCode = shipmentItem.puProvinceCode,
+                                    Postcode = shipmentItem.puPostalCode,
+                                    Phone = shipmentItem.puPhoneNumber,
+                                    Mobile = shipmentItem.puMobileNumber,
+                                    Contact = shipmentItem.puContactName,
+                                    Country = shipmentItem.puCountryCode,
+                                    Unloco = site?.Country + site?.Airport,
+                                    RegistrationNumber = shipmentItem.puGlobalCustomerCode,
+                                };
+                                tbPickupAddress.OrganizationCode = CreateOrganization(organization);
+
+                            }
+                            else
+                            {
+                                tbPickupAddress.OrganizationCode = tbPickupOrganizationData.OrgHeader.Code;
+                            }
+                            pickupInstruction.Address = tbPickupAddress;
+                            shipmentInstructions.Add(pickupInstruction);
                             #endregion
 
-                            packlineCount++;
+                            #region DELIVERY
+                            ShipmentInstructionCollectionInstruction deliveryInstruction = new ShipmentInstructionCollectionInstruction();
+                            deliveryInstruction.SequenceSpecified = true;
+                            deliveryInstruction.Sequence = instructionCount;
+                            instructionCount++;
+                            deliveryInstruction.Type = new CodeDescriptionPair() { Code = "DLV" };
+                            deliveryInstruction.Status = new CodeDescriptionPair() { Code = "AVL" };
+
+                            OrganizationData? tbDeliveryOrganizationData = SearchOrgWithRegNo(shipmentItem.dlvGlobalCustomerCode);
+                            OrganizationAddress tbDeliveryAddress = new OrganizationAddress();
+                            tbDeliveryAddress.AddressType = "LocalCartageImporter";
+                            if (tbDeliveryOrganizationData?.OrgHeader == null)
+                            {
+                                var site = _context.sites.Where(s => s.Country.ToLower() == shipmentItem.dlvCountryCode.ToLower()).FirstOrDefault();
+                                Organization organization = new Organization()
+                                {
+                                    isConsignor = true,
+                                    isConsignee = true,
+                                    CompanyName = shipmentItem.dlvName,
+                                    Address1 = shipmentItem.dlvAddress1,
+                                    Address2 = shipmentItem.dlvAddress2,
+                                    Address3 = shipmentItem.dlvAddress3,
+                                    Address4 = shipmentItem.dlvAddress4,
+                                    City = shipmentItem.dlvCity,
+                                    ProviceCode = shipmentItem.dlvProvinceCode,
+                                    Postcode = shipmentItem.dlvPostalCode,
+                                    Phone = shipmentItem.dlvPhoneNumber,
+                                    Mobile = shipmentItem.dlvMobileNumber,
+                                    Contact = shipmentItem.dlvContactName,
+                                    Country = shipmentItem.dlvCountryCode,
+                                    Unloco = site?.Country + site?.Airport,
+                                    RegistrationNumber = shipmentItem.dlvGlobalCustomerCode,
+                                };
+                                tbDeliveryAddress.OrganizationCode = CreateOrganization(organization);
+
+                            }
+                            else
+                            {
+                                tbDeliveryAddress.OrganizationCode = tbDeliveryOrganizationData.OrgHeader.Code;
+                            }
+
+                            deliveryInstruction.Address = tbDeliveryAddress;
+                            shipmentInstructions.Add(deliveryInstruction);
+                            #endregion
+
+                            #endregion
+
+
                         }
                         #endregion
-
-                        transportPackingLineCollection.PackingLine = transportPackings.ToArray();
-                        tbShipment.PackingLineCollection = transportPackingLineCollection;
 
                         #region TRANPORT BOOKING SUBSHIPMENT
                         List<Shipment> tbSubshipments = new List<Shipment>();
                         Shipment tbSubshipment = new Shipment();
                         tbSubshipment.DataContext = tbDataContext;
                         tbSubshipment.ContainerMode = new ContainerMode() { Code = "LSE" };
-                        //tbSubshipment.InstructionCollection = shipmentInstructions.ToArray();
-                        tbSubshipment.InstructionCollection = shipmentInstructions;
+
+
+                        shipmentInstructionCollection.Instruction = shipmentInstructions.ToArray();
+                        tbSubshipment.InstructionCollection = shipmentInstructionCollection;
                         tbSubshipments.Add(tbSubshipment);
                         tbShipment.SubShipmentCollection = tbSubshipments.ToArray();
                         #endregion
