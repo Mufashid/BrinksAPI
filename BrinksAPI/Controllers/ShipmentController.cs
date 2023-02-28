@@ -680,7 +680,7 @@ namespace BrinksAPI.Controllers
                     }
                     #endregion
 
-                    if (transportBooking != "")
+                    if (transportBooking == "123") // if (transportBooking != "")
                     {
                         #region TRANPORT BOOKING SHIPMENT
                         UniversalShipmentData universalTransportData = new UniversalShipmentData();
@@ -706,7 +706,8 @@ namespace BrinksAPI.Controllers
 
                         ShipmentPackingLineCollection transportPackingLineCollection = new ShipmentPackingLineCollection();
                         List<PackingLine> transportPackings = new List<PackingLine>();
-                        //List<ShipmentInstruction> shipmentInstructions = new List<ShipmentInstruction>();
+                        ShipmentInstructionCollection shipmentInstructions = new ShipmentInstructionCollection();
+                        
 
                         #region SHIPMENT ITEMS
                         int packlineCount = 0;
@@ -715,64 +716,66 @@ namespace BrinksAPI.Controllers
                         {
                             #region PACKING LINE
 
-                            PackingLine packingLine = new PackingLine();
+                            //PackingLine packingLine = new PackingLine();
 
-                            packingLine.LinkSpecified = true;
-                            packingLine.Link = packlineCount;
+                            //packingLine.LinkSpecified = true;
+                            //packingLine.Link = packlineCount;
 
-                            Commodity commodity = new Commodity();
-                            commodity.Code = shipmentItem.globalCommodityCode;
-                            packingLine.Commodity = commodity;
+                            //Commodity commodity = new Commodity();
+                            //commodity.Code = shipmentItem.globalCommodityCode;
+                            //packingLine.Commodity = commodity;
 
-                            packingLine.GoodsDescription = shipmentItem.commodityDescription;
+                            //packingLine.GoodsDescription = shipmentItem.commodityDescription;
 
-                            string? packaheTypeCodeCW = _context.packageTypes.Where(p => p.BrinksCode == shipmentItem.packageTypeCd)?.FirstOrDefault()?.CWCode;
-                            PackageType packageType = new PackageType();
-                            packageType.Code = packaheTypeCodeCW;
-                            packingLine.PackType = packageType;
+                            //string? packaheTypeCodeCW = _context.packageTypes.Where(p => p.BrinksCode == shipmentItem.packageTypeCd)?.FirstOrDefault()?.CWCode;
+                            //PackageType packageType = new PackageType();
+                            //packageType.Code = packaheTypeCodeCW;
+                            //packingLine.PackType = packageType;
 
 
-                            packingLine.PackQtySpecified = true;
-                            packingLine.WeightSpecified = true;
-                            packingLine.PackQty = Convert.ToInt64(shipmentItem.numberOfItems);
-                            packingLine.Weight = Convert.ToDecimal(shipmentItem.grossWeight);
+                            //packingLine.PackQtySpecified = true;
+                            //packingLine.WeightSpecified = true;
+                            //packingLine.PackQty = Convert.ToInt64(shipmentItem.numberOfItems);
+                            //packingLine.Weight = Convert.ToDecimal(shipmentItem.grossWeight);
 
-                            packingLine.LengthSpecified = true;
-                            packingLine.WeightSpecified = true;
-                            packingLine.WidthSpecified = true;
-                            packingLine.HeightSpecified = true;
-                            packingLine.Length = Convert.ToDecimal(shipmentItem.dimLength);
-                            packingLine.Weight = Convert.ToDecimal(shipmentItem.dimWeight);
-                            packingLine.Width = Convert.ToDecimal(shipmentItem.dimWidth);
-                            packingLine.Height = Convert.ToDecimal(shipmentItem.dimLength);
+                            //packingLine.LengthSpecified = true;
+                            //packingLine.WeightSpecified = true;
+                            //packingLine.WidthSpecified = true;
+                            //packingLine.HeightSpecified = true;
+                            //packingLine.Length = Convert.ToDecimal(shipmentItem.dimLength);
+                            //packingLine.Weight = Convert.ToDecimal(shipmentItem.dimWeight);
+                            //packingLine.Width = Convert.ToDecimal(shipmentItem.dimWidth);
+                            //packingLine.Height = Convert.ToDecimal(shipmentItem.dimLength);
 
-                            packingLine.ReferenceNumber = shipmentItem.barcode;
+                            //packingLine.ReferenceNumber = shipmentItem.barcode;
 
-                            Country countryOforigin = new Country();
-                            countryOforigin.Code = shipmentItem.originCountry;
-                            packingLine.CountryOfOrigin = countryOforigin;
+                            //Country countryOforigin = new Country();
+                            //countryOforigin.Code = shipmentItem.originCountry;
+                            //packingLine.CountryOfOrigin = countryOforigin;
 
-                            string? unitOfLengthBitsCode = shipmentItem.dimUOM == "in" ? "IN" : "CM";
-                            UnitOfLength unitOfLength = new UnitOfLength();
-                            unitOfLength.Code = unitOfLengthBitsCode;
-                            packingLine.LengthUnit = unitOfLength;
+                            //string? unitOfLengthBitsCode = shipmentItem.dimUOM == "in" ? "IN" : "CM";
+                            //UnitOfLength unitOfLength = new UnitOfLength();
+                            //unitOfLength.Code = unitOfLengthBitsCode;
+                            //packingLine.LengthUnit = unitOfLength;
 
-                            string? unitOfVolumeBitsCode = shipmentItem.dimUOM == "in" ? "CI" : "CC";
-                            UnitOfVolume unitOfVolume = new UnitOfVolume();
-                            unitOfVolume.Code = unitOfVolumeBitsCode;
-                            packingLine.VolumeUnit = unitOfVolume;
+                            //string? unitOfVolumeBitsCode = shipmentItem.dimUOM == "in" ? "CI" : "CC";
+                            //UnitOfVolume unitOfVolume = new UnitOfVolume();
+                            //unitOfVolume.Code = unitOfVolumeBitsCode;
+                            //packingLine.VolumeUnit = unitOfVolume;
 
-                            // Mapping
-                            UnitOfWeight unitOfWeight = new UnitOfWeight();
-                            unitOfWeight.Code = shipmentItem.uomCode;
-                            packingLine.WeightUnit = unitOfWeight;
+                            //// Mapping
+                            //UnitOfWeight unitOfWeight = new UnitOfWeight();
+                            //unitOfWeight.Code = shipmentItem.uomCode;
+                            //packingLine.WeightUnit = unitOfWeight;
 
-                            transportPackings.Add(packingLine);
+                            //transportPackings.Add(packingLine);
                             #endregion
 
                             #region INSTRUCTIONS
-                            //ShipmentInstruction tbPickUpShipmentInstruction = new ShipmentInstruction();
-
+                            ShipmentInstructionCollection shipmentInstruction = new ShipmentInstructionCollection();
+                            ShipmentInstructionCollectionInstruction shipmentInstructionCollectionInstruction = new ShipmentInstructionCollectionInstruction();
+                            //shipmentInstructionCollectionInstruction.Address = "";
+                            //shipmentInstruction.Instruction = shipmentInstructionCollectionInstruction;
                             //tbPickUpShipmentInstruction.SequenceSpecified = true;
                             //tbPickUpShipmentInstruction.Sequence = instructionCount;
                             //tbPickUpShipmentInstruction.Type = new CodeDescriptionPair() { Code = "PIC" };
@@ -861,6 +864,7 @@ namespace BrinksAPI.Controllers
                         tbSubshipment.DataContext = tbDataContext;
                         tbSubshipment.ContainerMode = new ContainerMode() { Code = "LSE" };
                         //tbSubshipment.InstructionCollection = shipmentInstructions.ToArray();
+                        tbSubshipment.InstructionCollection = shipmentInstructions;
                         tbSubshipments.Add(tbSubshipment);
                         tbShipment.SubShipmentCollection = tbSubshipments.ToArray();
                         #endregion
