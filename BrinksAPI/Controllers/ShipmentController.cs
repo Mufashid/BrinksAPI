@@ -87,6 +87,11 @@ namespace BrinksAPI.Controllers
                 ShipmentItem? firstShipmentItem = shipment.shipmentItems?.FirstOrDefault();
                 string? shipmentId = GetShipmentNumberByHawb(shipment.hawbNum);
 
+                var loadingPort = shipment.pickupAirportCode != null ?_context.sites.Where(s => s.Airport == shipment.pickupAirportCode).FirstOrDefault():null;
+                loadingPort = loadingPort == null ? _context.sites.Where(s => s.SiteCode.ToString() == shipment.pickupSiteCode).FirstOrDefault() : loadingPort;
+                loadingPort = loadingPort == null ? _context.sites.Where(s => s.Country.ToLower() == shipment.shipperCountryCode.ToLower()).FirstOrDefault() : loadingPort;
+                string? companyCode = loadingPort?.CompanyCode;
+
                 #region Data Context
                 DataContext dataContext = new DataContext();
                 DataTarget dataTarget = new DataTarget();
@@ -104,20 +109,20 @@ namespace BrinksAPI.Controllers
                 dataContext.EnterpriseID = _configuration.EnterpriseId;
                 dataContext.ServerID = _configuration.ServerId;
                 dataContext.DataProvider = "ShipmentAPI";
+                Company company = new Company();
+                company.Code = companyCode;
+                dataContext.Company = company;
 
                 cwShipment.DataContext = dataContext;
                 #endregion
 
                 #region PORT
-                var loadingPort = _context.sites.Where(s => s.Airport == shipment.pickupAirportCode).FirstOrDefault();
-                loadingPort = loadingPort == null ? _context.sites.Where(s => s.SiteCode.ToString() == shipment.pickupSiteCode).FirstOrDefault() : loadingPort;
-                loadingPort = loadingPort == null ? _context.sites.Where(s => s.Country.ToLower() == shipment.shipperCountryCode.ToLower()).FirstOrDefault() : loadingPort;
                 UNLOCO portOfLoading = new UNLOCO();
                 portOfLoading.Code = loadingPort?.Country + loadingPort?.Airport;
                 cwShipment.PortOfOrigin = portOfLoading;
                 cwShipment.PortOfLoading = portOfLoading;
 
-                var dischargePort = _context.sites.Where(s => s.Airport == shipment.deliveryAirportCode).FirstOrDefault();
+                var dischargePort = shipment.deliveryAirportCode != null ? _context.sites.Where(s => s.Airport == shipment.deliveryAirportCode).FirstOrDefault() : null;
                 dischargePort = dischargePort == null ? _context.sites.Where(s => s.SiteCode.ToString() == shipment.deliverySiteCode).FirstOrDefault() : dischargePort;
                 dischargePort = dischargePort == null ? _context.sites.Where(s => s.Country.ToLower() == shipment.consigneeCountryCode.ToLower()).FirstOrDefault() : dischargePort;
                 UNLOCO portOfDischarge = new UNLOCO();
