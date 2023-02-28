@@ -655,7 +655,7 @@ namespace BrinksAPI.Controllers
                                         if(!String.IsNullOrEmpty(_configuration.SftpUri))
                                         {
                                             // Backup to server
-                                            string sourcePath = Path.Join(_configuration.SftpOutboundFolder, Path.GetFileName(file));
+                                            string sourcePath = _configuration.SftpOutboundFolder + "/"+ Path.GetFileName(file);
                                             MoveFileFTP(_configuration.SftpUri, _configuration.SftpUsername, _configuration.SftpPassword, sourcePath, _configuration.SftpBackupFolder);
                                         }
                                         else
@@ -698,6 +698,7 @@ namespace BrinksAPI.Controllers
 
                         tbDataContext.EnterpriseID = _configuration.EnterpriseId;
                         tbDataContext.ServerID = _configuration.ServerId;
+                        tbDataContext.Company = company;
                         tbDataContext.DataProvider = "TBAAPI";
                         tbShipment.DataContext = tbDataContext;
                         #endregion
@@ -818,6 +819,8 @@ namespace BrinksAPI.Controllers
 
                         shipmentInstructionCollection.Instruction = shipmentInstructions.ToArray();
                         tbSubshipment.InstructionCollection = shipmentInstructionCollection;
+                        tbSubshipment.PackingLineCollection = cwShipment.PackingLineCollection;
+
                         tbSubshipments.Add(tbSubshipment);
                         tbShipment.SubShipmentCollection = tbSubshipments.ToArray();
                         #endregion
