@@ -129,12 +129,12 @@ namespace BrinksAPI.Controllers
                 } 
                 #endregion
 
-                if (organization.billingAttention != null && organization.accountOwner !=null && organization.billingAttention == organization.accountOwner)
-                {
-                    dataResponse.Status = "ERROR";
-                    dataResponse.Message = "Billing Attention and Account Owner field are same. Please check";
-                    return Ok(dataResponse);
-                }
+                //if (organization.billingAttention != null && organization.accountOwner !=null && organization.billingAttention == organization.accountOwner)
+                //{
+                //    dataResponse.Status = "ERROR";
+                //    dataResponse.Message = "Billing Attention and Account Owner field are same. Please check";
+                //    return Ok(dataResponse);
+                //}
                 NativeOrganization.Native native = new NativeOrganization.Native();
 
                 #region HEADER
@@ -162,47 +162,52 @@ namespace BrinksAPI.Controllers
 
                     #region SITE CODE
                     //DEFAULT SITE ID (Check sitecode first if not then check country code)
-                    Entities.OrganizationSite? site = new Entities.OrganizationSite();
+                    string? unlocoCode = "";
+                    string? cwCompanyCode = "";
                     if (organization.countryCode != null)
                     {
-                        var unloco = _context.organizationUnloco.Where(s => s.Alpha2Code == organization.countryCode).FirstOrDefault();
-                        site = _context.organizationSites.Where(s => s.CountryCode == organization.countryCode).FirstOrDefault();
-                        if (unloco != null)
-                            site.Unloco = unloco.DefaultUNLOCO;
-                        if (site == null)
+                        var organizationUnloco = _context.organizationUnloco.Where(s => s.Alpha2Code == organization.countryCode).FirstOrDefault();
+                        unlocoCode = organizationUnloco?.DefaultUNLOCO;
+
+                        var organizationSite = _context.organizationSites.Where(s => s.CountryCode == organization.countryCode).FirstOrDefault();
+                        cwCompanyCode = organizationSite?.CWBranchCode;
+
+                        if (string.IsNullOrEmpty(unlocoCode))
                         {
                             dataResponse.Status = "ERROR";
-                            dataResponse.Message = "countryCode " + organization.countryCode + " is not a valid mapping in the DB.";
+                            dataResponse.Message = "countryCode " + organization.countryCode + " is not a valid mapping in the DB (organizationUnloco).";
                             return Ok(dataResponse);
                         }
                     }
 
                     if (organization.siteCode != null)
                     {
-                        site = new Entities.OrganizationSite();
-                        site = _context.organizationSites.Where(s => s.SiteCode == organization.siteCode)?.FirstOrDefault();
-                        if (site == null)
+                        var organizationSite = _context.organizationSites.Where(s => s.SiteCode == organization.siteCode)?.FirstOrDefault();
+                        unlocoCode = organizationSite.Unloco;
+                        cwCompanyCode = organizationSite.CWBranchCode;
+
+                        if (string.IsNullOrEmpty(unlocoCode))
                         {
                             dataResponse.Status = "ERROR";
-                            dataResponse.Message = "siteCode " + organization.siteCode + " is not a valid mapping in the DB.";
+                            dataResponse.Message = "siteCode " + organization.siteCode + " is not a valid mapping in the DB (organizationSites).";
                             return Ok(dataResponse);
                         }
                     } 
                     #endregion
 
                     #region CLOSEST PORT
-                    if (site?.Unloco != null)
+                    if (!string.IsNullOrEmpty(unlocoCode))
                     {
-                        string pk = SearchUNLOCOCode(site?.Unloco);
+                        string pk = SearchUNLOCOCode(unlocoCode);
                         if (pk == null)
                         {
                             dataResponse.Status = "ERROR";
-                            dataResponse.Message = "siteCode = " + organization.siteCode + ". UNLOCO = " + site?.Unloco + " is not a valid UNLOCO Code";
+                            dataResponse.Message = "siteCode = " + organization.siteCode + ". UNLOCO = " + unlocoCode + " is not a valid UNLOCO code in CW.";
                             return Ok(dataResponse);
                         }
                         NativeOrganizationClosestPort nativeOrganizationClosestPort = new NativeOrganizationClosestPort();
                         nativeOrganizationClosestPort.TableName = "RefUNLOCO";
-                        nativeOrganizationClosestPort.Code = site?.Unloco;
+                        nativeOrganizationClosestPort.Code = unlocoCode;
                         nativeOrganization.ClosestPort = nativeOrganizationClosestPort;
                     }
                     else
@@ -238,7 +243,7 @@ namespace BrinksAPI.Controllers
                         clientCountryRelation.Code = organization.countryCode;
                         orgCountryData.ClientCountryRelation = clientCountryRelation;
 
-                        string approvedLocation = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24));
+                        string? approvedLocation = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24));
                         NativeOrganizationOrgCountryDataApprovedLocation dataApprovedLocation = new NativeOrganizationOrgCountryDataApprovedLocation();
                         dataApprovedLocation.TableName = "OrgAddress";
                         dataApprovedLocation.Code = approvedLocation;
@@ -255,75 +260,88 @@ namespace BrinksAPI.Controllers
                     #endregion
 
                     #region ORGANIZATION COMPANY DATA
-                    List<NativeOrganizationOrgCompanyData> orgCompanyDatas = new List<NativeOrganizationOrgCompanyData>();
-                    NativeOrganizationOrgCompanyData orgCompanyData = new NativeOrganizationOrgCompanyData();
-
-                    orgCompanyData.ActionSpecified = true;
-                    orgCompanyData.Action = NativeOrganization.Action.INSERT;
-                    NativeOrganizationOrgCompanyDataGlbCompany company = new NativeOrganizationOrgCompanyDataGlbCompany();
-                    company.Code = site?.CWBranchCode is not null ? site?.CWBranchCode : "DXB";
-                    orgCompanyData.GlbCompany = company;
-
-                    if (organization.arAccountNumber != null)
+                    bool isCompanyDataSpecified = !string.IsNullOrEmpty(organization.arAccountNumber) || !string.IsNullOrEmpty(organization.apAccountNumber);
+                    if (isCompanyDataSpecified)
                     {
-                        orgCompanyData.IsDebtorSpecified = true;
-                        orgCompanyData.IsDebtor = true;
-                        if (organization.RiskCodeDescription != null)
+                        List<NativeOrganizationOrgCompanyData> orgCompanyDatas = new List<NativeOrganizationOrgCompanyData>();
+                        NativeOrganizationOrgCompanyData orgCompanyData = new NativeOrganizationOrgCompanyData();
+
+                        orgCompanyData.ActionSpecified = isCompanyDataSpecified;
+                        orgCompanyData.Action = NativeOrganization.Action.INSERT;
+
+                        if (String.IsNullOrEmpty(cwCompanyCode))
                         {
-                            var riskCodeDescription = _context.riskCodeDescriptions.Where(r=>r.BrinksCode.ToLower() == organization.RiskCodeDescription.ToLower()).FirstOrDefault();
-                            if (riskCodeDescription == null)
+                            dataResponse.Status = "ERROR";
+                            dataResponse.Message = "Not a valid company code in DB. Please check the site code or the country code.";
+                            return Ok(dataResponse);
+                        }
+                        NativeOrganizationOrgCompanyDataGlbCompany company = new NativeOrganizationOrgCompanyDataGlbCompany();
+                        company.ActionSpecified = isCompanyDataSpecified;
+                        company.Action = NativeOrganization.Action.INSERT;
+                        company.Code = cwCompanyCode;
+                        orgCompanyData.GlbCompany = company;
+
+                        if (organization.arAccountNumber != null)
+                        {
+                            orgCompanyData.IsDebtorSpecified = true;
+                            orgCompanyData.IsDebtor = true;
+                            if (organization.RiskCodeDescription != null)
                             {
-                                dataResponse.Status = "ERROR";
-                                dataResponse.Message = "Not a valid Risk Code Description " + organization.RiskCodeDescription;
-                                return Ok(dataResponse);
+                                var riskCodeDescription = _context.riskCodeDescriptions.Where(r => r.BrinksCode.ToLower() == organization.RiskCodeDescription.ToLower()).FirstOrDefault();
+                                if (riskCodeDescription == null)
+                                {
+                                    dataResponse.Status = "ERROR";
+                                    dataResponse.Message = "Not a valid Risk Code Description '" + organization.RiskCodeDescription + "' in DB.";
+                                    return Ok(dataResponse);
+                                }
+                                orgCompanyData.ARCreditRating = riskCodeDescription.CWCode;
                             }
-                            orgCompanyData.ARCreditRating = riskCodeDescription.CWCode;
-                        }
 
-                        if (organization.invoiceType != null)
+                            if (organization.invoiceType != null)
+                            {
+                                List<NativeOrganizationOrgCompanyDataOrgInvoiceType> invoiceTypes = new List<NativeOrganizationOrgCompanyDataOrgInvoiceType>();
+                                NativeOrganizationOrgCompanyDataOrgInvoiceType invoiceType = new NativeOrganizationOrgCompanyDataOrgInvoiceType();
+                                invoiceType.ActionSpecified = true;
+                                invoiceType.Action = NativeOrganization.Action.INSERT;
+                                invoiceType.Module = "ALL";
+                                invoiceType.ServiceDirection = "ALL";
+                                invoiceType.TransportMode = "ALL";
+                                invoiceType.Interval = "MTH";
+                                invoiceType.StartDay = "LMH";
+                                string? invoiceTypeString = (organization.invoiceType == InvoiceTypes.C) ? "INV" : "CHG";
+                                invoiceType.Type = invoiceTypeString;
+                                invoiceType.SecondaryType = invoiceTypeString;
+                                invoiceTypes.Add(invoiceType);
+                                orgCompanyData.OrgInvoiceTypeCollection = invoiceTypes.ToArray();
+                            }
+
+                            NativeOrganizationOrgCompanyDataARDDefltCurrency arDefltCurrency = new NativeOrganizationOrgCompanyDataARDDefltCurrency();
+                            arDefltCurrency.TableName = "RefCurrency";
+                            arDefltCurrency.Code = organization.preferredCurrency;
+                            orgCompanyData.ARDDefltCurrency = arDefltCurrency;
+
+                            NativeOrganizationOrgCompanyDataARDebtorGroup debtorGroup = new NativeOrganizationOrgCompanyDataARDebtorGroup();
+                            debtorGroup.TableName = "OrgDebtorGroup";
+                            debtorGroup.Code = "TPY";
+                            orgCompanyData.ARDebtorGroup = debtorGroup;
+                        }
+                        if (organization.apAccountNumber != null)
                         {
-                            List<NativeOrganizationOrgCompanyDataOrgInvoiceType> invoiceTypes = new List<NativeOrganizationOrgCompanyDataOrgInvoiceType>();
-                            NativeOrganizationOrgCompanyDataOrgInvoiceType invoiceType = new NativeOrganizationOrgCompanyDataOrgInvoiceType();
-                            invoiceType.ActionSpecified = true;
-                            invoiceType.Action = NativeOrganization.Action.INSERT;
-                            invoiceType.Module = "ALL";
-                            invoiceType.ServiceDirection = "ALL";
-                            invoiceType.TransportMode = "ALL";
-                            invoiceType.Interval = "MTH";
-                            invoiceType.StartDay = "LMH";
-                            string? invoiceTypeString = (organization.invoiceType == InvoiceTypes.C) ? "INV" : "CHG";
-                            invoiceType.Type = invoiceTypeString;
-                            invoiceType.SecondaryType = invoiceTypeString;
-                            invoiceTypes.Add(invoiceType);
-                            orgCompanyData.OrgInvoiceTypeCollection = invoiceTypes.ToArray();
+                            orgCompanyData.IsCreditorSpecified = true;
+                            orgCompanyData.IsCreditor = true;
+                            NativeOrganizationOrgCompanyDataAPDefltCurrency apDefltCurrency = new NativeOrganizationOrgCompanyDataAPDefltCurrency();
+                            apDefltCurrency.TableName = "RefCurrency";
+                            apDefltCurrency.Code = organization.preferredCurrency;
+                            orgCompanyData.APDefltCurrency = apDefltCurrency;
+
+                            NativeOrganizationOrgCompanyDataAPCreditorGroup creditorGroup = new NativeOrganizationOrgCompanyDataAPCreditorGroup();
+                            creditorGroup.TableName = "OrgCreditorGroup";
+                            creditorGroup.Code = "TPY";
+                            orgCompanyData.APCreditorGroup = creditorGroup;
                         }
-
-                        NativeOrganizationOrgCompanyDataARDDefltCurrency arDefltCurrency = new NativeOrganizationOrgCompanyDataARDDefltCurrency();
-                        arDefltCurrency.TableName = "RefCurrency";
-                        arDefltCurrency.Code = organization.preferredCurrency;
-                        orgCompanyData.ARDDefltCurrency = arDefltCurrency;
-
-                        NativeOrganizationOrgCompanyDataARDebtorGroup debtorGroup = new NativeOrganizationOrgCompanyDataARDebtorGroup();
-                        debtorGroup.TableName = "OrgDebtorGroup";
-                        debtorGroup.Code = "TPY";
-                        orgCompanyData.ARDebtorGroup = debtorGroup;
+                        orgCompanyDatas.Add(orgCompanyData);
+                        nativeOrganization.OrgCompanyDataCollection = orgCompanyDatas.ToArray();
                     }
-                    if (organization.apAccountNumber != null)
-                    {
-                        orgCompanyData.IsCreditorSpecified = true;
-                        orgCompanyData.IsCreditor = true;
-                        NativeOrganizationOrgCompanyDataAPDefltCurrency apDefltCurrency = new NativeOrganizationOrgCompanyDataAPDefltCurrency();
-                        apDefltCurrency.TableName = "RefCurrency";
-                        apDefltCurrency.Code = organization.preferredCurrency;
-                        orgCompanyData.APDefltCurrency = apDefltCurrency;
-
-                        NativeOrganizationOrgCompanyDataAPCreditorGroup creditorGroup = new NativeOrganizationOrgCompanyDataAPCreditorGroup();
-                        creditorGroup.TableName = "OrgCreditorGroup";
-                        creditorGroup.Code = "TPY";
-                        orgCompanyData.APCreditorGroup = creditorGroup;
-                    }
-                    orgCompanyDatas.Add(orgCompanyData);
-                    nativeOrganization.OrgCompanyDataCollection = orgCompanyDatas.ToArray();
                     #endregion
 
                     #region CONTACTS
@@ -341,19 +359,36 @@ namespace BrinksAPI.Controllers
                         billingContact.Email = organization.emailAddress;
                         contacts.Add(billingContact);
                     }
+                    //if (organization.accountOwner != null)
+                    //{
+                    //    NativeOrganizationOrgContact ownerContact = new NativeOrganizationOrgContact();
+                    //    ownerContact.ActionSpecified = true;
+                    //    ownerContact.Action = NativeOrganization.Action.INSERT;
+                    //    ownerContact.Language = "EN";
+                    //    ownerContact.Title = "Owner Contact";
+                    //    ownerContact.NotifyMode = "DND";
+                    //    ownerContact.ContactName = organization.accountOwner;
+                    //    ownerContact.Email = organization.einvoiceEmailAddress;
+                    //    contacts.Add(ownerContact);
+                    //}
+                    nativeOrganization.OrgContactCollection = contacts.ToArray();
+                    #endregion
+
+                    #region STAFFS
                     if (organization.accountOwner != null)
                     {
-                        NativeOrganizationOrgContact ownerContact = new NativeOrganizationOrgContact();
-                        ownerContact.ActionSpecified = true;
-                        ownerContact.Action = NativeOrganization.Action.INSERT;
-                        ownerContact.Language = "EN";
-                        ownerContact.Title = "Owner Contact";
-                        ownerContact.NotifyMode = "DND";
-                        ownerContact.ContactName = organization.accountOwner;
-                        ownerContact.Email = organization.einvoiceEmailAddress;
-                        contacts.Add(ownerContact);
+                        List<NativeOrganizationOrgStaffAssignments> staffAssignments = new List<NativeOrganizationOrgStaffAssignments>();
+                        NativeOrganizationOrgStaffAssignments staffAssignment = new NativeOrganizationOrgStaffAssignments();
+                        staffAssignment.ActionSpecified = true;
+                        staffAssignment.Action = NativeOrganization.Action.INSERT;
+                        NativeOrganizationOrgStaffAssignmentsPersonResponsible accountOwner = new NativeOrganizationOrgStaffAssignmentsPersonResponsible();
+                        accountOwner.Code = organization.accountOwner;
+                        staffAssignment.Role = "ACT";
+                        staffAssignment.PersonResponsible = accountOwner;
+                        staffAssignment.Department = "ALL";
+                        staffAssignments.Add(staffAssignment);
+                        nativeOrganization.OrgStaffAssignmentsCollection = staffAssignments.ToArray();
                     }
-                    nativeOrganization.OrgContactCollection = contacts.ToArray();
                     #endregion
 
                     #region RESGISTRATION
@@ -519,8 +554,8 @@ namespace BrinksAPI.Controllers
                     }
 
                     Dictionary<string, string> kycDict = new Dictionary<string, string>();
-                    kycDict.Add("kycCreatedPrior2018", organization.kycCreatedPrior2018.ToString());
-                    kycDict.Add("kycOpenProcCompleted", organization.kycOpenProcCompleted.ToString());
+                    kycDict.Add("kycCreatedPrior2018",string.IsNullOrEmpty(organization.kycCreatedPrior2018.ToString())?null:organization.kycCreatedPrior2018.ToString());
+                    kycDict.Add("kycOpenProcCompleted", string.IsNullOrEmpty(organization.kycOpenProcCompleted.ToString()) ? null : organization.kycOpenProcCompleted.ToString());
                     kycDict.Add("kycRefNbr", organization.kycRefNbr);
                     kycDict.Add("kycVerifDate", organization.kycVerifDate);
                     kycDict.Add("kycApprovedBy", organization.kycApprovedBy);
@@ -590,7 +625,7 @@ namespace BrinksAPI.Controllers
                     nativeOrgAddress.CountryCode = nativeOrgCountryCode;
                     NativeOrganizationOrgAddressRelatedPortCode nativeOrgAddressRelatedPortCode = new NativeOrganizationOrgAddressRelatedPortCode();
                     nativeOrgAddressRelatedPortCode.TableName = "RefUNLOCO";
-                    nativeOrgAddressRelatedPortCode.Code = site?.Unloco;
+                    nativeOrgAddressRelatedPortCode.Code = unlocoCode;
 
                     nativeOrgAddress.Phone = organization.phoneNumber;
                     nativeOrgAddress.Mobile = organization.mobileNumber;
@@ -661,58 +696,55 @@ namespace BrinksAPI.Controllers
                     organizationData.OrgHeader.FullName = organization.name;
 
                     // DEFAULT UNLOCO VALUES
-                    Entities.OrganizationSite? site = new Entities.OrganizationSite();
-                    site.Unloco = organizationData.OrgHeader.ClosestPort.Code;
-                    string closestPortPK = organizationData.OrgHeader.ClosestPort.PK;
-
+                    #region SITE CODE
+                    string? unlocoCode = "";
+                    string? cwCompanyCode = "";
                     if (organization.countryCode != null)
                     {
-                        site = new Entities.OrganizationSite();
-                        var unloco = _context.organizationUnloco.Where(s => s.Alpha2Code == organization.countryCode).FirstOrDefault();
-                        site = _context.organizationSites.Where(s => s.CountryCode == organization.countryCode).FirstOrDefault();
-                        if (site == null)
+                        var organizationUnloco = _context.organizationUnloco.Where(s => s.Alpha2Code == organization.countryCode).FirstOrDefault();
+                        unlocoCode = organizationUnloco?.DefaultUNLOCO;
+
+                        var organizationSite = _context.organizationSites.Where(s => s.CountryCode == organization.countryCode).FirstOrDefault();
+                        cwCompanyCode = organizationSite?.CWBranchCode;
+
+                        if (string.IsNullOrEmpty(unlocoCode))
                         {
                             dataResponse.Status = "ERROR";
-                            dataResponse.Message = "countryCode " + organization.countryCode + " is not a valid mapping in the DB.";
-                            return Ok(dataResponse);
-                        }
-                        if (unloco != null)
-                            site.Unloco = unloco.DefaultUNLOCO;
-                        closestPortPK = SearchUNLOCOCode(site?.Unloco);
-                        if (closestPortPK == null)
-                        {
-                            dataResponse.Status = "ERROR";
-                            dataResponse.Message = "countryCode = " + organization.countryCode + " UNLOCO = " + site?.Unloco + " is not a valid UNLOCO Code";
+                            dataResponse.Message = "countryCode " + organization.countryCode + " is not a valid mapping in the DB (organizationUnloco).";
                             return Ok(dataResponse);
                         }
                     }
 
                     if (organization.siteCode != null)
                     {
-                        site = new Entities.OrganizationSite();
-                        site = _context.organizationSites.Where(s => s.SiteCode == organization.siteCode)?.FirstOrDefault();
-                        if (site == null)
+                        var organizationSite = _context.organizationSites.Where(s => s.SiteCode == organization.siteCode)?.FirstOrDefault();
+                        unlocoCode = organizationSite.Unloco;
+                        cwCompanyCode = organizationSite.CWBranchCode;
+
+                        if (string.IsNullOrEmpty(unlocoCode))
                         {
                             dataResponse.Status = "ERROR";
-                            dataResponse.Message = "siteCode " + organization.siteCode + " is not a valid mapping in the DB.";
+                            dataResponse.Message = "siteCode " + organization.siteCode + " is not a valid mapping in the DB (organizationSites).";
                             return Ok(dataResponse);
                         }
-                        closestPortPK = SearchUNLOCOCode(site?.Unloco);
-                        if (closestPortPK == null)
-                        {
-                            dataResponse.Status = "ERROR";
-                            dataResponse.Message = "siteCode = " + organization.siteCode + " UNLOCO = " + site?.Unloco + " is not a valid UNLOCO Code";
-                            return Ok(dataResponse);
-                        }
-                    }
-                    
+
+                    } 
+                    #endregion
+
                     #region CLOSEST PORT
-                    if (site?.Unloco != null)
+                    if (!string.IsNullOrEmpty(unlocoCode))
                     {
+                        string unlocoPK = SearchUNLOCOCode(unlocoCode);
+                        if (string.IsNullOrEmpty(unlocoPK))
+                        {
+                            dataResponse.Status = "ERROR";
+                            dataResponse.Message = "siteCode = " + organization.siteCode + ". UNLOCO = " + unlocoCode + " is not a valid UNLOCO code in CW.";
+                            return Ok(dataResponse);
+                        }
                         organizationData.OrgHeader.ClosestPort.ActionSpecified = true;
                         organizationData.OrgHeader.ClosestPort.Action = NativeOrganization.Action.UPDATE;
-                        organizationData.OrgHeader.ClosestPort.PK = closestPortPK;
-                        organizationData.OrgHeader.ClosestPort.Code = site?.Unloco;
+                        organizationData.OrgHeader.ClosestPort.PK = unlocoPK;
+                        organizationData.OrgHeader.ClosestPort.Code = unlocoCode;
                     }
 
                     #endregion
@@ -722,20 +754,11 @@ namespace BrinksAPI.Controllers
                     organizationData.OrgHeader.IsConsignorSpecified = true;
                     organizationData.OrgHeader.IsConsignee = true;
                     organizationData.OrgHeader.IsConsignor = true;
-                    //if (organization.knownShipper == YesOrNo.Y)
-                    //    organizationData.OrgHeader.IsConsignee = true;
-                    //if (organization.knownShipper == YesOrNo.N)
-                    //    organizationData.OrgHeader.IsConsignee = false;
-
-                    //if (organization.allowCollect == YesOrNo.Y)
-                    //    organizationData.OrgHeader.IsConsignor = true;
-                    //if (organization.allowCollect == YesOrNo.N)
-                    //    organizationData.OrgHeader.IsConsignor = false;
                     #endregion
 
                     #region ORGANIZATION COUNTRY DATA TSA
-                    string currentCountryCode = organizationData.OrgHeader.OrgAddressCollection.FirstOrDefault()?.CountryCode?.Code;
-                    if (organization.tsaValidationId != null && organization.locationVerifiedDate != null && organization.countryCode?.ToLower() == "us")
+                    //string? currentCountryCode = organizationData.OrgHeader?.OrgAddressCollection.FirstOrDefault()?.CountryCode?.Code;
+                    if (!string.IsNullOrEmpty(organization.tsaValidationId) && !string.IsNullOrEmpty(organization.locationVerifiedDate) && organization.countryCode?.ToLower() == "us")
                     {
                         if (organizationData.OrgHeader.OrgCountryDataCollection is not null)
                         {
@@ -765,7 +788,7 @@ namespace BrinksAPI.Controllers
                             clientCountryRelation.Code = organization.countryCode;
                             orgCountryData.ClientCountryRelation = clientCountryRelation;
 
-                            string approvedLocation = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24));
+                            string? approvedLocation = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24));
                             NativeOrganizationOrgCountryDataApprovedLocation dataApprovedLocation = new NativeOrganizationOrgCountryDataApprovedLocation();
                             dataApprovedLocation.TableName = "OrgAddress";
                             dataApprovedLocation.Code = approvedLocation;
@@ -784,23 +807,18 @@ namespace BrinksAPI.Controllers
                     #endregion
 
                     #region ORGANIZATION COMPANY DATA
-                    if (organization.arAccountNumber != null || organization.apAccountNumber != null)
+                    if (!string.IsNullOrEmpty(organization.arAccountNumber)  || !string.IsNullOrEmpty(organization.apAccountNumber))
                     {
                         if (organizationData.OrgHeader.OrgCompanyDataCollection is not null)
                         {
-                            var filterOrgCompanyData = organizationData.OrgHeader.OrgCompanyDataCollection.FirstOrDefault(x => x.GlbCompany.Code == site.CWBranchCode);
-                            //filterOrgCompanyData = filterOrgCompanyData == null?organizationData.OrgHeader.OrgCompanyDataCollection.FirstOrDefault():filterOrgCompanyData;
-
+                            var filterOrgCompanyData = organizationData.OrgHeader.OrgCompanyDataCollection.FirstOrDefault(x => x.GlbCompany.Code == cwCompanyCode);
                             if (filterOrgCompanyData != null)
                             {
                                 filterOrgCompanyData.ActionSpecified = true;
                                 filterOrgCompanyData.Action = NativeOrganization.Action.UPDATE;
-                                if(organization.siteCode != null)
-                                {
-                                    string? companyCode = _context.organizationSites.Where(s => s.SiteCode == organization.siteCode).FirstOrDefault().CWBranchCode;
-                                    filterOrgCompanyData.GlbCompany.Code = companyCode is not null ? companyCode : "DXB"; 
+                                filterOrgCompanyData.GlbCompany.Code = cwCompanyCode;
 
-                                }
+
                                 if (organization.arAccountNumber != null)
                                 {
                                     filterOrgCompanyData.IsDebtorSpecified = true;
@@ -812,7 +830,7 @@ namespace BrinksAPI.Controllers
                                         if (riskCodeDescription == null)
                                         {
                                             dataResponse.Status = "ERROR";
-                                            dataResponse.Message = "Not a valid Risk Code Description " + organization.RiskCodeDescription;
+                                            dataResponse.Message = "Not a valid Risk Code Description '" + organization.RiskCodeDescription + "' in DB.";
                                             return Ok(dataResponse);
                                         }
                                         filterOrgCompanyData.ARCreditRating = riskCodeDescription.CWCode;
@@ -854,19 +872,17 @@ namespace BrinksAPI.Controllers
                                 NativeOrganizationOrgCompanyData orgCompanyData = new NativeOrganizationOrgCompanyData();
                                 orgCompanyData.ActionSpecified = true;
                                 orgCompanyData.Action = NativeOrganization.Action.INSERT;
-                                //string? companyCode = "";
-                                //if (organization.siteCode != null)
-                                //     companyCode = _context.organizationSites.Where(s => s.SiteCode == organization.siteCode).FirstOrDefault().CWBranchCode;
 
-                                if(String.IsNullOrEmpty(site?.CWBranchCode))
+                                if(String.IsNullOrEmpty(cwCompanyCode))
                                 {
                                     dataResponse.Status = "ERROR";
-                                    dataResponse.Message = "Not a valid company code in DB. Please check the site code.";
+                                    dataResponse.Message = "Not a valid company code in DB. Please check the site code or the country code.";
                                     return Ok(dataResponse);
                                 }
                                 NativeOrganizationOrgCompanyDataGlbCompany company = new NativeOrganizationOrgCompanyDataGlbCompany();
-                                company.Code = site?.CWBranchCode;
+                                company.Code = cwCompanyCode;
                                 orgCompanyData.GlbCompany = company;
+
                                 if (organization.arAccountNumber != null)
                                 {
                                     if (organization.RiskCodeDescription != null)
@@ -875,7 +891,7 @@ namespace BrinksAPI.Controllers
                                         if (riskCodeDescription == null)
                                         {
                                             dataResponse.Status = "ERROR";
-                                            dataResponse.Message = "Not a valid Risk Code Description " + organization.RiskCodeDescription;
+                                            dataResponse.Message = "Not a valid Risk Code Description '" + organization.RiskCodeDescription + "' in DB.";
                                             return Ok(dataResponse);
                                         }
                                         orgCompanyData.ARCreditRating = riskCodeDescription.CWCode;
@@ -933,7 +949,6 @@ namespace BrinksAPI.Controllers
                     #endregion
 
                     #region CONTACTS
-
                     List<NativeOrganizationOrgContact> contacts = new List<NativeOrganizationOrgContact>();
                     if (organization.billingAttention != null)
                     {
@@ -975,48 +990,93 @@ namespace BrinksAPI.Controllers
                         }
                     }
 
+                    //if (organization.accountOwner != null)
+                    //{
+                    //    NativeOrganizationOrgContact ownerContact = new NativeOrganizationOrgContact();
+                    //    if (organizationData.OrgHeader.OrgContactCollection is not null)
+                    //    {
+                    //        var filteredOwnerContact = organizationData.OrgHeader.OrgContactCollection.Where(bc => bc.Title == "Owner Contact").FirstOrDefault();
+                    //        if (filteredOwnerContact != null)
+                    //        {
+                    //            filteredOwnerContact.ActionSpecified = true;
+                    //            filteredOwnerContact.Action = NativeOrganization.Action.UPDATE;
+                    //            filteredOwnerContact.PK = filteredOwnerContact.PK;
+                    //            filteredOwnerContact.ContactName = organization.accountOwner;
+                    //            filteredOwnerContact.Email = organization.einvoiceEmailAddress;
+                    //            contacts.Add(filteredOwnerContact);
+                    //        }
+                    //        else
+                    //        {
+                    //            ownerContact.ActionSpecified = true;
+                    //            ownerContact.Action = NativeOrganization.Action.INSERT;
+                    //            ownerContact.Language = "EN";
+                    //            ownerContact.Title = "Owner Contact";
+                    //            ownerContact.NotifyMode = "DND";
+                    //            ownerContact.ContactName = organization.accountOwner;
+                    //            ownerContact.Email = organization.einvoiceEmailAddress;
+                    //            contacts.Add(ownerContact);
+                    //        }
+                    //    }
+                    //    else
+                    //    {
+                    //        ownerContact.ActionSpecified = true;
+                    //        ownerContact.Action = NativeOrganization.Action.INSERT;
+                    //        ownerContact.Language = "EN";
+                    //        ownerContact.Title = "Owner Contact";
+                    //        ownerContact.NotifyMode = "DND";
+                    //        ownerContact.ContactName = organization.accountOwner;
+                    //        ownerContact.Email = organization.einvoiceEmailAddress;
+                    //        contacts.Add(ownerContact);
+                    //    }
+
+                    //}
+                    organizationData.OrgHeader.OrgContactCollection = contacts.ToArray();
+
+                    #endregion
+
+                    #region STAFF
                     if (organization.accountOwner != null)
                     {
-                        NativeOrganizationOrgContact ownerContact = new NativeOrganizationOrgContact();
-                        if (organizationData.OrgHeader.OrgContactCollection is not null)
+                        List<NativeOrganizationOrgStaffAssignments> staffAssignments = new List<NativeOrganizationOrgStaffAssignments>();
+                        NativeOrganizationOrgStaffAssignments staffAssignment = new NativeOrganizationOrgStaffAssignments();
+                        if (organizationData.OrgHeader.OrgStaffAssignmentsCollection is not null)
                         {
-                            var filteredOwnerContact = organizationData.OrgHeader.OrgContactCollection.Where(bc => bc.Title == "Owner Contact").FirstOrDefault();
+                            var filteredOwnerContact = organizationData.OrgHeader.OrgStaffAssignmentsCollection.Where(s => s.Role == "ACT").FirstOrDefault();
                             if (filteredOwnerContact != null)
                             {
                                 filteredOwnerContact.ActionSpecified = true;
                                 filteredOwnerContact.Action = NativeOrganization.Action.UPDATE;
                                 filteredOwnerContact.PK = filteredOwnerContact.PK;
-                                filteredOwnerContact.ContactName = organization.accountOwner;
-                                filteredOwnerContact.Email = organization.einvoiceEmailAddress;
-                                contacts.Add(filteredOwnerContact);
+                                NativeOrganizationOrgStaffAssignmentsPersonResponsible accountOwner = new NativeOrganizationOrgStaffAssignmentsPersonResponsible();
+                                accountOwner.Code = organization.accountOwner;
+                                filteredOwnerContact.PersonResponsible = accountOwner;
+                                staffAssignments.Add(filteredOwnerContact);
                             }
                             else
                             {
-                                ownerContact.ActionSpecified = true;
-                                ownerContact.Action = NativeOrganization.Action.INSERT;
-                                ownerContact.Language = "EN";
-                                ownerContact.Title = "Owner Contact";
-                                ownerContact.NotifyMode = "DND";
-                                ownerContact.ContactName = organization.accountOwner;
-                                ownerContact.Email = organization.einvoiceEmailAddress;
-                                contacts.Add(ownerContact);
+                                staffAssignment.ActionSpecified = true;
+                                staffAssignment.Action = NativeOrganization.Action.INSERT;
+                                NativeOrganizationOrgStaffAssignmentsPersonResponsible accountOwner = new NativeOrganizationOrgStaffAssignmentsPersonResponsible();
+                                accountOwner.Code = organization.accountOwner;
+                                staffAssignment.PersonResponsible = accountOwner;
+                                staffAssignment.Role = "ACT";
+                                staffAssignment.Department = "ALL";
+                                staffAssignments.Add(staffAssignment);
                             }
                         }
                         else
                         {
-                            ownerContact.ActionSpecified = true;
-                            ownerContact.Action = NativeOrganization.Action.INSERT;
-                            ownerContact.Language = "EN";
-                            ownerContact.Title = "Owner Contact";
-                            ownerContact.NotifyMode = "DND";
-                            ownerContact.ContactName = organization.accountOwner;
-                            ownerContact.Email = organization.einvoiceEmailAddress;
-                            contacts.Add(ownerContact);
+                            staffAssignment.ActionSpecified = true;
+                            staffAssignment.Action = NativeOrganization.Action.INSERT;
+                            NativeOrganizationOrgStaffAssignmentsPersonResponsible accountOwner = new NativeOrganizationOrgStaffAssignmentsPersonResponsible();
+                            accountOwner.Code = organization.accountOwner;
+                            staffAssignment.PersonResponsible = accountOwner;
+                            staffAssignment.Role = "ACT";
+                            staffAssignment.Department = "ALL";
+                            staffAssignments.Add(staffAssignment);
                         }
 
-                    }
-                    organizationData.OrgHeader.OrgContactCollection = contacts.ToArray();
-
+                    } 
                     #endregion
 
                     #region REGISTRATION
@@ -1479,8 +1539,8 @@ namespace BrinksAPI.Controllers
 
                     organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.ActionSpecified = true;
                     organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.Action = NativeOrganization.Action.UPDATE;
-                    organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.PK = closestPortPK;
-                    organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.Code = site?.Unloco;
+                    organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.PK = organizationData.OrgHeader.ClosestPort.PK;
+                    organizationData.OrgHeader.OrgAddressCollection[0].RelatedPortCode.Code = organizationData.OrgHeader.ClosestPort.Code;
 
                     organizationData.OrgHeader.OrgAddressCollection[0].City = organization.city;
                     organizationData.OrgHeader.OrgAddressCollection[0].PostCode = organization.postalCode;
