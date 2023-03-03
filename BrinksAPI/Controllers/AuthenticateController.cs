@@ -31,18 +31,19 @@ namespace BrinksAPI.Controllers
         [Authorize(Roles = UserRoles.Admin)]
         public async Task<IActionResult> Register([FromBody] Register model)
         {
-            if(!ModelState.IsValid)
+            if (!ModelState.IsValid)
                 return BadRequest(model);
             var userExists = _context.users.Where(user=>user.Email == model.Email).Any();
             if (userExists)
                 return Conflict(new Response { Status = "Error", Message = "User already exists!" });
 
+            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(model.Password);
             User user = new()
             {
                 FirstName = model.FirstName,
                 LastName = model.LastName,
                 Email=  model.Email,
-                Password   = model.Password,
+                Password = hashedPassword,
                 isActive    =   true,
                 AuthLevelRefId=2,
                 CreatedTime  = DateTime.UtcNow,
@@ -72,12 +73,13 @@ namespace BrinksAPI.Controllers
             if (userExists)
                 return Conflict(new Response { Status = "Error", Message = "Admin already exists!" });
 
+            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(model.Password);
             User user = new()
             {
                 FirstName = model.FirstName,
                 LastName = model.LastName,
                 Email = model.Email,
-                Password = model.Password,
+                Password = hashedPassword,
                 isActive = true,
                 AuthLevelRefId = 1,
                 CreatedTime = DateTime.UtcNow,

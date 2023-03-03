@@ -32,9 +32,13 @@ public class BasicAuthenticationHandler : AuthenticationHandler<AuthenticationSc
             string emailAddress = credentials[0];
             string password = credentials[1];
 
-            User? user = _context.users.Where(u => u.Email == emailAddress && u.Password == password).FirstOrDefault();
+            User? user = _context.users.Where(u => u.Email == emailAddress).FirstOrDefault();
             if (user == null)
-                return Task.FromResult(AuthenticateResult.Fail("Invalid Username or Password"));
+                return Task.FromResult(AuthenticateResult.Fail("Username Does Not Exist"));
+
+            bool passwordMatches = BCrypt.Net.BCrypt.Verify(password, user.Password);
+            if (!passwordMatches)
+                return Task.FromResult(AuthenticateResult.Fail("Invalid Password"));
 
             string? role = _context.AuthenticationLevels.Where(aut => aut.AuthId == user.AuthLevelRefId).FirstOrDefault().AuthName;
             var claims = new[] { new Claim("name", credentials[0]), new Claim(ClaimTypes.Role, role) };
