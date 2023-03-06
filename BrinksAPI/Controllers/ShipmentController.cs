@@ -1482,14 +1482,16 @@ namespace BrinksAPI.Controllers
             globalCustomerRegistrationCusCode.CodeCountry = cusCodeCountry;
             registrationCusCodes.Add(globalCustomerRegistrationCusCode);
 
-            NativeOrganizationOrgCusCode eoriRegistrationCusCode = new NativeOrganizationOrgCusCode();
-            eoriRegistrationCusCode.ActionSpecified = !string.IsNullOrEmpty(organization?.Eori);
-            eoriRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
-            eoriRegistrationCusCode.CodeType = "EOR";
-            eoriRegistrationCusCode.CustomsRegNo = organization.Eori;
-            eoriRegistrationCusCode.CodeCountry = cusCodeCountry;
-            registrationCusCodes.Add(eoriRegistrationCusCode);
-
+            if (!string.IsNullOrEmpty(organization?.Eori))
+            {
+                NativeOrganizationOrgCusCode eoriRegistrationCusCode = new NativeOrganizationOrgCusCode();
+                eoriRegistrationCusCode.ActionSpecified = !string.IsNullOrEmpty(organization?.Eori);
+                eoriRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
+                eoriRegistrationCusCode.CodeType = "EOR";
+                eoriRegistrationCusCode.CustomsRegNo = organization.Eori;
+                eoriRegistrationCusCode.CodeCountry = cusCodeCountry;
+                registrationCusCodes.Add(eoriRegistrationCusCode);
+            }
             nativeOrganization.OrgCusCodeCollection = registrationCusCodes.ToArray();
             #endregion
 
