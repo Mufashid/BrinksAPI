@@ -164,6 +164,7 @@ namespace BrinksAPI.Controllers
                     //DEFAULT SITE ID (Check sitecode first if not then check country code)
                     string? unlocoCode = "";
                     string? cwCompanyCode = "";
+                    string? cwBranchCode = "";
                     if (organization.countryCode != null)
                     {
                         var organizationUnloco = _context.organizationUnloco.Where(s => s.Alpha2Code == organization.countryCode).FirstOrDefault();
@@ -183,8 +184,10 @@ namespace BrinksAPI.Controllers
                     if (organization.siteCode != null)
                     {
                         var organizationSite = _context.organizationSites.Where(s => s.SiteCode == organization.siteCode)?.FirstOrDefault();
+                        var organizationMngSite = _context.sites.Where(s => s.FinancialMgmt == organization.siteCode)?.FirstOrDefault();
                         unlocoCode = organizationSite.Unloco;
-                        cwCompanyCode = organizationSite.CWBranchCode;
+                        cwCompanyCode = organizationSite.CWBranchCode;// This is company code
+                        cwBranchCode  = organizationMngSite?.BranchCode;
 
                         if (string.IsNullOrEmpty(unlocoCode))
                         {
@@ -281,6 +284,13 @@ namespace BrinksAPI.Controllers
                         company.Code = cwCompanyCode;
                         orgCompanyData.GlbCompany = company;
 
+                        NativeOrganizationOrgCompanyDataControllingBranch branch = new NativeOrganizationOrgCompanyDataControllingBranch();
+                        branch.ActionSpecified = string.IsNullOrEmpty(cwBranchCode)?false:true;
+                        branch.Action = NativeOrganization.Action.INSERT;
+                        branch.TableName = "GlbBranch";
+                        branch.Code = cwBranchCode;
+                        orgCompanyData.ControllingBranch = branch;
+
                         if (organization.arAccountNumber != null)
                         {
                             orgCompanyData.IsDebtorSpecified = true;
@@ -359,18 +369,6 @@ namespace BrinksAPI.Controllers
                         billingContact.Email = organization.emailAddress;
                         contacts.Add(billingContact);
                     }
-                    //if (organization.accountOwner != null)
-                    //{
-                    //    NativeOrganizationOrgContact ownerContact = new NativeOrganizationOrgContact();
-                    //    ownerContact.ActionSpecified = true;
-                    //    ownerContact.Action = NativeOrganization.Action.INSERT;
-                    //    ownerContact.Language = "EN";
-                    //    ownerContact.Title = "Owner Contact";
-                    //    ownerContact.NotifyMode = "DND";
-                    //    ownerContact.ContactName = organization.accountOwner;
-                    //    ownerContact.Email = organization.einvoiceEmailAddress;
-                    //    contacts.Add(ownerContact);
-                    //}
                     nativeOrganization.OrgContactCollection = contacts.ToArray();
                     #endregion
 
@@ -699,6 +697,7 @@ namespace BrinksAPI.Controllers
                     #region SITE CODE
                     string? unlocoCode = "";
                     string? cwCompanyCode = "";
+                    string? cwBranchCode = "";
                     if (organization.countryCode != null)
                     {
                         var organizationUnloco = _context.organizationUnloco.Where(s => s.Alpha2Code == organization.countryCode).FirstOrDefault();
@@ -718,8 +717,10 @@ namespace BrinksAPI.Controllers
                     if (organization.siteCode != null)
                     {
                         var organizationSite = _context.organizationSites.Where(s => s.SiteCode == organization.siteCode)?.FirstOrDefault();
+                        var organizationMngSite = _context.sites.Where(s => s.FinancialMgmt == organization.siteCode)?.FirstOrDefault();
                         unlocoCode = organizationSite.Unloco;
                         cwCompanyCode = organizationSite.CWBranchCode;
+                        cwBranchCode = organizationMngSite?.BranchCode;
 
                         if (string.IsNullOrEmpty(unlocoCode))
                         {
@@ -818,6 +819,20 @@ namespace BrinksAPI.Controllers
                                 filterOrgCompanyData.Action = NativeOrganization.Action.UPDATE;
                                 filterOrgCompanyData.GlbCompany.Code = cwCompanyCode;
 
+                                if(string.IsNullOrEmpty(filterOrgCompanyData.ControllingBranch?.Code))
+                                {
+                                    NativeOrganizationOrgCompanyDataControllingBranch branch = new NativeOrganizationOrgCompanyDataControllingBranch();
+                                    branch.ActionSpecified = string.IsNullOrEmpty(cwBranchCode) ? false : true;
+                                    branch.Action = NativeOrganization.Action.INSERT;
+                                    branch.Code = cwBranchCode;
+                                    filterOrgCompanyData.ControllingBranch = branch;
+                                }
+                                else
+                                {
+                                    filterOrgCompanyData.ControllingBranch.Code = cwCompanyCode;
+                                    filterOrgCompanyData.ControllingBranch.PK = null;
+                                }
+
 
                                 if (organization.arAccountNumber != null)
                                 {
@@ -882,6 +897,10 @@ namespace BrinksAPI.Controllers
                                 NativeOrganizationOrgCompanyDataGlbCompany company = new NativeOrganizationOrgCompanyDataGlbCompany();
                                 company.Code = cwCompanyCode;
                                 orgCompanyData.GlbCompany = company;
+
+                                NativeOrganizationOrgCompanyDataControllingBranch branch = new NativeOrganizationOrgCompanyDataControllingBranch();
+                                branch.Code = cwBranchCode;
+                                orgCompanyData.ControllingBranch = branch;
 
                                 if (organization.arAccountNumber != null)
                                 {
