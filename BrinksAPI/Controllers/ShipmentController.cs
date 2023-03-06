@@ -376,7 +376,7 @@ namespace BrinksAPI.Controllers
                     packingLine.Volume = Convert.ToDecimal(shipmentItem.dimLength)* Convert.ToDecimal(shipmentItem.dimWidth)* Convert.ToDecimal(shipmentItem.dimHeight);
 
                     packingLine.ReferenceNumber = shipmentItem.barcode;
-                    packingLine.PackingLineID = shipmentItem.barcode;
+                    //packingLine.PackingLineID = shipmentItem.barcode;
 
                     packingLine.MarksAndNos = shipmentItem.showSealNumber;
 
