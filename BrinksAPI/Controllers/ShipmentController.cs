@@ -1485,7 +1485,7 @@ namespace BrinksAPI.Controllers
             if (!string.IsNullOrEmpty(organization?.Eori))
             {
                 NativeOrganizationOrgCusCode eoriRegistrationCusCode = new NativeOrganizationOrgCusCode();
-                eoriRegistrationCusCode.ActionSpecified = !string.IsNullOrEmpty(organization?.Eori);
+                eoriRegistrationCusCode.ActionSpecified = true;
                 eoriRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
                 eoriRegistrationCusCode.CodeType = "EOR";
                 eoriRegistrationCusCode.CustomsRegNo = organization.Eori;

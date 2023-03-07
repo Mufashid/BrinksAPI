@@ -129,12 +129,6 @@ namespace BrinksAPI.Controllers
                 } 
                 #endregion
 
-                //if (organization.billingAttention != null && organization.accountOwner !=null && organization.billingAttention == organization.accountOwner)
-                //{
-                //    dataResponse.Status = "ERROR";
-                //    dataResponse.Message = "Billing Attention and Account Owner field are same. Please check";
-                //    return Ok(dataResponse);
-                //}
                 NativeOrganization.Native native = new NativeOrganization.Native();
 
                 #region HEADER
@@ -263,6 +257,34 @@ namespace BrinksAPI.Controllers
                     #endregion
 
                     #region ORGANIZATION COMPANY DATA
+
+                    #region COMPANY CODE AND BRANCH CODE
+                    if (!String.IsNullOrEmpty(cwCompanyCode) && !String.IsNullOrEmpty(cwBranchCode))
+                    {
+                        List<NativeOrganizationOrgCompanyData> orgCompanyDatas = new List<NativeOrganizationOrgCompanyData>();
+                        NativeOrganizationOrgCompanyData orgCompanyData = new NativeOrganizationOrgCompanyData();
+                        orgCompanyData.ActionSpecified = true;
+                        orgCompanyData.Action = NativeOrganization.Action.INSERT;
+
+                        if (String.IsNullOrEmpty(cwCompanyCode))
+                        {
+                            dataResponse.Status = "ERROR";
+                            dataResponse.Message = "Not a valid company code in DB. Please check the site code or the country code.";
+                            return Ok(dataResponse);
+                        }
+                        NativeOrganizationOrgCompanyDataGlbCompany company = new NativeOrganizationOrgCompanyDataGlbCompany();
+                        company.Code = cwCompanyCode;
+                        orgCompanyData.GlbCompany = company;
+
+                        NativeOrganizationOrgCompanyDataControllingBranch branch = new NativeOrganizationOrgCompanyDataControllingBranch();
+                        branch.Code = cwBranchCode;
+                        orgCompanyData.ControllingBranch = branch;
+                        orgCompanyDatas.Add(orgCompanyData);
+                        nativeOrganization.OrgCompanyDataCollection = orgCompanyDatas.ToArray();
+                    }
+                    #endregion
+
+                    #region AR AP DETAILS
                     bool isCompanyDataSpecified = !string.IsNullOrEmpty(organization.arAccountNumber) || !string.IsNullOrEmpty(organization.apAccountNumber);
                     if (isCompanyDataSpecified)
                     {
@@ -285,7 +307,7 @@ namespace BrinksAPI.Controllers
                         orgCompanyData.GlbCompany = company;
 
                         NativeOrganizationOrgCompanyDataControllingBranch branch = new NativeOrganizationOrgCompanyDataControllingBranch();
-                        branch.ActionSpecified = string.IsNullOrEmpty(cwBranchCode)?false:true;
+                        branch.ActionSpecified = string.IsNullOrEmpty(cwBranchCode) ? false : true;
                         branch.Action = NativeOrganization.Action.INSERT;
                         branch.TableName = "GlbBranch";
                         branch.Code = cwBranchCode;
@@ -351,7 +373,9 @@ namespace BrinksAPI.Controllers
                         }
                         orgCompanyDatas.Add(orgCompanyData);
                         nativeOrganization.OrgCompanyDataCollection = orgCompanyDatas.ToArray();
-                    }
+                    } 
+                    #endregion
+
                     #endregion
 
                     #region CONTACTS
@@ -808,18 +832,66 @@ namespace BrinksAPI.Controllers
                     #endregion
 
                     #region ORGANIZATION COMPANY DATA
-                    if (!string.IsNullOrEmpty(organization.arAccountNumber)  || !string.IsNullOrEmpty(organization.apAccountNumber))
+                    #region COMPANY CODE AND BRANCH CODE
+                    var filterOrgCompanyData = organizationData.OrgHeader.OrgCompanyDataCollection.FirstOrDefault(x => x.GlbCompany.Code == cwCompanyCode);
+                    if (!string.IsNullOrEmpty(cwCompanyCode) && !string.IsNullOrEmpty(cwBranchCode))
+                    {
+                        if (filterOrgCompanyData != null)
+                        {
+                            filterOrgCompanyData.ActionSpecified = true;
+                            filterOrgCompanyData.Action = NativeOrganization.Action.UPDATE;
+                            if (string.IsNullOrEmpty(filterOrgCompanyData.ControllingBranch?.Code))
+                            {
+                                NativeOrganizationOrgCompanyDataControllingBranch branch = new NativeOrganizationOrgCompanyDataControllingBranch();
+                                branch.ActionSpecified = true;
+                                branch.Action = NativeOrganization.Action.INSERT;
+                                branch.Code = cwBranchCode;
+                                filterOrgCompanyData.ControllingBranch = branch;
+                            }
+                            else
+                            {
+                                filterOrgCompanyData.ControllingBranch.Code = cwBranchCode;
+                                filterOrgCompanyData.ControllingBranch.PK = null;
+                            }
+                        }
+                        else
+                        {
+                            List<NativeOrganizationOrgCompanyData> orgCompanyDatas = new List<NativeOrganizationOrgCompanyData>();
+                            NativeOrganizationOrgCompanyData orgCompanyData = new NativeOrganizationOrgCompanyData();
+                            orgCompanyData.ActionSpecified = true;
+                            orgCompanyData.Action = NativeOrganization.Action.INSERT;
+
+                            if (String.IsNullOrEmpty(cwCompanyCode))
+                            {
+                                dataResponse.Status = "ERROR";
+                                dataResponse.Message = "Not a valid company code in DB. Please check the site code or the country code.";
+                                return Ok(dataResponse);
+                            }
+                            NativeOrganizationOrgCompanyDataGlbCompany company = new NativeOrganizationOrgCompanyDataGlbCompany();
+                            company.Code = cwCompanyCode;
+                            orgCompanyData.GlbCompany = company;
+
+                            NativeOrganizationOrgCompanyDataControllingBranch branch = new NativeOrganizationOrgCompanyDataControllingBranch();
+                            branch.Code = cwBranchCode;
+                            orgCompanyData.ControllingBranch = branch;
+                            orgCompanyDatas.Add(orgCompanyData);
+                            organizationData.OrgHeader.OrgCompanyDataCollection = orgCompanyDatas.ToArray();
+                        }
+                    }
+                    #endregion
+
+                    #region AR AP DETAILS
+                    if (!string.IsNullOrEmpty(organization.arAccountNumber) || !string.IsNullOrEmpty(organization.apAccountNumber))
                     {
                         if (organizationData.OrgHeader.OrgCompanyDataCollection is not null)
                         {
-                            var filterOrgCompanyData = organizationData.OrgHeader.OrgCompanyDataCollection.FirstOrDefault(x => x.GlbCompany.Code == cwCompanyCode);
+                            //var filterOrgCompanyData = organizationData.OrgHeader.OrgCompanyDataCollection.FirstOrDefault(x => x.GlbCompany.Code == cwCompanyCode);
                             if (filterOrgCompanyData != null)
                             {
                                 filterOrgCompanyData.ActionSpecified = true;
                                 filterOrgCompanyData.Action = NativeOrganization.Action.UPDATE;
-                                filterOrgCompanyData.GlbCompany.Code = cwCompanyCode;
 
-                                if(string.IsNullOrEmpty(filterOrgCompanyData.ControllingBranch?.Code))
+                                if (string.IsNullOrEmpty(filterOrgCompanyData.ControllingBranch?.Code))
                                 {
                                     NativeOrganizationOrgCompanyDataControllingBranch branch = new NativeOrganizationOrgCompanyDataControllingBranch();
                                     branch.ActionSpecified = string.IsNullOrEmpty(cwBranchCode) ? false : true;
@@ -829,7 +901,7 @@ namespace BrinksAPI.Controllers
                                 }
                                 else
                                 {
-                                    filterOrgCompanyData.ControllingBranch.Code = cwCompanyCode;
+                                    filterOrgCompanyData.ControllingBranch.Code = cwBranchCode;
                                     filterOrgCompanyData.ControllingBranch.PK = null;
                                 }
 
@@ -888,7 +960,7 @@ namespace BrinksAPI.Controllers
                                 orgCompanyData.ActionSpecified = true;
                                 orgCompanyData.Action = NativeOrganization.Action.INSERT;
 
-                                if(String.IsNullOrEmpty(cwCompanyCode))
+                                if (String.IsNullOrEmpty(cwCompanyCode))
                                 {
                                     dataResponse.Status = "ERROR";
                                     dataResponse.Message = "Not a valid company code in DB. Please check the site code or the country code.";
@@ -964,7 +1036,8 @@ namespace BrinksAPI.Controllers
                                 organizationData.OrgHeader.OrgCompanyDataCollection = orgCompanyDatas.ToArray();
                             }
                         }
-                    }
+                    } 
+                    #endregion
                     #endregion
 
                     #region CONTACTS
