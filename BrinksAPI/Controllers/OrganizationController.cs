@@ -126,8 +126,15 @@ namespace BrinksAPI.Controllers
                     dataResponse.Message = errorString;
 
                     return Ok(dataResponse);
-                } 
+                }
                 #endregion
+
+                if (!string.IsNullOrEmpty(organization.billingAttention) && !string.IsNullOrEmpty(organization.contactName) && organization.billingAttention == organization.contactName)
+                {
+                    dataResponse.Status = "ERROR";
+                    dataResponse.Message = "Billing Attention and Contact Name field cannot be same.";
+                    return Ok(dataResponse);
+                }
 
                 NativeOrganization.Native native = new NativeOrganization.Native();
 
@@ -301,8 +308,8 @@ namespace BrinksAPI.Controllers
                             return Ok(dataResponse);
                         }
                         NativeOrganizationOrgCompanyDataGlbCompany company = new NativeOrganizationOrgCompanyDataGlbCompany();
-                        company.ActionSpecified = isCompanyDataSpecified;
-                        company.Action = NativeOrganization.Action.INSERT;
+                        //company.ActionSpecified = isCompanyDataSpecified;
+                        //company.Action = NativeOrganization.Action.INSERT;
                         company.Code = cwCompanyCode;
                         orgCompanyData.GlbCompany = company;
 
@@ -381,7 +388,19 @@ namespace BrinksAPI.Controllers
                     #region CONTACTS
                     List<NativeOrganizationOrgContact> contacts = new List<NativeOrganizationOrgContact>();
 
-                    if (organization.billingAttention != null)
+                    if (!string.IsNullOrEmpty(organization.contactName))
+                    {
+                        NativeOrganizationOrgContact contactName = new NativeOrganizationOrgContact();
+                        contactName.ActionSpecified = true;
+                        contactName.Action = NativeOrganization.Action.INSERT;
+                        contactName.Language = "EN";
+                        contactName.Title = "Contact Name";
+                        contactName.NotifyMode = "DND";
+                        contactName.ContactName = organization.contactName;
+                        contactName.Email = organization.emailAddress;
+                        contacts.Add(contactName);
+                    }
+                    if (!string.IsNullOrEmpty(organization.billingAttention))
                     {
                         NativeOrganizationOrgContact billingContact = new NativeOrganizationOrgContact();
                         billingContact.ActionSpecified = true;
@@ -390,7 +409,7 @@ namespace BrinksAPI.Controllers
                         billingContact.Title = "Billing Attention";
                         billingContact.NotifyMode = "DND";
                         billingContact.ContactName = organization.billingAttention;
-                        billingContact.Email = organization.emailAddress;
+                        billingContact.Email = organization.einvoiceEmailAddress;
                         contacts.Add(billingContact);
                     }
                     nativeOrganization.OrgContactCollection = contacts.ToArray();
@@ -1042,7 +1061,7 @@ namespace BrinksAPI.Controllers
 
                     #region CONTACTS
                     List<NativeOrganizationOrgContact> contacts = new List<NativeOrganizationOrgContact>();
-                    if (organization.billingAttention != null)
+                    if (!string.IsNullOrEmpty(organization.billingAttention))
                     {
                         NativeOrganizationOrgContact billingContact = new NativeOrganizationOrgContact();
                         if (organizationData.OrgHeader.OrgContactCollection is not null)
@@ -1052,9 +1071,9 @@ namespace BrinksAPI.Controllers
                             {
                                 filteredBillingContact.ActionSpecified = true;
                                 filteredBillingContact.Action = NativeOrganization.Action.UPDATE;
-                                filteredBillingContact.PK = filteredBillingContact.PK;
+                                //filteredBillingContact.PK = filteredBillingContact.PK;
                                 filteredBillingContact.ContactName = organization.billingAttention;
-                                billingContact.Email = organization.emailAddress;
+                                billingContact.Email = organization.einvoiceEmailAddress;
                                 contacts.Add(filteredBillingContact);
                             }
                             else
@@ -1065,7 +1084,7 @@ namespace BrinksAPI.Controllers
                                 billingContact.Title = "Billing Attention";
                                 billingContact.NotifyMode = "DND";
                                 billingContact.ContactName = organization.billingAttention;
-                                billingContact.Email = organization.emailAddress;
+                                billingContact.Email = organization.einvoiceEmailAddress;
                                 contacts.Add(billingContact);
                             }
                         }
@@ -1077,51 +1096,51 @@ namespace BrinksAPI.Controllers
                             billingContact.Title = "Billing Attention";
                             billingContact.NotifyMode = "DND";
                             billingContact.ContactName = organization.billingAttention;
-                            billingContact.Email = organization.emailAddress;
+                            billingContact.Email = organization.einvoiceEmailAddress;
                             contacts.Add(billingContact);
                         }
                     }
 
-                    //if (organization.accountOwner != null)
-                    //{
-                    //    NativeOrganizationOrgContact ownerContact = new NativeOrganizationOrgContact();
-                    //    if (organizationData.OrgHeader.OrgContactCollection is not null)
-                    //    {
-                    //        var filteredOwnerContact = organizationData.OrgHeader.OrgContactCollection.Where(bc => bc.Title == "Owner Contact").FirstOrDefault();
-                    //        if (filteredOwnerContact != null)
-                    //        {
-                    //            filteredOwnerContact.ActionSpecified = true;
-                    //            filteredOwnerContact.Action = NativeOrganization.Action.UPDATE;
-                    //            filteredOwnerContact.PK = filteredOwnerContact.PK;
-                    //            filteredOwnerContact.ContactName = organization.accountOwner;
-                    //            filteredOwnerContact.Email = organization.einvoiceEmailAddress;
-                    //            contacts.Add(filteredOwnerContact);
-                    //        }
-                    //        else
-                    //        {
-                    //            ownerContact.ActionSpecified = true;
-                    //            ownerContact.Action = NativeOrganization.Action.INSERT;
-                    //            ownerContact.Language = "EN";
-                    //            ownerContact.Title = "Owner Contact";
-                    //            ownerContact.NotifyMode = "DND";
-                    //            ownerContact.ContactName = organization.accountOwner;
-                    //            ownerContact.Email = organization.einvoiceEmailAddress;
-                    //            contacts.Add(ownerContact);
-                    //        }
-                    //    }
-                    //    else
-                    //    {
-                    //        ownerContact.ActionSpecified = true;
-                    //        ownerContact.Action = NativeOrganization.Action.INSERT;
-                    //        ownerContact.Language = "EN";
-                    //        ownerContact.Title = "Owner Contact";
-                    //        ownerContact.NotifyMode = "DND";
-                    //        ownerContact.ContactName = organization.accountOwner;
-                    //        ownerContact.Email = organization.einvoiceEmailAddress;
-                    //        contacts.Add(ownerContact);
-                    //    }
+                    if (!string.IsNullOrEmpty(organization.contactName))
+                    {
+                        NativeOrganizationOrgContact contactName = new NativeOrganizationOrgContact();
+                        if (organizationData.OrgHeader.OrgContactCollection is not null)
+                        {
+                            var filteredOwnerContact = organizationData.OrgHeader.OrgContactCollection.Where(bc => bc.Title == "Contact Name").FirstOrDefault();
+                            if (filteredOwnerContact != null)
+                            {
+                                filteredOwnerContact.ActionSpecified = true;
+                                filteredOwnerContact.Action = NativeOrganization.Action.UPDATE;
+                                filteredOwnerContact.PK = filteredOwnerContact.PK;
+                                filteredOwnerContact.ContactName = organization.contactName;
+                                filteredOwnerContact.Email = organization.emailAddress;
+                                contacts.Add(filteredOwnerContact);
+                            }
+                            else
+                            {
+                                contactName.ActionSpecified = true;
+                                contactName.Action = NativeOrganization.Action.INSERT;
+                                contactName.Language = "EN";
+                                contactName.Title = "Contact Name";
+                                contactName.NotifyMode = "DND";
+                                contactName.ContactName = organization.contactName;
+                                contactName.Email = organization.emailAddress;
+                                contacts.Add(contactName);
+                            }
+                        }
+                        else
+                        {
+                            contactName.ActionSpecified = true;
+                            contactName.Action = NativeOrganization.Action.INSERT;
+                            contactName.Language = "EN";
+                            contactName.Title = "Contact Name";
+                            contactName.NotifyMode = "DND";
+                            contactName.ContactName = organization.contactName;
+                            contactName.Email = organization.emailAddress;
+                            contacts.Add(contactName);
+                        }
 
-                    //}
+                    }
                     organizationData.OrgHeader.OrgContactCollection = contacts.ToArray();
 
                     #endregion
@@ -1716,10 +1735,11 @@ namespace BrinksAPI.Controllers
                 native.Body = body;
 
                 string xml = Utilities.Serialize(native);
-                var documentResponse = eAdaptor.Services.SendToCargowise(xml, _configuration.URI, _configuration.Username, _configuration.Password);
+                var documentResponse = eAdaptor.Services.SendToCargowise2(xml, _configuration.URI, _configuration.Username, _configuration.Password);
                 if (documentResponse.Status == "ERROR")
                 {
-                    string errorMessage = documentResponse.Data.Data.FirstChild.InnerText;
+                    //string errorMessage = documentResponse.Data.Data.FirstChild.InnerText;
+                    string? errorMessage = documentResponse.Message;
                     dataResponse.Status = documentResponse.Status;
                     MatchCollection matchedError = Regex.Matches(errorMessage, "(Error)(.*)");
                     string[] groupedErrors = matchedError.GroupBy(x => x.Value).Select(y => y.Key).ToArray();

@@ -3,6 +3,8 @@ using System.IO.Compression;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Xml;
+using System.Xml.Linq;
 using System.Xml.Serialization;
 
 namespace eAdaptor
@@ -19,7 +21,6 @@ namespace eAdaptor
                 using (var sourceStream = new MemoryStream(Encoding.UTF8.GetBytes(xml)))
                 {
                     var response = client.Post(sourceStream);
-                    //var responseStatus = response.StatusCode;
                     if (response.IsSuccessStatusCode)
                     {
                         if (response.Content != null)
@@ -32,11 +33,9 @@ namespace eAdaptor
                             }
 
                             XmlSerializer serializer = new XmlSerializer(typeof(UniversalResponseData));
-
                             using (StreamReader reader = new StreamReader(stream))
                             {
-
-                                UniversalResponseData result = (UniversalResponseData)serializer.Deserialize(reader);
+                                UniversalResponseData? result = (UniversalResponseData?)serializer.Deserialize(reader);
                                 bool isError = result.Data.InnerText.Contains("Error") || result.Status != "PRS";
                                 responseData.Status = isError ? "ERROR" : "SUCCESS";
                                 responseData.Message = isError ? "Please fix the errors." : "Successfull";
@@ -110,11 +109,12 @@ namespace eAdaptor
             }
 
             return responseData;
-        } 
+        }
         #endregion
 
 
-        #region Send XML to CW
+        #region Send XML to CW(Only for organization )
+        // This function is only used in organization because while getting serialization wrong if the response is failure from CW side
         public static XMLDataResponse SendToCargowise2(string xml, string uri, string username, string password)
         {
             XMLDataResponse responseData = new XMLDataResponse();
@@ -138,13 +138,18 @@ namespace eAdaptor
 
                             using (var reader = new StreamReader(stream))
                             {
-                                var serializer = new XmlSerializer(typeof(UniversalResponseData));
-                                UniversalResponseData result = (UniversalResponseData)serializer.Deserialize(reader);
+                                string xmlString = reader.ReadToEnd();
+                                XmlDocument doc = new XmlDocument();
+                                doc.LoadXml(xmlString);
 
-                                bool isError = result.Data.InnerText.Contains("Error");
+                                string? status =  doc.GetElementsByTagName("Status")[0]?.FirstChild?.InnerText;
+                                string? data = doc.GetElementsByTagName("Data")[0]?.FirstChild?.InnerText;
+                                string? processingLog = doc.GetElementsByTagName("ProcessingLog")[0]?.FirstChild?.InnerText;
+
+                                bool isError = processingLog.Contains("Error");
                                 responseData.Status = isError ? "ERROR" : "SUCCESS";
-                                responseData.Message = isError ? "Please fix the errors." : "Successfull";
-                                responseData.Data = result;
+                                responseData.Message = processingLog;
+                                responseData.Data = null;
                             }
                         }
                     }

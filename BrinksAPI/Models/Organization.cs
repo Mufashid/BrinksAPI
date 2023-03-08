@@ -13,6 +13,9 @@ namespace BrinksAPI.Models
         [StringLength(40)]
         public string? name { get; set; }
         [Required(ErrorMessage = "Customer Address1 is required.")]
+
+        [StringLength(25)]
+        public string? contactName { get; set; }
         [StringLength(30)]
         public string? address1 { get; set; }
         [StringLength(30)]
@@ -76,7 +79,7 @@ namespace BrinksAPI.Models
         public string? locationVerifiedDate { get; set; }
         public YesOrNo? electronicInvoice { get; set; }
         public YesOrNo? addressValidatedFlag { get; set; }
-        [StringLength(40)]
+        [StringLength(3)]
         public string? accountOwner { get; set; }
         [StringLength(255)]
         public string? einvoiceEmailAddress { get; set; }

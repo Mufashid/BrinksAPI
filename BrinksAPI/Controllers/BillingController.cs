@@ -384,7 +384,6 @@ namespace BrinksAPI.Controllers
 
                 transactionInfo.Number = payableInvoice.invoice_number;
                 transactionInfo.TransactionDate = payableInvoice.invoice_date;
-                //transactionInfo.DueDate = payableInvoice.exchange_date;
 
                 OrganizationData invoiceOrg = SearchOrgWithRegNo(payableInvoice.invoice_gcc);
                 string invoiceOrgCode = invoiceOrg.OrgHeader == null ? "HERMESLTD" : invoiceOrg.OrgHeader.Code;
@@ -411,32 +410,19 @@ namespace BrinksAPI.Controllers
                 branch.Code = branchCodeCW;
                 transactionInfo.Branch = branch;
 
-                //UniversalTransaction.Department department = new UniversalTransaction.Department();
-                //department.Code = "FES";
-                //transactionInfo.Department = department;
-
-
                 List<UniversalTransaction.PostingJournal> journals = new List<UniversalTransaction.PostingJournal>();
                 List<string> shipmentIds = new List<string>();
 
+                //int journalSequence = 1;
                 foreach (var revenue in payableInvoice.revenues)
                 {
                     var shipmentDetails = GetShipmentDetailByHawb(revenue?.revenue_hawb_number);
-                    string shipmentId = "";
-                    string departmentCode = "";
+                    string? shipmentId = "";
+                    string? departmentCode = "";
                     if (shipmentDetails != null)
                     {
                         shipmentId = shipmentDetails.ShipmentNo;
-
-                        //removed due to class error on delilveryDuedate field -- renz 16/01/2023
-                        //var sDetails = GetShipmentByIdAndCompanyCode(shipmentId,dataContext.EnterpriseID,dataContext.ServerID, dataContext.Company.Code);
-                        //if (sDetails.Shipment.DataContext.DataSourceCollection.Any(y => y.Type == "ForwardingConsol"))
-                        //    departmentCode = sDetails.Shipment.SubShipmentCollection.FirstOrDefault().JobCosting?.Department?.Code;
-                        //else
-                        //    departmentCode = sDetails.Shipment.SubShipmentCollection.FirstOrDefault().JobCosting?.Department?.Code;
-
-                        var dept1 = GetDepartmentCodeByIdAndCompanyCode(shipmentId, dataContext.EnterpriseID, dataContext.ServerID, dataContext.Company.Code);
-                        departmentCode = dept1;
+                        departmentCode = GetDepartmentCodeByIdAndCompanyCode(shipmentId, dataContext.EnterpriseID, dataContext.ServerID, dataContext.Company.Code); ;
                     }
 
                     UniversalTransaction.Department department = new UniversalTransaction.Department();
@@ -445,6 +431,8 @@ namespace BrinksAPI.Controllers
                     //string? companyCodeCW = _context.sites.Where(s => s.SiteCode == billFromSiteCode).FirstOrDefault()?.CompanyCode;
 
                     UniversalTransaction.PostingJournal journal = new UniversalTransaction.PostingJournal();
+                    //journal.SequenceSpecified = true;
+                    //journal.Sequence = journalSequence;
 
                     string? chargeCodeCW = _context.Categories.Where(c => c.BrinksCode == revenue.category_code).FirstOrDefault()?.CWCode;
                     UniversalTransaction.ChargeCode chargeCode = new UniversalTransaction.ChargeCode();
@@ -452,25 +440,20 @@ namespace BrinksAPI.Controllers
                     journal.ChargeCode = chargeCode;
 
                     journal.Description = revenue.description;
-
                     UniversalTransaction.Currency osCurrency = new UniversalTransaction.Currency();
                     osCurrency.Code = revenue.invoice_currency;
                     journal.OSCurrency = osCurrency;
-                    //currency for hermes is always usd - renz 03/01/2023
-                    if (invoiceOrgCode == "HERMESLTD")
+                    
+                    if (invoiceOrgCode == "HERMESLTD") //currency for hermes is always usd - renz 03/01/2023
                     {
                         osCurrency.Code = "USD";
                         journal.OSCurrency = osCurrency;
-
                     }
                     journal.OSAmountSpecified = true;
                     journal.OSAmount = -Math.Abs(Convert.ToDecimal(revenue.invoice_amount));
 
                     journal.OSGSTVATAmountSpecified = true;
                     journal.OSGSTVATAmount = -Math.Abs(Convert.ToDecimal(revenue.invoice_tax_amount));
-
-                    //journal.OSTotalAmountSpecified = true;
-                    //journal.OSTotalAmount = -Math.Abs(Convert.ToDecimal(revenue.invoice_amount) + Convert.ToDecimal(revenue.invoice_tax_amount));
 
                     string? taxCodeCW = _context.TaxTypes.Where(t => t.BrinksCode.ToLower() == revenue.tax_code.ToLower()).FirstOrDefault()?.CWCode;
                     UniversalTransaction.TaxID taxID = new UniversalTransaction.TaxID();
@@ -492,16 +475,10 @@ namespace BrinksAPI.Controllers
                     journal.Organization = organizationReference;
 
                     journals.Add(journal);
+                    //journalSequence++;
                 }
-                //removed dont convert for OS - renz 03/01/2022
-                //decimal totalAmountExcludeTax = payableInvoice.revenues.Sum(s => Convert.ToDecimal(s.invoice_amount)) * Convert.ToDecimal(payableInvoice.exchange_rate);
-                //decimal totalAmountTax = payableInvoice.revenues.Sum(s => Convert.ToDecimal(s.invoice_tax_amount)) * Convert.ToDecimal(payableInvoice.exchange_rate);
-
-
-                //removed the exchange rate since this is going to os amount
                 decimal totalAmountExcludeTax = journals.Sum(x => x.OSAmount);
                 decimal totalAmountTax = journals.Sum(x => x.OSGSTVATAmount);
-
 
                 transactionInfo.OSExGSTVATAmountSpecified = !IsNullOrEmpty(totalAmountExcludeTax.ToString()); ;
                 transactionInfo.OSExGSTVATAmount = -Math.Abs(totalAmountExcludeTax);
@@ -515,10 +492,7 @@ namespace BrinksAPI.Controllers
                 transactionInfo.PostingJournalCollection = journals.ToArray();
 
                 List<UniversalTransaction.Shipment> shipments = new List<UniversalTransaction.Shipment>();
-
-
                 shipmentIds = shipmentIds.Distinct().ToList();
-
 
                 foreach (var shipmentId in shipmentIds)
                 {
@@ -571,7 +545,7 @@ namespace BrinksAPI.Controllers
                         {
                             dataResponse.Status = "SUCCESS";
                             dataResponse.Message = "Invoice Created Sucessfully";
-                            _logger.LogError("Success: {@Success} Request: {@Request}", dataResponse.Message, payableInvoice);
+                            _logger.LogInformation("Success: {@Success} Request: {@Request}", dataResponse.Message, payableInvoice);
                         }
                     }
                 }
@@ -607,6 +581,9 @@ namespace BrinksAPI.Controllers
 
                 #region DATA CONTEXT
                 Events.DataContext eventDataContext = new Events.DataContext();
+                eventDataContext.EnterpriseID = hawb;
+                eventDataContext.ServerID = hawb;
+
                 List<Events.DataTarget> dataTargets = new List<Events.DataTarget>();
                 Events.DataTarget dataTarget = new Events.DataTarget();
                 dataTarget.Type = "ForwardingShipment";
@@ -642,10 +619,7 @@ namespace BrinksAPI.Controllers
                         var serializer = new XmlSerializer(typeof(Events.UniversalEventData));
                         Events.UniversalEventData eventResponse = (Events.UniversalEventData)serializer.Deserialize(reader);
                         shipmentNumber = eventResponse?.Event?.DataContext?.DataSourceCollection?.Where(d => d.Type == "ForwardingShipment")?.FirstOrDefault()?.Key;
-
                         s.ShipmentNo = shipmentNumber;
-
-
                     }
                 }
             }
