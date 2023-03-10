@@ -119,9 +119,10 @@ var app = builder.Build();
 app.UseCors("AnyOrigin");
 
 #region For Development
-//if (app.Environment.IsDevelopment())
-//{
-//} 
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
 #endregion
 
 #region Swagger 
@@ -145,6 +146,7 @@ app.UseAuthorization();
 app.MapControllers();
 
 #region Error Handling
+
 //app.Use(async (context, next) =>
 //{
 //    await next(); 

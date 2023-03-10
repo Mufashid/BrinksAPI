@@ -12,11 +12,11 @@ namespace BrinksAPI.Models
         [Required(ErrorMessage = "Customer Name is required.")]
         [StringLength(40)]
         public string? name { get; set; }
-        [Required(ErrorMessage = "Customer Address1 is required.")]
 
         [StringLength(25)]
         public string? contactName { get; set; }
         [StringLength(30)]
+        [Required(ErrorMessage = "Customer Address1 is required.")]
         public string? address1 { get; set; }
         [StringLength(30)]
         public string? address2 { get; set; }

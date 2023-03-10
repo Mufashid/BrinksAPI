@@ -5,8 +5,8 @@
         string URI { get; }
         string Username { get; }
         string Password { get; }
-        string CompanyCode { get; }
-        string ServiceDataProvider { get; }
+        //string CompanyCode { get; }
+        //string ServiceDataProvider { get; }
         string EnterpriseId { get; }
         string ServerId { get; }
 
@@ -16,9 +16,9 @@
         string SftpOutboundFolder { get; }
         string SftpBackupFolder { get; }
 
-        string AtlasURI { get; }
-        string AtlasUsername { get; }
-        string AtlasPassword { get; }
+        //string AtlasURI { get; }
+        //string AtlasUsername { get; }
+        //string AtlasPassword { get; }
     }
 
 

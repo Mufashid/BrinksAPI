@@ -49,11 +49,11 @@ namespace BrinksAPI.Controllers
                 dataTargets.Add(dataTarget);
                 dataContext.DataTargetCollection = dataTargets.ToArray();
 
-                Company company = new Company();
-                company.Code = Configuration.CompanyCode;
-                dataContext.Company = company;
+                //Company company = new Company();
+                //company.Code = Configuration.CompanyCode;
+                //dataContext.Company = company;
 
-                dataContext.DataProvider = Configuration.ServiceDataProvider;
+                //dataContext.DataProvider = Configuration.ServiceDataProvider;
                 dataContext.EnterpriseID = Configuration.EnterpriseId;
 
                 dataContext.ServerID = Configuration.ServerId;
