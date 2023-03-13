@@ -57,7 +57,8 @@ namespace BrinksAPI.Models
         PL,
         POA,
         TIB,
-        TR
+        TR,
+        PICK
     }
     public enum DocumentFormatType
     {
