@@ -314,8 +314,8 @@ namespace BrinksAPI.Controllers
                         orgCompanyData.GlbCompany = company;
 
                         NativeOrganizationOrgCompanyDataControllingBranch branch = new NativeOrganizationOrgCompanyDataControllingBranch();
-                        branch.ActionSpecified = string.IsNullOrEmpty(cwBranchCode) ? false : true;
-                        branch.Action = NativeOrganization.Action.INSERT;
+                        //branch.ActionSpecified = string.IsNullOrEmpty(cwBranchCode) ? false : true;
+                        //branch.Action = NativeOrganization.Action.INSERT;
                         branch.TableName = "GlbBranch";
                         branch.Code = cwBranchCode;
                         orgCompanyData.ControllingBranch = branch;
@@ -862,8 +862,8 @@ namespace BrinksAPI.Controllers
                             if (string.IsNullOrEmpty(filterOrgCompanyData.ControllingBranch?.Code))
                             {
                                 NativeOrganizationOrgCompanyDataControllingBranch branch = new NativeOrganizationOrgCompanyDataControllingBranch();
-                                branch.ActionSpecified = true;
-                                branch.Action = NativeOrganization.Action.INSERT;
+                                //branch.ActionSpecified = true;
+                                //branch.Action = NativeOrganization.Action.INSERT;
                                 branch.Code = cwBranchCode;
                                 filterOrgCompanyData.ControllingBranch = branch;
                             }
