@@ -160,7 +160,7 @@ namespace BrinksAPI.Controllers
                 notes.Add(pickUpNote);
 
                 Note deliveryNote = new Note();
-                deliveryNote.Description = "Devlivery Note";
+                deliveryNote.Description = "Delivery Note";
                 deliveryNote.NoteText = shipment.dlvNotes;
                 notes.Add(deliveryNote);
 
