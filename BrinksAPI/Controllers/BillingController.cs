@@ -413,20 +413,25 @@ namespace BrinksAPI.Controllers
                 List<UniversalTransaction.PostingJournal> journals = new List<UniversalTransaction.PostingJournal>();
                 List<string> shipmentIds = new List<string>();
 
+                List<ShipmentDetails> shipmentDetails = new List<ShipmentDetails>();
+                List<string>? distinctHouseBill = payableInvoice.revenues.Select(r => r.revenue_hawb_number).Distinct().ToList();
+                foreach (var houseBill in distinctHouseBill)
+                {
+                    ShipmentDetails shipmentDetail = GetShipmentDetailByHawb(houseBill);
+                    if (shipmentDetail.ShipmentNo != null)
+                    {
+                        string? departmentCode = GetDepartmentCodeByIdAndCompanyCode(shipmentDetail?.ShipmentNo, dataContext.EnterpriseID, dataContext.ServerID, dataContext?.Company?.Code);
+                        shipmentDetail.DepartmentCode = departmentCode;
+                    }
+                    shipmentDetails.Add(shipmentDetail);
+                }
+
                 //int journalSequence = 1;
                 foreach (var revenue in payableInvoice.revenues)
                 {
-                    var shipmentDetails = GetShipmentDetailByHawb(revenue?.revenue_hawb_number);
-                    string? shipmentId = "";
-                    string? departmentCode = "";
-                    if (shipmentDetails != null)
-                    {
-                        shipmentId = shipmentDetails.ShipmentNo;
-                        departmentCode = GetDepartmentCodeByIdAndCompanyCode(shipmentId, dataContext.EnterpriseID, dataContext.ServerID, dataContext.Company.Code); ;
-                    }
-
+                    ShipmentDetails? shipmentDetail = shipmentDetails.Where(s => s.HouseBill == revenue.revenue_hawb_number).FirstOrDefault();
                     UniversalTransaction.Department department = new UniversalTransaction.Department();
-                    department.Code = departmentCode;
+                    department.Code = shipmentDetail.DepartmentCode;
                     //int billFromSiteCode = Convert.ToInt32(revenue.billed_from_site_code);
                     //string? companyCodeCW = _context.sites.Where(s => s.SiteCode == billFromSiteCode).FirstOrDefault()?.CompanyCode;
 
@@ -465,9 +470,9 @@ namespace BrinksAPI.Controllers
 
                     UniversalTransaction.EntityReference job = new UniversalTransaction.EntityReference();
                     job.Type = "Job";
-                    job.Key = shipmentId;
+                    job.Key = shipmentDetail.ShipmentNo;
                     journal.Job = job;
-                    shipmentIds.Add(shipmentId);
+                    shipmentIds.Add(shipmentDetail.ShipmentNo);
 
                     UniversalTransaction.OrganizationReference organizationReference = new UniversalTransaction.OrganizationReference();
                     organizationReference.Type = "Organization";
@@ -574,6 +579,7 @@ namespace BrinksAPI.Controllers
         {
             string? shipmentNumber = null;
             ShipmentDetails s = new ShipmentDetails();
+            s.HouseBill = hawb;
             try
             {
                 Events.UniversalEventData universalEvent = new Events.UniversalEventData();
@@ -581,8 +587,8 @@ namespace BrinksAPI.Controllers
 
                 #region DATA CONTEXT
                 Events.DataContext eventDataContext = new Events.DataContext();
-                eventDataContext.EnterpriseID = hawb;
-                eventDataContext.ServerID = hawb;
+                eventDataContext.EnterpriseID = _configuration.EnterpriseId;
+                eventDataContext.ServerID = _configuration.ServerId;
 
                 List<Events.DataTarget> dataTargets = new List<Events.DataTarget>();
                 Events.DataTarget dataTarget = new Events.DataTarget();
@@ -734,18 +740,6 @@ namespace BrinksAPI.Controllers
                         response = dept.Element(ns + "Code").Value;
 
                 }
-                //foreach (var item in xmldocu.Elements(ns + "Shipment"))
-                //{
-
-                //}
-
-
-                //using (var reader = new StringReader(shipmentRequestResponse.Data.Data.OuterXml))
-                //{
-
-                //    var serializer = new XmlSerializer(typeof(UniversalShipmentData));
-                //    response = (UniversalShipmentData?)serializer.Deserialize(reader);
-                //}
             }
 
             return response;
@@ -818,6 +812,7 @@ namespace BrinksAPI.Controllers
 
     public class ShipmentDetails
     {
+        public string? HouseBill { get; set; }
         public string? ShipmentNo { get; set; }
         public string? DepartmentCode { get; set; }
     }

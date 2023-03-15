@@ -398,6 +398,9 @@ namespace BrinksAPI.Controllers
                         contactName.NotifyMode = "DND";
                         contactName.ContactName = organization.contactName;
                         contactName.Email = organization.emailAddress;
+                        contactName.Phone = organization.phoneNumber;
+                        contactName.Mobile = organization.mobileNumber;
+                        contactName.Fax = organization.faxNumber;
                         contacts.Add(contactName);
                     }
                     if (!string.IsNullOrEmpty(organization.billingAttention))
@@ -1071,7 +1074,6 @@ namespace BrinksAPI.Controllers
                             {
                                 filteredBillingContact.ActionSpecified = true;
                                 filteredBillingContact.Action = NativeOrganization.Action.UPDATE;
-                                //filteredBillingContact.PK = filteredBillingContact.PK;
                                 filteredBillingContact.ContactName = organization.billingAttention;
                                 billingContact.Email = organization.einvoiceEmailAddress;
                                 contacts.Add(filteredBillingContact);
@@ -1106,15 +1108,17 @@ namespace BrinksAPI.Controllers
                         NativeOrganizationOrgContact contactName = new NativeOrganizationOrgContact();
                         if (organizationData.OrgHeader.OrgContactCollection is not null)
                         {
-                            var filteredOwnerContact = organizationData.OrgHeader.OrgContactCollection.Where(bc => bc.Title == "Contact Name").FirstOrDefault();
-                            if (filteredOwnerContact != null)
+                            var filteredContactName = organizationData.OrgHeader.OrgContactCollection.Where(bc => bc.Title == "Contact Name").FirstOrDefault();
+                            if (filteredContactName != null)
                             {
-                                filteredOwnerContact.ActionSpecified = true;
-                                filteredOwnerContact.Action = NativeOrganization.Action.UPDATE;
-                                filteredOwnerContact.PK = filteredOwnerContact.PK;
-                                filteredOwnerContact.ContactName = organization.contactName;
-                                filteredOwnerContact.Email = organization.emailAddress;
-                                contacts.Add(filteredOwnerContact);
+                                filteredContactName.ActionSpecified = true;
+                                filteredContactName.Action = NativeOrganization.Action.UPDATE;
+                                filteredContactName.ContactName = organization.contactName;
+                                filteredContactName.Email = organization.emailAddress;
+                                filteredContactName.Phone = organization.phoneNumber;
+                                filteredContactName.Mobile = organization.mobileNumber;
+                                filteredContactName.Fax = organization.faxNumber;
+                                contacts.Add(filteredContactName);
                             }
                             else
                             {
@@ -1125,6 +1129,9 @@ namespace BrinksAPI.Controllers
                                 contactName.NotifyMode = "DND";
                                 contactName.ContactName = organization.contactName;
                                 contactName.Email = organization.emailAddress;
+                                contactName.Phone = organization.phoneNumber;
+                                contactName.Mobile = organization.mobileNumber;
+                                contactName.Fax = organization.faxNumber;
                                 contacts.Add(contactName);
                             }
                         }
@@ -1137,6 +1144,9 @@ namespace BrinksAPI.Controllers
                             contactName.NotifyMode = "DND";
                             contactName.ContactName = organization.contactName;
                             contactName.Email = organization.emailAddress;
+                            contactName.Phone = organization.phoneNumber;
+                            contactName.Mobile = organization.mobileNumber;
+                            contactName.Fax = organization.faxNumber;
                             contacts.Add(contactName);
                         }
 
