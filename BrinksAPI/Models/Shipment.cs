@@ -252,7 +252,6 @@ namespace BrinksAPI.Models
         [Required]
         [StringLength(40)]
         public string? puName { get; set; }
-        [Required]
         [StringLength(40)]
         public string? puContactName { get; set; }
         [Required]
