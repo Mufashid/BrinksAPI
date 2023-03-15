@@ -84,7 +84,7 @@ namespace BrinksAPI.Models
         public string? shipperCountryCode { get; set; }
         
         public string? shipperMobileNumber { get; set; }
-        [Required]
+
         [StringLength(22)]
         public string? shipperPhoneNumber { get; set; }
         public string? shipperContactName { get; set; }
@@ -276,7 +276,7 @@ namespace BrinksAPI.Models
         [Required]
         [StringLength(3)]
         public string? puCountryCode { get; set; }
-        [Required]
+
         [StringLength(22)]
         public string? puPhoneNumber { get; set; }
         public string? puMobileNumber { get; set; }
