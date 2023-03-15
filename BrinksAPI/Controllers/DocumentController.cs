@@ -41,7 +41,7 @@ namespace BrinksAPI.Controllers
         ///     {
         ///        "requestId":"123456",
         ///        "documentTypeCode":"OTH",
-        ///        "fileName":"Tiny PreAlert.txt",
+        ///        "fileName":"Tiny PreAlert",
         ///        "documentReference":"MAWB",
         ///        "documentReferenceId":"12345678",
         ///        "documentContent":"SGV5ISBXYWtlIFVwIQ==",
@@ -295,7 +295,8 @@ namespace BrinksAPI.Controllers
             List<AttachedDocument> attachedDocuments = new List<AttachedDocument>();
             AttachedDocument attachedDocument = new AttachedDocument();
 
-            attachedDocument.FileName = document.FileName;
+            string extension = "." + document.DocumentFormat?.ToLower();
+            attachedDocument.FileName = document.FileName + extension;
             attachedDocument.ImageData = document.DocumentContent;
 
             var documentTypeInDB = _context.documentTypes
