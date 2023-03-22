@@ -230,159 +230,92 @@ namespace BrinksAPI.Controllers
                     #endregion
 
                     #region ORGANIZATION COUNTRY DATA TSA
-                    if (!String.IsNullOrEmpty(organization.tsaValidationId) && !String.IsNullOrEmpty(organization.locationVerifiedDate) && organization.countryCode?.ToLower() == "us")
-                    {
-                        List<NativeOrganizationOrgCountryData> orgCountryDatas = new List<NativeOrganizationOrgCountryData>();
-                        NativeOrganizationOrgCountryData orgCountryData = new NativeOrganizationOrgCountryData();
-                        orgCountryData.ActionSpecified = true;
-                        orgCountryData.Action = NativeOrganization.Action.INSERT;
-                        orgCountryData.EXApprovedOrMajorExporter = "NO";
-                        orgCountryData.EXApprovalNumber = organization.tsaValidationId;
-                        orgCountryData.EXExportPermissionDetails = organization.tsaType;
-                        orgCountryData.EXSiteInspectionDate = DateTime.ParseExact(organization.locationVerifiedDate, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy-MM-ddTmm:ss:ff");
-                        //orgCountryData.EXSiteInspectionDate = DateTime.ParseExact(organization.locationVerifiedDate, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy-MM-ddTmm:ss:ff");
+                    //if (!String.IsNullOrEmpty(organization.tsaValidationId) && !String.IsNullOrEmpty(organization.locationVerifiedDate) && organization.countryCode?.ToLower() == "us")
+                    //{
+                    //    List<NativeOrganizationOrgCountryData> orgCountryDatas = new List<NativeOrganizationOrgCountryData>();
+                    //    NativeOrganizationOrgCountryData orgCountryData = new NativeOrganizationOrgCountryData();
+                    //    orgCountryData.ActionSpecified = true;
+                    //    orgCountryData.Action = NativeOrganization.Action.INSERT;
+                    //    orgCountryData.EXApprovedOrMajorExporter = "NO";
+                    //    orgCountryData.EXApprovalNumber = organization.tsaValidationId;
+                    //    orgCountryData.EXExportPermissionDetails = organization.tsaType;
+                    //    orgCountryData.EXSiteInspectionDate = DateTime.ParseExact(organization.locationVerifiedDate, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy-MM-ddTmm:ss:ff");
+                    //    //orgCountryData.EXSiteInspectionDate = DateTime.ParseExact(organization.locationVerifiedDate, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy-MM-ddTmm:ss:ff");
 
-                        NativeOrganizationOrgCountryDataClientCountryRelation clientCountryRelation = new NativeOrganizationOrgCountryDataClientCountryRelation();
-                        clientCountryRelation.TableName = "RefCountry";
-                        clientCountryRelation.Code = organization.countryCode;
-                        orgCountryData.ClientCountryRelation = clientCountryRelation;
+                    //    NativeOrganizationOrgCountryDataClientCountryRelation clientCountryRelation = new NativeOrganizationOrgCountryDataClientCountryRelation();
+                    //    clientCountryRelation.TableName = "RefCountry";
+                    //    clientCountryRelation.Code = organization.countryCode;
+                    //    orgCountryData.ClientCountryRelation = clientCountryRelation;
 
-                        string? approvedLocation = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24));
-                        NativeOrganizationOrgCountryDataApprovedLocation dataApprovedLocation = new NativeOrganizationOrgCountryDataApprovedLocation();
-                        dataApprovedLocation.TableName = "OrgAddress";
-                        dataApprovedLocation.Code = approvedLocation;
-                        orgCountryData.ApprovedLocation = dataApprovedLocation;
+                    //    string? approvedLocation = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24));
+                    //    NativeOrganizationOrgCountryDataApprovedLocation dataApprovedLocation = new NativeOrganizationOrgCountryDataApprovedLocation();
+                    //    dataApprovedLocation.TableName = "OrgAddress";
+                    //    dataApprovedLocation.Code = approvedLocation;
+                    //    orgCountryData.ApprovedLocation = dataApprovedLocation;
 
-                        NativeOrganizationOrgCountryDataIssuingAuthorityCountry authorityCountry = new NativeOrganizationOrgCountryDataIssuingAuthorityCountry();
-                        authorityCountry.TableName = "RefCountry";
-                        authorityCountry.Code = organization.countryCode;
-                        orgCountryData.IssuingAuthorityCountry = authorityCountry;
+                    //    NativeOrganizationOrgCountryDataIssuingAuthorityCountry authorityCountry = new NativeOrganizationOrgCountryDataIssuingAuthorityCountry();
+                    //    authorityCountry.TableName = "RefCountry";
+                    //    authorityCountry.Code = organization.countryCode;
+                    //    orgCountryData.IssuingAuthorityCountry = authorityCountry;
 
-                        orgCountryDatas.Add(orgCountryData);
-                        nativeOrganization.OrgCountryDataCollection = orgCountryDatas.ToArray();
-                    }
+                    //    orgCountryDatas.Add(orgCountryData);
+                    //    nativeOrganization.OrgCountryDataCollection = orgCountryDatas.ToArray();
+                    //}
                     #endregion
 
-                    #region ORGANIZATION COMPANY DATA
+                    #region COMPANY DATA AND CONTROLLING BRANCH
 
-                    #region COMPANY CODE AND BRANCH CODE
-                    if (!String.IsNullOrEmpty(cwCompanyCode) && !String.IsNullOrEmpty(cwBranchCode))
+                    List<NativeOrganizationOrgCompanyData> orgCompanyDatas = new List<NativeOrganizationOrgCompanyData>();
+                    NativeOrganizationOrgCompanyData orgCompanyData = new NativeOrganizationOrgCompanyData();
+                    orgCompanyData.ActionSpecified = true;
+                    orgCompanyData.Action = NativeOrganization.Action.INSERT;
+
+                    if (String.IsNullOrEmpty(cwCompanyCode))
                     {
-                        List<NativeOrganizationOrgCompanyData> orgCompanyDatas = new List<NativeOrganizationOrgCompanyData>();
-                        NativeOrganizationOrgCompanyData orgCompanyData = new NativeOrganizationOrgCompanyData();
-                        orgCompanyData.ActionSpecified = true;
-                        orgCompanyData.Action = NativeOrganization.Action.INSERT;
-
-                        if (String.IsNullOrEmpty(cwCompanyCode))
-                        {
-                            dataResponse.Status = "ERROR";
-                            dataResponse.Message = "Not a valid company code in DB. Please check the site code or the country code.";
-                            return Ok(dataResponse);
-                        }
-                        NativeOrganizationOrgCompanyDataGlbCompany company = new NativeOrganizationOrgCompanyDataGlbCompany();
-                        company.Code = cwCompanyCode;
-                        orgCompanyData.GlbCompany = company;
-
-                        NativeOrganizationOrgCompanyDataControllingBranch branch = new NativeOrganizationOrgCompanyDataControllingBranch();
-                        branch.Code = cwBranchCode;
-                        orgCompanyData.ControllingBranch = branch;
-                        orgCompanyDatas.Add(orgCompanyData);
-                        nativeOrganization.OrgCompanyDataCollection = orgCompanyDatas.ToArray();
+                        dataResponse.Status = "ERROR";
+                        dataResponse.Message = "Not a valid company code in DB. Please check the site code or the country code.";
+                        return Ok(dataResponse);
                     }
-                    #endregion
+                    NativeOrganizationOrgCompanyDataGlbCompany company = new NativeOrganizationOrgCompanyDataGlbCompany();
+                    company.Code = cwCompanyCode;
+                    orgCompanyData.GlbCompany = company;
 
-                    #region AR AP DETAILS
-                    bool isCompanyDataSpecified = !string.IsNullOrEmpty(organization.arAccountNumber) || !string.IsNullOrEmpty(organization.apAccountNumber);
-                    if (isCompanyDataSpecified)
+                    NativeOrganizationOrgCompanyDataControllingBranch branch = new NativeOrganizationOrgCompanyDataControllingBranch();
+                    branch.Code = cwBranchCode;
+                    orgCompanyData.ControllingBranch = branch;
+
+                    if (!String.IsNullOrEmpty(organization.RiskCodeDescription) || !String.IsNullOrEmpty(organization.preferredCurrency))
                     {
-                        List<NativeOrganizationOrgCompanyData> orgCompanyDatas = new List<NativeOrganizationOrgCompanyData>();
-                        NativeOrganizationOrgCompanyData orgCompanyData = new NativeOrganizationOrgCompanyData();
+                        orgCompanyData.IsDebtorSpecified = true;
+                        orgCompanyData.IsDebtor = true;
 
-                        orgCompanyData.ActionSpecified = isCompanyDataSpecified;
-                        orgCompanyData.Action = NativeOrganization.Action.INSERT;
-
-                        if (String.IsNullOrEmpty(cwCompanyCode))
+                        NativeOrganizationOrgCompanyDataARDebtorGroup debtorGroup = new NativeOrganizationOrgCompanyDataARDebtorGroup();
+                        debtorGroup.TableName = "OrgDebtorGroup";
+                        debtorGroup.Code = "TPY";
+                        orgCompanyData.ARDebtorGroup = debtorGroup;
+                        if (!String.IsNullOrEmpty(organization.RiskCodeDescription))
                         {
-                            dataResponse.Status = "ERROR";
-                            dataResponse.Message = "Not a valid company code in DB. Please check the site code or the country code.";
-                            return Ok(dataResponse);
+                            var riskCodeDescription = _context.riskCodeDescriptions.Where(r => r.BrinksCode.ToLower() == organization.RiskCodeDescription.ToLower()).FirstOrDefault();
+                            if (riskCodeDescription == null)
+                            {
+                                dataResponse.Status = "ERROR";
+                                dataResponse.Message = "Not a valid Risk Code Description '" + organization.RiskCodeDescription + "' in DB.";
+                                return Ok(dataResponse);
+                            }
+                            orgCompanyData.ARCreditRating = riskCodeDescription.CWCode;
                         }
-                        NativeOrganizationOrgCompanyDataGlbCompany company = new NativeOrganizationOrgCompanyDataGlbCompany();
-                        //company.ActionSpecified = isCompanyDataSpecified;
-                        //company.Action = NativeOrganization.Action.INSERT;
-                        company.Code = cwCompanyCode;
-                        orgCompanyData.GlbCompany = company;
 
-                        NativeOrganizationOrgCompanyDataControllingBranch branch = new NativeOrganizationOrgCompanyDataControllingBranch();
-                        //branch.ActionSpecified = string.IsNullOrEmpty(cwBranchCode) ? false : true;
-                        //branch.Action = NativeOrganization.Action.INSERT;
-                        branch.TableName = "GlbBranch";
-                        branch.Code = cwBranchCode;
-                        orgCompanyData.ControllingBranch = branch;
-
-                        if (organization.arAccountNumber != null)
+                        if(!String.IsNullOrEmpty(organization.preferredCurrency))
                         {
-                            orgCompanyData.IsDebtorSpecified = true;
-                            orgCompanyData.IsDebtor = true;
-                            if (organization.RiskCodeDescription != null)
-                            {
-                                var riskCodeDescription = _context.riskCodeDescriptions.Where(r => r.BrinksCode.ToLower() == organization.RiskCodeDescription.ToLower()).FirstOrDefault();
-                                if (riskCodeDescription == null)
-                                {
-                                    dataResponse.Status = "ERROR";
-                                    dataResponse.Message = "Not a valid Risk Code Description '" + organization.RiskCodeDescription + "' in DB.";
-                                    return Ok(dataResponse);
-                                }
-                                orgCompanyData.ARCreditRating = riskCodeDescription.CWCode;
-                            }
-
-                            if (organization.invoiceType != null)
-                            {
-                                List<NativeOrganizationOrgCompanyDataOrgInvoiceType> invoiceTypes = new List<NativeOrganizationOrgCompanyDataOrgInvoiceType>();
-                                NativeOrganizationOrgCompanyDataOrgInvoiceType invoiceType = new NativeOrganizationOrgCompanyDataOrgInvoiceType();
-                                invoiceType.ActionSpecified = true;
-                                invoiceType.Action = NativeOrganization.Action.INSERT;
-                                invoiceType.Module = "ALL";
-                                invoiceType.ServiceDirection = "ALL";
-                                invoiceType.TransportMode = "ALL";
-                                invoiceType.Interval = "MTH";
-                                invoiceType.StartDay = "LMH";
-                                string? invoiceTypeString = (organization.invoiceType == InvoiceTypes.C) ? "INV" : "CHG";
-                                invoiceType.Type = invoiceTypeString;
-                                invoiceType.SecondaryType = invoiceTypeString;
-                                invoiceTypes.Add(invoiceType);
-                                orgCompanyData.OrgInvoiceTypeCollection = invoiceTypes.ToArray();
-                            }
-
                             NativeOrganizationOrgCompanyDataARDDefltCurrency arDefltCurrency = new NativeOrganizationOrgCompanyDataARDDefltCurrency();
                             arDefltCurrency.TableName = "RefCurrency";
                             arDefltCurrency.Code = organization.preferredCurrency;
                             orgCompanyData.ARDDefltCurrency = arDefltCurrency;
-
-                            NativeOrganizationOrgCompanyDataARDebtorGroup debtorGroup = new NativeOrganizationOrgCompanyDataARDebtorGroup();
-                            debtorGroup.TableName = "OrgDebtorGroup";
-                            debtorGroup.Code = "TPY";
-                            orgCompanyData.ARDebtorGroup = debtorGroup;
                         }
-                        if (organization.apAccountNumber != null)
-                        {
-                            orgCompanyData.IsCreditorSpecified = true;
-                            orgCompanyData.IsCreditor = true;
-                            NativeOrganizationOrgCompanyDataAPDefltCurrency apDefltCurrency = new NativeOrganizationOrgCompanyDataAPDefltCurrency();
-                            apDefltCurrency.TableName = "RefCurrency";
-                            apDefltCurrency.Code = organization.preferredCurrency;
-                            orgCompanyData.APDefltCurrency = apDefltCurrency;
 
-                            NativeOrganizationOrgCompanyDataAPCreditorGroup creditorGroup = new NativeOrganizationOrgCompanyDataAPCreditorGroup();
-                            creditorGroup.TableName = "OrgCreditorGroup";
-                            creditorGroup.Code = "TPY";
-                            orgCompanyData.APCreditorGroup = creditorGroup;
-                        }
-                        orgCompanyDatas.Add(orgCompanyData);
-                        nativeOrganization.OrgCompanyDataCollection = orgCompanyDatas.ToArray();
-                    } 
-                    #endregion
-
+                    }
+                    orgCompanyDatas.Add(orgCompanyData);
+                    nativeOrganization.OrgCompanyDataCollection = orgCompanyDatas.ToArray();
                     #endregion
 
                     #region CONTACTS
@@ -448,36 +381,6 @@ namespace BrinksAPI.Controllers
                     globalCustomerRegistrationCusCode.CodeCountry = cusCodeCountry;
                     registrationCusCodes.Add(globalCustomerRegistrationCusCode);
 
-                    if (organization.taxId != null)
-                    {
-                        NativeOrganizationOrgCusCode taxRegistrationCusCode = new NativeOrganizationOrgCusCode();
-                        taxRegistrationCusCode.ActionSpecified = true;
-                        taxRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
-                        taxRegistrationCusCode.CustomsRegNo = organization.taxId;
-                        taxRegistrationCusCode.CodeType = "VAT";
-                        taxRegistrationCusCode.CodeCountry = cusCodeCountry;
-                        registrationCusCodes.Add(taxRegistrationCusCode);
-                    }
-                    if (organization.arAccountNumber != null)
-                    {
-                        NativeOrganizationOrgCusCode arRegistrationCusCode = new NativeOrganizationOrgCusCode();
-                        arRegistrationCusCode.ActionSpecified = true;
-                        arRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
-                        arRegistrationCusCode.CustomsRegNo = organization.arAccountNumber;
-                        arRegistrationCusCode.CodeType = "EDR";
-                        arRegistrationCusCode.CodeCountry = cusCodeCountry;
-                        registrationCusCodes.Add(arRegistrationCusCode);
-                    }
-                    if (organization.apAccountNumber != null)
-                    {
-                        NativeOrganizationOrgCusCode apRegistrationCusCode = new NativeOrganizationOrgCusCode();
-                        apRegistrationCusCode.ActionSpecified = true;
-                        apRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
-                        apRegistrationCusCode.CustomsRegNo = organization.apAccountNumber;
-                        apRegistrationCusCode.CodeType = "ECR";
-                        apRegistrationCusCode.CodeCountry = cusCodeCountry;
-                        registrationCusCodes.Add(apRegistrationCusCode);
-                    }
                     if(organization.eoriNumber != null)
                     {
                         NativeOrganizationOrgCusCode eorRegistrationCusCode = new NativeOrganizationOrgCusCode();
@@ -494,33 +397,33 @@ namespace BrinksAPI.Controllers
 
                     #region RELATED PARTIES
                     List<NativeOrganizationOrgRelatedParty> relatedParties = new List<NativeOrganizationOrgRelatedParty>();
-                    if (organization.invoiceGlobalCustomerCode != null)
-                    {
-                        OrganizationData invoiceOrganizationData = SearchOrgWithRegNo(organization.invoiceGlobalCustomerCode);
-                        if (invoiceOrganizationData.OrgHeader != null)
-                        {
-                            NativeOrganizationOrgRelatedParty relatedParty = new NativeOrganizationOrgRelatedParty();
-                            relatedParty.ActionSpecified = true;
-                            relatedParty.Action = NativeOrganization.Action.INSERT;
-                            relatedParty.PartyType = "LFW";
-                            relatedParty.FreightTransportMode = "ALL";
-                            relatedParty.FreightDirection = "PAD";
-                            NativeOrganizationOrgRelatedPartyRelatedParty relatedPartyCode = new NativeOrganizationOrgRelatedPartyRelatedParty();
-                            relatedPartyCode.PK = invoiceOrganizationData.OrgHeader.PK;
-                            relatedPartyCode.Code = organization.invoiceGlobalCustomerCode;
-                            relatedParty.RelatedParty = relatedPartyCode;
-                            relatedParties.Add(relatedParty);
-                            //nativeOrganization.OrgRelatedPartyCollection = relatedParties.ToArray();
-                        }
-                        else
-                        {
-                            dataResponse.Status = "ERROR";
-                            dataResponse.Message = "The Invoice global customer code " + organization.invoiceGlobalCustomerCode + " not found in CW.";
-                            return Ok(dataResponse);
-                        }
+                    //if (organization.invoiceGlobalCustomerCode != null)
+                    //{
+                    //    OrganizationData invoiceOrganizationData = SearchOrgWithRegNo(organization.invoiceGlobalCustomerCode);
+                    //    if (invoiceOrganizationData.OrgHeader != null)
+                    //    {
+                    //        NativeOrganizationOrgRelatedParty relatedParty = new NativeOrganizationOrgRelatedParty();
+                    //        relatedParty.ActionSpecified = true;
+                    //        relatedParty.Action = NativeOrganization.Action.INSERT;
+                    //        relatedParty.PartyType = "LFW";
+                    //        relatedParty.FreightTransportMode = "ALL";
+                    //        relatedParty.FreightDirection = "PAD";
+                    //        NativeOrganizationOrgRelatedPartyRelatedParty relatedPartyCode = new NativeOrganizationOrgRelatedPartyRelatedParty();
+                    //        relatedPartyCode.PK = invoiceOrganizationData.OrgHeader.PK;
+                    //        relatedPartyCode.Code = organization.invoiceGlobalCustomerCode;
+                    //        relatedParty.RelatedParty = relatedPartyCode;
+                    //        relatedParties.Add(relatedParty);
+                    //        //nativeOrganization.OrgRelatedPartyCollection = relatedParties.ToArray();
+                    //    }
+                    //    else
+                    //    {
+                    //        dataResponse.Status = "ERROR";
+                    //        dataResponse.Message = "The Invoice global customer code " + organization.invoiceGlobalCustomerCode + " not found in CW.";
+                    //        return Ok(dataResponse);
+                    //    }
 
 
-                    }
+                    //}
                     if (organization.brokerGlobalCustomerCode != null)
                     {
                         OrganizationData brokerOrganizationData = SearchOrgWithRegNo(organization.brokerGlobalCustomerCode);
@@ -694,12 +597,7 @@ namespace BrinksAPI.Controllers
 
                     #region DOCUMENT VALUES
                     Dictionary<string, string> customValues = new Dictionary<string, string>();
-                    customValues.Add("locationVerifiedDate", organization.locationVerifiedDate);
                     customValues.Add("Lob", organization.lob);
-                    //customValues.Add("adyenPay", organization.adyenPay?.ToString());
-                    //customValues.Add("adyenPayPreference", organization.adyenPayPreference);
-                    //customValues.Add("adyenTokenId", organization.adyenTokenId);
-                    //customValues.Add("adyenPayByLinkId", organization.adyenPayByLinkId);
                     customValues = customValues.Where(c => c.Value != null && c.Value != "").ToDictionary(x => x.Key, x => x.Value);
                     List<NativeOrganizationJobRequiredDocument> documents = new List<NativeOrganizationJobRequiredDocument>();
                     int count = 0;
@@ -805,68 +703,66 @@ namespace BrinksAPI.Controllers
 
                     #region ORGANIZATION COUNTRY DATA TSA
                     //string? currentCountryCode = organizationData.OrgHeader?.OrgAddressCollection.FirstOrDefault()?.CountryCode?.Code;
-                    if (!string.IsNullOrEmpty(organization.tsaValidationId) && !string.IsNullOrEmpty(organization.locationVerifiedDate) && organization.countryCode?.ToLower() == "us")
-                    {
-                        if (organizationData.OrgHeader.OrgCountryDataCollection is not null)
-                        {
-                            NativeOrganizationOrgCountryData? filterdOrganizationCountryData = organizationData.OrgHeader.OrgCountryDataCollection.Where(o => o.ClientCountryRelation?.Code?.ToLower() == "us" && o.IssuingAuthorityCountry?.Code?.ToLower() == "us").FirstOrDefault();
-                            if (filterdOrganizationCountryData is not null)
-                            {
-                                filterdOrganizationCountryData.ActionSpecified = true;
-                                filterdOrganizationCountryData.Action = NativeOrganization.Action.UPDATE;
-                                filterdOrganizationCountryData.EXApprovalNumber = organization.tsaValidationId;
-                                filterdOrganizationCountryData.EXExportPermissionDetails = organization.tsaType;
-                                filterdOrganizationCountryData.EXSiteInspectionDate = DateTime.ParseExact(organization.locationVerifiedDate, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy-MM-ddTmm:ss:ff");
-                            }
-                        }
-                        else
-                        {
-                            List<NativeOrganizationOrgCountryData> orgCountryDatas = new List<NativeOrganizationOrgCountryData>();
-                            NativeOrganizationOrgCountryData orgCountryData = new NativeOrganizationOrgCountryData();
-                            orgCountryData.ActionSpecified = true;
-                            orgCountryData.Action = NativeOrganization.Action.INSERT;
-                            orgCountryData.EXApprovedOrMajorExporter = "NO";
-                            orgCountryData.EXApprovalNumber = organization.tsaValidationId;
-                            orgCountryData.EXExportPermissionDetails = organization.tsaType;
-                            orgCountryData.EXSiteInspectionDate = DateTime.ParseExact(organization.locationVerifiedDate, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy-MM-ddTmm:ss:ff");
+                    //if (!string.IsNullOrEmpty(organization.tsaValidationId) && !string.IsNullOrEmpty(organization.locationVerifiedDate) && organization.countryCode?.ToLower() == "us")
+                    //{
+                    //    if (organizationData.OrgHeader.OrgCountryDataCollection is not null)
+                    //    {
+                    //        NativeOrganizationOrgCountryData? filterdOrganizationCountryData = organizationData.OrgHeader.OrgCountryDataCollection.Where(o => o.ClientCountryRelation?.Code?.ToLower() == "us" && o.IssuingAuthorityCountry?.Code?.ToLower() == "us").FirstOrDefault();
+                    //        if (filterdOrganizationCountryData is not null)
+                    //        {
+                    //            filterdOrganizationCountryData.ActionSpecified = true;
+                    //            filterdOrganizationCountryData.Action = NativeOrganization.Action.UPDATE;
+                    //            filterdOrganizationCountryData.EXApprovalNumber = organization.tsaValidationId;
+                    //            filterdOrganizationCountryData.EXExportPermissionDetails = organization.tsaType;
+                    //            filterdOrganizationCountryData.EXSiteInspectionDate = DateTime.ParseExact(organization.locationVerifiedDate, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy-MM-ddTmm:ss:ff");
+                    //        }
+                    //    }
+                    //    else
+                    //    {
+                    //        List<NativeOrganizationOrgCountryData> orgCountryDatas = new List<NativeOrganizationOrgCountryData>();
+                    //        NativeOrganizationOrgCountryData orgCountryData = new NativeOrganizationOrgCountryData();
+                    //        orgCountryData.ActionSpecified = true;
+                    //        orgCountryData.Action = NativeOrganization.Action.INSERT;
+                    //        orgCountryData.EXApprovedOrMajorExporter = "NO";
+                    //        orgCountryData.EXApprovalNumber = organization.tsaValidationId;
+                    //        orgCountryData.EXExportPermissionDetails = organization.tsaType;
+                    //        orgCountryData.EXSiteInspectionDate = DateTime.ParseExact(organization.locationVerifiedDate, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture).ToString("yyyy-MM-ddTmm:ss:ff");
 
-                            NativeOrganizationOrgCountryDataClientCountryRelation clientCountryRelation = new NativeOrganizationOrgCountryDataClientCountryRelation();
-                            clientCountryRelation.TableName = "RefCountry";
-                            clientCountryRelation.Code = organization.countryCode;
-                            orgCountryData.ClientCountryRelation = clientCountryRelation;
+                    //        NativeOrganizationOrgCountryDataClientCountryRelation clientCountryRelation = new NativeOrganizationOrgCountryDataClientCountryRelation();
+                    //        clientCountryRelation.TableName = "RefCountry";
+                    //        clientCountryRelation.Code = organization.countryCode;
+                    //        orgCountryData.ClientCountryRelation = clientCountryRelation;
 
-                            string? approvedLocation = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24));
-                            NativeOrganizationOrgCountryDataApprovedLocation dataApprovedLocation = new NativeOrganizationOrgCountryDataApprovedLocation();
-                            dataApprovedLocation.TableName = "OrgAddress";
-                            dataApprovedLocation.Code = approvedLocation;
-                            orgCountryData.ApprovedLocation = dataApprovedLocation;
+                    //        string? approvedLocation = organization.address1?.Substring(0, Math.Min(organization.address1.Length, 24));
+                    //        NativeOrganizationOrgCountryDataApprovedLocation dataApprovedLocation = new NativeOrganizationOrgCountryDataApprovedLocation();
+                    //        dataApprovedLocation.TableName = "OrgAddress";
+                    //        dataApprovedLocation.Code = approvedLocation;
+                    //        orgCountryData.ApprovedLocation = dataApprovedLocation;
 
-                            NativeOrganizationOrgCountryDataIssuingAuthorityCountry authorityCountry = new NativeOrganizationOrgCountryDataIssuingAuthorityCountry();
-                            authorityCountry.TableName = "RefCountry";
-                            authorityCountry.Code = organization.countryCode;
-                            orgCountryData.IssuingAuthorityCountry = authorityCountry;
+                    //        NativeOrganizationOrgCountryDataIssuingAuthorityCountry authorityCountry = new NativeOrganizationOrgCountryDataIssuingAuthorityCountry();
+                    //        authorityCountry.TableName = "RefCountry";
+                    //        authorityCountry.Code = organization.countryCode;
+                    //        orgCountryData.IssuingAuthorityCountry = authorityCountry;
 
-                            orgCountryDatas.Add(orgCountryData);
-                            organizationData.OrgHeader.OrgCountryDataCollection = orgCountryDatas.ToArray();
-                        }
+                    //        orgCountryDatas.Add(orgCountryData);
+                    //        organizationData.OrgHeader.OrgCountryDataCollection = orgCountryDatas.ToArray();
+                    //    }
 
-                    }
+                    //}
                     #endregion
 
-                    #region ORGANIZATION COMPANY DATA
-                    #region COMPANY CODE AND BRANCH CODE
-                    var filterOrgCompanyData = organizationData.OrgHeader.OrgCompanyDataCollection.FirstOrDefault(x => x.GlbCompany.Code == cwCompanyCode);
-                    if (!string.IsNullOrEmpty(cwCompanyCode) && !string.IsNullOrEmpty(cwBranchCode))
+                    #region ORGANIZATION COMPANY DATA                      
+                    if (organizationData.OrgHeader.OrgCompanyDataCollection is not null)
                     {
+                        var filterOrgCompanyData = organizationData.OrgHeader.OrgCompanyDataCollection.FirstOrDefault(x => x.GlbCompany.Code == cwCompanyCode);
                         if (filterOrgCompanyData != null)
                         {
                             filterOrgCompanyData.ActionSpecified = true;
                             filterOrgCompanyData.Action = NativeOrganization.Action.UPDATE;
+
                             if (string.IsNullOrEmpty(filterOrgCompanyData.ControllingBranch?.Code))
                             {
                                 NativeOrganizationOrgCompanyDataControllingBranch branch = new NativeOrganizationOrgCompanyDataControllingBranch();
-                                //branch.ActionSpecified = true;
-                                //branch.Action = NativeOrganization.Action.INSERT;
                                 branch.Code = cwBranchCode;
                                 filterOrgCompanyData.ControllingBranch = branch;
                             }
@@ -875,6 +771,31 @@ namespace BrinksAPI.Controllers
                                 filterOrgCompanyData.ControllingBranch.Code = cwBranchCode;
                                 filterOrgCompanyData.ControllingBranch.PK = null;
                             }
+
+                            if (!String.IsNullOrEmpty(organization.RiskCodeDescription) || !String.IsNullOrEmpty(organization.preferredCurrency))
+                            {
+                                filterOrgCompanyData.IsDebtorSpecified = true;
+                                filterOrgCompanyData.IsDebtor = true;
+                                if (!String.IsNullOrEmpty(organization.RiskCodeDescription))
+                                {
+                                    var riskCodeDescription = _context.riskCodeDescriptions.Where(r => r.BrinksCode.ToLower() == organization.RiskCodeDescription.ToLower()).FirstOrDefault();
+                                    if (riskCodeDescription == null)
+                                    {
+                                        dataResponse.Status = "ERROR";
+                                        dataResponse.Message = "Not a valid Risk Code Description '" + organization.RiskCodeDescription + "' in DB.";
+                                        return Ok(dataResponse);
+                                    }
+                                    filterOrgCompanyData.ARCreditRating = riskCodeDescription.CWCode;
+                                }
+                                if (!String.IsNullOrEmpty(organization.preferredCurrency))
+                                {
+                                    filterOrgCompanyData.ARDDefltCurrency.Code = organization.preferredCurrency;
+                                    filterOrgCompanyData.ARDDefltCurrency.PK = null;
+                                    filterOrgCompanyData.ARDDefltCurrency.Action = NativeOrganization.Action.UPDATE;
+                                }
+
+                            }
+
                         }
                         else
                         {
@@ -896,170 +817,43 @@ namespace BrinksAPI.Controllers
                             NativeOrganizationOrgCompanyDataControllingBranch branch = new NativeOrganizationOrgCompanyDataControllingBranch();
                             branch.Code = cwBranchCode;
                             orgCompanyData.ControllingBranch = branch;
-                            orgCompanyDatas.Add(orgCompanyData);
-                            organizationData.OrgHeader.OrgCompanyDataCollection = orgCompanyDatas.ToArray();
-                        }
-                    }
-                    #endregion
 
-                    #region AR AP DETAILS
-                    if (!string.IsNullOrEmpty(organization.arAccountNumber) || !string.IsNullOrEmpty(organization.apAccountNumber))
-                    {
-                        if (organizationData.OrgHeader.OrgCompanyDataCollection is not null)
-                        {
-                            //var filterOrgCompanyData = organizationData.OrgHeader.OrgCompanyDataCollection.FirstOrDefault(x => x.GlbCompany.Code == cwCompanyCode);
-                            if (filterOrgCompanyData != null)
+
+                            if (!String.IsNullOrEmpty(organization.RiskCodeDescription) || !String.IsNullOrEmpty(organization.preferredCurrency))
                             {
-                                filterOrgCompanyData.ActionSpecified = true;
-                                filterOrgCompanyData.Action = NativeOrganization.Action.UPDATE;
+                                orgCompanyData.IsDebtorSpecified = true;
+                                orgCompanyData.IsDebtor = true;
 
-                                if (string.IsNullOrEmpty(filterOrgCompanyData.ControllingBranch?.Code))
+                                NativeOrganizationOrgCompanyDataARDebtorGroup debtorGroup = new NativeOrganizationOrgCompanyDataARDebtorGroup();
+                                debtorGroup.TableName = "OrgDebtorGroup";
+                                debtorGroup.Code = "TPY";
+                                orgCompanyData.ARDebtorGroup = debtorGroup;
+                                if (!String.IsNullOrEmpty(organization.RiskCodeDescription))
                                 {
-                                    NativeOrganizationOrgCompanyDataControllingBranch branch = new NativeOrganizationOrgCompanyDataControllingBranch();
-                                    branch.ActionSpecified = string.IsNullOrEmpty(cwBranchCode) ? false : true;
-                                    branch.Action = NativeOrganization.Action.INSERT;
-                                    branch.Code = cwBranchCode;
-                                    filterOrgCompanyData.ControllingBranch = branch;
-                                }
-                                else
-                                {
-                                    filterOrgCompanyData.ControllingBranch.Code = cwBranchCode;
-                                    filterOrgCompanyData.ControllingBranch.PK = null;
-                                }
-
-
-                                if (organization.arAccountNumber != null)
-                                {
-                                    filterOrgCompanyData.IsDebtorSpecified = true;
-                                    filterOrgCompanyData.IsDebtor = true;
-
-                                    if (organization.RiskCodeDescription != null)
+                                    var riskCodeDescription = _context.riskCodeDescriptions.Where(r => r.BrinksCode.ToLower() == organization.RiskCodeDescription.ToLower()).FirstOrDefault();
+                                    if (riskCodeDescription == null)
                                     {
-                                        var riskCodeDescription = _context.riskCodeDescriptions.Where(r => r.BrinksCode.ToLower() == organization.RiskCodeDescription.ToLower()).FirstOrDefault();
-                                        if (riskCodeDescription == null)
-                                        {
-                                            dataResponse.Status = "ERROR";
-                                            dataResponse.Message = "Not a valid Risk Code Description '" + organization.RiskCodeDescription + "' in DB.";
-                                            return Ok(dataResponse);
-                                        }
-                                        filterOrgCompanyData.ARCreditRating = riskCodeDescription.CWCode;
+                                        dataResponse.Status = "ERROR";
+                                        dataResponse.Message = "Not a valid Risk Code Description '" + organization.RiskCodeDescription + "' in DB.";
+                                        return Ok(dataResponse);
                                     }
-
-                                    if (organization.invoiceType != null)
-                                    {
-                                        if (filterOrgCompanyData.OrgInvoiceTypeCollection is not null)
-                                        {
-                                            var filterOrgInvoiceType = filterOrgCompanyData.OrgInvoiceTypeCollection.FirstOrDefault();
-                                            if (filterOrgInvoiceType != null)
-                                            {
-                                                filterOrgInvoiceType.ActionSpecified = true;
-                                                filterOrgInvoiceType.Action = NativeOrganization.Action.UPDATE;
-                                                string? invoiceTypeString = (organization.invoiceType == InvoiceTypes.C) ? "INV" : "CHG";
-                                                filterOrgInvoiceType.Type = invoiceTypeString;
-                                                filterOrgInvoiceType.SecondaryType = invoiceTypeString;
-                                            }
-                                        }
-                                    }
-                                    //filterOrgCompanyData.ARExternalDebtorCode = organization.arAccountNumber;
-                                    filterOrgCompanyData.ARDDefltCurrency.Code = organization.preferredCurrency;
-                                    filterOrgCompanyData.ARDDefltCurrency.PK = null;
-                                    filterOrgCompanyData.ARDDefltCurrency.Action = NativeOrganization.Action.UPDATE;
+                                    orgCompanyData.ARCreditRating = riskCodeDescription.CWCode;
                                 }
-                                if (organization.apAccountNumber != null)
-                                {
-                                    filterOrgCompanyData.IsCreditorSpecified = true;
-                                    filterOrgCompanyData.IsCreditor = true;
-                                    //filterOrgCompanyData.APExternalCreditorCode = organization.apAccountNumber;
-                                    filterOrgCompanyData.APDefltCurrency.Code = organization.preferredCurrency;
-                                    filterOrgCompanyData.APDefltCurrency.PK = null;
-                                    filterOrgCompanyData.APDefltCurrency.Action = NativeOrganization.Action.UPDATE;
-                                }
-                            }
-                            else
-                            {
-                                List<NativeOrganizationOrgCompanyData> orgCompanyDatas = new List<NativeOrganizationOrgCompanyData>();
-                                NativeOrganizationOrgCompanyData orgCompanyData = new NativeOrganizationOrgCompanyData();
-                                orgCompanyData.ActionSpecified = true;
-                                orgCompanyData.Action = NativeOrganization.Action.INSERT;
 
-                                if (String.IsNullOrEmpty(cwCompanyCode))
+                                if (!String.IsNullOrEmpty(organization.preferredCurrency))
                                 {
-                                    dataResponse.Status = "ERROR";
-                                    dataResponse.Message = "Not a valid company code in DB. Please check the site code or the country code.";
-                                    return Ok(dataResponse);
-                                }
-                                NativeOrganizationOrgCompanyDataGlbCompany company = new NativeOrganizationOrgCompanyDataGlbCompany();
-                                company.Code = cwCompanyCode;
-                                orgCompanyData.GlbCompany = company;
-
-                                NativeOrganizationOrgCompanyDataControllingBranch branch = new NativeOrganizationOrgCompanyDataControllingBranch();
-                                branch.Code = cwBranchCode;
-                                orgCompanyData.ControllingBranch = branch;
-
-                                if (organization.arAccountNumber != null)
-                                {
-                                    if (organization.RiskCodeDescription != null)
-                                    {
-                                        var riskCodeDescription = _context.riskCodeDescriptions.Where(r => r.BrinksCode == organization.RiskCodeDescription).FirstOrDefault();
-                                        if (riskCodeDescription == null)
-                                        {
-                                            dataResponse.Status = "ERROR";
-                                            dataResponse.Message = "Not a valid Risk Code Description '" + organization.RiskCodeDescription + "' in DB.";
-                                            return Ok(dataResponse);
-                                        }
-                                        orgCompanyData.ARCreditRating = riskCodeDescription.CWCode;
-                                    }
-                                    if (organization.invoiceType != null)
-                                    {
-                                        List<NativeOrganizationOrgCompanyDataOrgInvoiceType> invoiceTypes = new List<NativeOrganizationOrgCompanyDataOrgInvoiceType>();
-                                        NativeOrganizationOrgCompanyDataOrgInvoiceType invoiceType = new NativeOrganizationOrgCompanyDataOrgInvoiceType();
-                                        invoiceType.ActionSpecified = true;
-                                        invoiceType.Action = NativeOrganization.Action.INSERT;
-                                        invoiceType.Module = "ALL";
-                                        invoiceType.ServiceDirection = "ALL";
-                                        invoiceType.TransportMode = "ALL";
-                                        invoiceType.Interval = "MTH";
-                                        invoiceType.StartDay = "LMH";
-                                        string? invoiceTypeString = (organization.invoiceType == InvoiceTypes.C) ? "INV" : "CHG";
-                                        invoiceType.Type = invoiceTypeString;
-                                        invoiceType.SecondaryType = invoiceTypeString;
-                                        invoiceTypes.Add(invoiceType);
-                                        orgCompanyData.OrgInvoiceTypeCollection = invoiceTypes.ToArray();
-                                    }
-                                    orgCompanyData.IsDebtorSpecified = true;
-                                    orgCompanyData.IsDebtor = true;
-                                    //orgCompanyData.ARExternalDebtorCode = organization.arAccountNumber;
                                     NativeOrganizationOrgCompanyDataARDDefltCurrency arDefltCurrency = new NativeOrganizationOrgCompanyDataARDDefltCurrency();
                                     arDefltCurrency.TableName = "RefCurrency";
                                     arDefltCurrency.Code = organization.preferredCurrency;
                                     orgCompanyData.ARDDefltCurrency = arDefltCurrency;
-
-                                    NativeOrganizationOrgCompanyDataARDebtorGroup debtorGroup = new NativeOrganizationOrgCompanyDataARDebtorGroup();
-                                    debtorGroup.TableName = "OrgDebtorGroup";
-                                    debtorGroup.Code = "TPY";
-                                    orgCompanyData.ARDebtorGroup = debtorGroup;
                                 }
-                                if (organization.apAccountNumber != null)
-                                {
-                                    orgCompanyData.IsCreditorSpecified = true;
-                                    orgCompanyData.IsCreditor = true;
-                                    //orgCompanyData.APExternalCreditorCode = organization.apAccountNumber;
-                                    NativeOrganizationOrgCompanyDataAPDefltCurrency apDefltCurrency = new NativeOrganizationOrgCompanyDataAPDefltCurrency();
-                                    apDefltCurrency.TableName = "RefCurrency";
-                                    apDefltCurrency.Code = organization.preferredCurrency;
-                                    orgCompanyData.APDefltCurrency = apDefltCurrency;
-
-                                    NativeOrganizationOrgCompanyDataAPCreditorGroup creditorGroup = new NativeOrganizationOrgCompanyDataAPCreditorGroup();
-                                    creditorGroup.TableName = "OrgCreditorGroup";
-                                    creditorGroup.Code = "TPY";
-                                    orgCompanyData.APCreditorGroup = creditorGroup;
-                                }
-                                orgCompanyDatas.Add(orgCompanyData);
-                                organizationData.OrgHeader.OrgCompanyDataCollection = orgCompanyDatas.ToArray();
                             }
+
+
+                            orgCompanyDatas.Add(orgCompanyData);
+                            organizationData.OrgHeader.OrgCompanyDataCollection = orgCompanyDatas.ToArray();
                         }
-                    } 
-                    #endregion
+                    }
                     #endregion
 
                     #region CONTACTS
@@ -1205,81 +999,81 @@ namespace BrinksAPI.Controllers
                     if (organizationData.OrgHeader.OrgCusCodeCollection is not null)
                     {
                         List<NativeOrganizationOrgCusCode> registrationCusCodes = new List<NativeOrganizationOrgCusCode>();
-                        if (organization.taxId != null)
-                        {
-                            var filterTaxRegistrationCusCode = organizationData.OrgHeader.OrgCusCodeCollection.Where(cus => cus.CodeType == "VAT").FirstOrDefault();
-                            if (filterTaxRegistrationCusCode != null)
-                            {
-                                filterTaxRegistrationCusCode.ActionSpecified = true;
-                                filterTaxRegistrationCusCode.Action = NativeOrganization.Action.UPDATE;
-                                filterTaxRegistrationCusCode.PK = filterTaxRegistrationCusCode.PK;
-                                filterTaxRegistrationCusCode.CustomsRegNo = organization.taxId;
-                                registrationCusCodes.Add(filterTaxRegistrationCusCode);
-                            }
-                            else
-                            {
-                                NativeOrganizationOrgCusCodeCodeCountry cusCodeCountry = new NativeOrganizationOrgCusCodeCodeCountry();
-                                cusCodeCountry.Code = organization.countryCode;
-                                NativeOrganizationOrgCusCode taxRegistrationCusCode = new NativeOrganizationOrgCusCode();
-                                taxRegistrationCusCode.ActionSpecified = true;
-                                taxRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
-                                taxRegistrationCusCode.CustomsRegNo = organization.taxId;
-                                taxRegistrationCusCode.CodeType = "VAT";
-                                taxRegistrationCusCode.CodeCountry = cusCodeCountry;
-                                registrationCusCodes.Add(taxRegistrationCusCode);
-                                //organizationData.OrgHeader.OrgCusCodeCollection = registrationCusCodes.ToArray();
-                            }
-                        }
-                        if (organization.arAccountNumber != null)
-                        {
-                            var filterArRegistrationCusCode = organizationData.OrgHeader.OrgCusCodeCollection.Where(cus => cus.CodeType == "ECR").FirstOrDefault();
-                            if (filterArRegistrationCusCode != null)
-                            {
-                                filterArRegistrationCusCode.ActionSpecified = true;
-                                filterArRegistrationCusCode.Action = NativeOrganization.Action.UPDATE;
-                                filterArRegistrationCusCode.PK = filterArRegistrationCusCode.PK;
-                                filterArRegistrationCusCode.CustomsRegNo = organization.arAccountNumber;
-                                registrationCusCodes.Add(filterArRegistrationCusCode);
-                            }
-                            else
-                            {
-                                NativeOrganizationOrgCusCodeCodeCountry cusCodeCountry = new NativeOrganizationOrgCusCodeCodeCountry();
-                                cusCodeCountry.Code = organization.countryCode;
-                                NativeOrganizationOrgCusCode arRegistrationCusCode = new NativeOrganizationOrgCusCode();
-                                arRegistrationCusCode.ActionSpecified = true;
-                                arRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
-                                arRegistrationCusCode.CustomsRegNo = organization.arAccountNumber;
-                                arRegistrationCusCode.CodeType = "ECR";
-                                arRegistrationCusCode.CodeCountry = cusCodeCountry;
-                                registrationCusCodes.Add(arRegistrationCusCode);
+                        //if (organization.taxId != null)
+                        //{
+                        //    var filterTaxRegistrationCusCode = organizationData.OrgHeader.OrgCusCodeCollection.Where(cus => cus.CodeType == "VAT").FirstOrDefault();
+                        //    if (filterTaxRegistrationCusCode != null)
+                        //    {
+                        //        filterTaxRegistrationCusCode.ActionSpecified = true;
+                        //        filterTaxRegistrationCusCode.Action = NativeOrganization.Action.UPDATE;
+                        //        filterTaxRegistrationCusCode.PK = filterTaxRegistrationCusCode.PK;
+                        //        filterTaxRegistrationCusCode.CustomsRegNo = organization.taxId;
+                        //        registrationCusCodes.Add(filterTaxRegistrationCusCode);
+                        //    }
+                        //    else
+                        //    {
+                        //        NativeOrganizationOrgCusCodeCodeCountry cusCodeCountry = new NativeOrganizationOrgCusCodeCodeCountry();
+                        //        cusCodeCountry.Code = organization.countryCode;
+                        //        NativeOrganizationOrgCusCode taxRegistrationCusCode = new NativeOrganizationOrgCusCode();
+                        //        taxRegistrationCusCode.ActionSpecified = true;
+                        //        taxRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
+                        //        taxRegistrationCusCode.CustomsRegNo = organization.taxId;
+                        //        taxRegistrationCusCode.CodeType = "VAT";
+                        //        taxRegistrationCusCode.CodeCountry = cusCodeCountry;
+                        //        registrationCusCodes.Add(taxRegistrationCusCode);
+                        //        //organizationData.OrgHeader.OrgCusCodeCollection = registrationCusCodes.ToArray();
+                        //    }
+                        //}
+                        //if (organization.arAccountNumber != null)
+                        //{
+                        //    var filterArRegistrationCusCode = organizationData.OrgHeader.OrgCusCodeCollection.Where(cus => cus.CodeType == "ECR").FirstOrDefault();
+                        //    if (filterArRegistrationCusCode != null)
+                        //    {
+                        //        filterArRegistrationCusCode.ActionSpecified = true;
+                        //        filterArRegistrationCusCode.Action = NativeOrganization.Action.UPDATE;
+                        //        filterArRegistrationCusCode.PK = filterArRegistrationCusCode.PK;
+                        //        filterArRegistrationCusCode.CustomsRegNo = organization.arAccountNumber;
+                        //        registrationCusCodes.Add(filterArRegistrationCusCode);
+                        //    }
+                        //    else
+                        //    {
+                        //        NativeOrganizationOrgCusCodeCodeCountry cusCodeCountry = new NativeOrganizationOrgCusCodeCodeCountry();
+                        //        cusCodeCountry.Code = organization.countryCode;
+                        //        NativeOrganizationOrgCusCode arRegistrationCusCode = new NativeOrganizationOrgCusCode();
+                        //        arRegistrationCusCode.ActionSpecified = true;
+                        //        arRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
+                        //        arRegistrationCusCode.CustomsRegNo = organization.arAccountNumber;
+                        //        arRegistrationCusCode.CodeType = "ECR";
+                        //        arRegistrationCusCode.CodeCountry = cusCodeCountry;
+                        //        registrationCusCodes.Add(arRegistrationCusCode);
 
-                            }
-                        }
-                        if (organization.apAccountNumber != null)
-                        {
-                            var filterApRegistrationCusCode = organizationData.OrgHeader.OrgCusCodeCollection.Where(cus => cus.CodeType == "EDR").FirstOrDefault();
-                            if (filterApRegistrationCusCode != null)
-                            {
-                                filterApRegistrationCusCode.ActionSpecified = true;
-                                filterApRegistrationCusCode.Action = NativeOrganization.Action.UPDATE;
-                                filterApRegistrationCusCode.PK = filterApRegistrationCusCode.PK;
-                                filterApRegistrationCusCode.CustomsRegNo = organization.apAccountNumber;
-                                registrationCusCodes.Add(filterApRegistrationCusCode);
-                            }
-                            else
-                            {
-                                NativeOrganizationOrgCusCodeCodeCountry cusCodeCountry = new NativeOrganizationOrgCusCodeCodeCountry();
-                                cusCodeCountry.Code = organization.countryCode;
-                                NativeOrganizationOrgCusCode apRegistrationCusCode = new NativeOrganizationOrgCusCode();
-                                apRegistrationCusCode.ActionSpecified = true;
-                                apRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
-                                apRegistrationCusCode.CustomsRegNo = organization.apAccountNumber;
-                                apRegistrationCusCode.CodeType = "EDR";
-                                apRegistrationCusCode.CodeCountry = cusCodeCountry;
-                                registrationCusCodes.Add(apRegistrationCusCode);
+                        //    }
+                        //}
+                        //if (organization.apAccountNumber != null)
+                        //{
+                        //    var filterApRegistrationCusCode = organizationData.OrgHeader.OrgCusCodeCollection.Where(cus => cus.CodeType == "EDR").FirstOrDefault();
+                        //    if (filterApRegistrationCusCode != null)
+                        //    {
+                        //        filterApRegistrationCusCode.ActionSpecified = true;
+                        //        filterApRegistrationCusCode.Action = NativeOrganization.Action.UPDATE;
+                        //        filterApRegistrationCusCode.PK = filterApRegistrationCusCode.PK;
+                        //        filterApRegistrationCusCode.CustomsRegNo = organization.apAccountNumber;
+                        //        registrationCusCodes.Add(filterApRegistrationCusCode);
+                        //    }
+                        //    else
+                        //    {
+                        //        NativeOrganizationOrgCusCodeCodeCountry cusCodeCountry = new NativeOrganizationOrgCusCodeCodeCountry();
+                        //        cusCodeCountry.Code = organization.countryCode;
+                        //        NativeOrganizationOrgCusCode apRegistrationCusCode = new NativeOrganizationOrgCusCode();
+                        //        apRegistrationCusCode.ActionSpecified = true;
+                        //        apRegistrationCusCode.Action = NativeOrganization.Action.INSERT;
+                        //        apRegistrationCusCode.CustomsRegNo = organization.apAccountNumber;
+                        //        apRegistrationCusCode.CodeType = "EDR";
+                        //        apRegistrationCusCode.CodeCountry = cusCodeCountry;
+                        //        registrationCusCodes.Add(apRegistrationCusCode);
 
-                            }
-                        }
+                        //    }
+                        //}
                         if (organization.eoriNumber != null)
                         {
                             var filterEORRegistrationCusCode = organizationData.OrgHeader.OrgCusCodeCollection.Where(cus => cus.CodeType == "EOR").FirstOrDefault();
@@ -1371,65 +1165,65 @@ namespace BrinksAPI.Controllers
                             return Ok(dataResponse);
                         }
                     }
-                    if (organization.invoiceGlobalCustomerCode != null)
-                    {
-                        OrganizationData invoiceOrganizationData = SearchOrgWithRegNo(organization.invoiceGlobalCustomerCode);
-                        if (invoiceOrganizationData.OrgHeader != null)
-                        {
-                            //List<NativeOrganizationOrgRelatedParty> relatedParties = new List<NativeOrganizationOrgRelatedParty>();
-                            NativeOrganizationOrgRelatedParty relatedParty = new NativeOrganizationOrgRelatedParty();
-                            if (organizationData.OrgHeader.OrgRelatedPartyCollection is not null)
-                            {
-                                var filteredOrganizationRelatedData = organizationData.OrgHeader.OrgRelatedPartyCollection.Where(orp => orp.PartyType == "LFW").FirstOrDefault();
-                                if (filteredOrganizationRelatedData != null)
-                                {
-                                    filteredOrganizationRelatedData.ActionSpecified = true;
-                                    filteredOrganizationRelatedData.Action = NativeOrganization.Action.UPDATE;
-                                    filteredOrganizationRelatedData.RelatedParty.ActionSpecified = true;
-                                    filteredOrganizationRelatedData.RelatedParty.Action = NativeOrganization.Action.UPDATE;
-                                    filteredOrganizationRelatedData.RelatedParty.PK = invoiceOrganizationData.OrgHeader.PK;
-                                    filteredOrganizationRelatedData.RelatedParty.Code = invoiceOrganizationData.OrgHeader.Code;
-                                    relatedParties.Add(filteredOrganizationRelatedData);
+                    //if (organization.invoiceGlobalCustomerCode != null)
+                    //{
+                    //    OrganizationData invoiceOrganizationData = SearchOrgWithRegNo(organization.invoiceGlobalCustomerCode);
+                    //    if (invoiceOrganizationData.OrgHeader != null)
+                    //    {
+                    //        //List<NativeOrganizationOrgRelatedParty> relatedParties = new List<NativeOrganizationOrgRelatedParty>();
+                    //        NativeOrganizationOrgRelatedParty relatedParty = new NativeOrganizationOrgRelatedParty();
+                    //        if (organizationData.OrgHeader.OrgRelatedPartyCollection is not null)
+                    //        {
+                    //            var filteredOrganizationRelatedData = organizationData.OrgHeader.OrgRelatedPartyCollection.Where(orp => orp.PartyType == "LFW").FirstOrDefault();
+                    //            if (filteredOrganizationRelatedData != null)
+                    //            {
+                    //                filteredOrganizationRelatedData.ActionSpecified = true;
+                    //                filteredOrganizationRelatedData.Action = NativeOrganization.Action.UPDATE;
+                    //                filteredOrganizationRelatedData.RelatedParty.ActionSpecified = true;
+                    //                filteredOrganizationRelatedData.RelatedParty.Action = NativeOrganization.Action.UPDATE;
+                    //                filteredOrganizationRelatedData.RelatedParty.PK = invoiceOrganizationData.OrgHeader.PK;
+                    //                filteredOrganizationRelatedData.RelatedParty.Code = invoiceOrganizationData.OrgHeader.Code;
+                    //                relatedParties.Add(filteredOrganizationRelatedData);
 
-                                }
-                                else
-                                {
-                                    relatedParty.ActionSpecified = true;
-                                    relatedParty.Action = NativeOrganization.Action.INSERT;
-                                    relatedParty.PartyType = "LFW";
-                                    relatedParty.FreightTransportMode = "ALL";
-                                    relatedParty.FreightDirection = "PAD";
-                                    NativeOrganizationOrgRelatedPartyRelatedParty relatedPartyCode = new NativeOrganizationOrgRelatedPartyRelatedParty();
-                                    relatedPartyCode.PK = invoiceOrganizationData.OrgHeader.PK;
-                                    relatedPartyCode.Code = organization.invoiceGlobalCustomerCode;
-                                    relatedParty.RelatedParty = relatedPartyCode;
-                                    relatedParties.Add(relatedParty);
-                                    //organizationData.OrgHeader.OrgRelatedPartyCollection = relatedParties.ToArray();
-                                }
-                            }
-                            else
-                            {
-                                relatedParty.ActionSpecified = true;
-                                relatedParty.Action = NativeOrganization.Action.INSERT;
-                                relatedParty.PartyType = "LFW";
-                                relatedParty.FreightTransportMode = "ALL";
-                                relatedParty.FreightDirection = "PAD";
-                                NativeOrganizationOrgRelatedPartyRelatedParty relatedPartyCode = new NativeOrganizationOrgRelatedPartyRelatedParty();
-                                relatedPartyCode.PK = invoiceOrganizationData.OrgHeader.PK;
-                                relatedPartyCode.Code = organization.invoiceGlobalCustomerCode;
-                                relatedParty.RelatedParty = relatedPartyCode;
-                                relatedParties.Add(relatedParty);
-                                //organizationData.OrgHeader.OrgRelatedPartyCollection = relatedParties.ToArray();
-                            }
+                    //            }
+                    //            else
+                    //            {
+                    //                relatedParty.ActionSpecified = true;
+                    //                relatedParty.Action = NativeOrganization.Action.INSERT;
+                    //                relatedParty.PartyType = "LFW";
+                    //                relatedParty.FreightTransportMode = "ALL";
+                    //                relatedParty.FreightDirection = "PAD";
+                    //                NativeOrganizationOrgRelatedPartyRelatedParty relatedPartyCode = new NativeOrganizationOrgRelatedPartyRelatedParty();
+                    //                relatedPartyCode.PK = invoiceOrganizationData.OrgHeader.PK;
+                    //                relatedPartyCode.Code = organization.invoiceGlobalCustomerCode;
+                    //                relatedParty.RelatedParty = relatedPartyCode;
+                    //                relatedParties.Add(relatedParty);
+                    //                //organizationData.OrgHeader.OrgRelatedPartyCollection = relatedParties.ToArray();
+                    //            }
+                    //        }
+                    //        else
+                    //        {
+                    //            relatedParty.ActionSpecified = true;
+                    //            relatedParty.Action = NativeOrganization.Action.INSERT;
+                    //            relatedParty.PartyType = "LFW";
+                    //            relatedParty.FreightTransportMode = "ALL";
+                    //            relatedParty.FreightDirection = "PAD";
+                    //            NativeOrganizationOrgRelatedPartyRelatedParty relatedPartyCode = new NativeOrganizationOrgRelatedPartyRelatedParty();
+                    //            relatedPartyCode.PK = invoiceOrganizationData.OrgHeader.PK;
+                    //            relatedPartyCode.Code = organization.invoiceGlobalCustomerCode;
+                    //            relatedParty.RelatedParty = relatedPartyCode;
+                    //            relatedParties.Add(relatedParty);
+                    //            //organizationData.OrgHeader.OrgRelatedPartyCollection = relatedParties.ToArray();
+                    //        }
 
-                        }
-                        else
-                        {
-                            dataResponse.Status = "ERROR";
-                            dataResponse.Message = "The invoice global customer code " + organization.invoiceGlobalCustomerCode + " not found in CW.";
-                            return Ok(dataResponse);
-                        }
-                    }
+                    //    }
+                    //    else
+                    //    {
+                    //        dataResponse.Status = "ERROR";
+                    //        dataResponse.Message = "The invoice global customer code " + organization.invoiceGlobalCustomerCode + " not found in CW.";
+                    //        return Ok(dataResponse);
+                    //    }
+                    //}
                     organizationData.OrgHeader.OrgRelatedPartyCollection = relatedParties.ToArray();
                     #endregion
 
@@ -1676,7 +1470,7 @@ namespace BrinksAPI.Controllers
 
                     #region DOCUMENT VALUES
                     Dictionary<string, string> customValues = new Dictionary<string, string>();
-                    customValues.Add("locationVerifiedDate", organization.locationVerifiedDate);
+                    //customValues.Add("locationVerifiedDate", organization.locationVerifiedDate);
                     customValues.Add("Lob", organization.lob);
                     //customValues.Add("adyenPay", organization.adyenPay.ToString());
                     //customValues.Add("adyenPayPreference", organization.adyenPayPreference);

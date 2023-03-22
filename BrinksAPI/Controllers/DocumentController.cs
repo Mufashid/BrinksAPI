@@ -303,6 +303,8 @@ namespace BrinksAPI.Controllers
                 .Where(d => d.BrinksCode == document.DocumentTypeCode.Value.ToString()).FirstOrDefault();
 
 
+
+
             DocumentType documentType = new DocumentType();
             documentType.Code = documentTypeInDB != null ? documentTypeInDB.CWCode : "OTH";
             documentType.Description = document.DocumentDescription;

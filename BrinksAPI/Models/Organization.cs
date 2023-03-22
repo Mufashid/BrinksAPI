@@ -43,10 +43,10 @@ namespace BrinksAPI.Models
         public string? faxNumber { get; set; }
         [StringLength(255)]
         public string? emailAddress { get; set; }
-        [StringLength(15)]
-        public string? arAccountNumber { get; set; }
-        [StringLength(15)]
-        public string? apAccountNumber { get; set; }
+        //[StringLength(15)]
+        //public string? arAccountNumber { get; set; }
+        //[StringLength(15)]
+        //public string? apAccountNumber { get; set; }
         [StringLength(3)]
         public string? preferredCurrency { get; set; }
         [StringLength(25)]
@@ -55,29 +55,29 @@ namespace BrinksAPI.Models
         [StringLength(8)]
         public string? userId { get; set; }
         public string? notes { get; set; }
-        public InvoiceTypes? invoiceType { get; set; }
+        //public InvoiceTypes? invoiceType { get; set; }
         [StringLength(4)]
         public string? siteCode { get; set; }
         [StringLength(20)]
         [Required(ErrorMessage =("Customer Global Code is required."))]
         public string? globalCustomerCode { get; set; }
-        [StringLength(20)]
-        public string? invoiceGlobalCustomerCode { get; set; }
+        //[StringLength(20)]
+        //public string? invoiceGlobalCustomerCode { get; set; }
         [StringLength(20)]
         public string? brokerGlobalCustomerCode { get; set; }
-        [StringLength(20)]
-        public string? taxId { get; set; }
+        //[StringLength(20)]
+        //public string? taxId { get; set; }
         [StringLength(2000)]
         public string? creditRiskNotes { get; set; }
         public YesOrNo? knownShipper { get; set; } = YesOrNo.Y;
         [StringLength(10)]
         public string? customerGroupCode { get; set; }
         [StringLength(15)]
-        public string? tsaValidationId { get; set; }
-        public string? tsaDate { get; set; }
-        public string? tsaType { get; set; }
-        public string? locationVerifiedDate { get; set; }
-        public YesOrNo? electronicInvoice { get; set; }
+        //public string? tsaValidationId { get; set; }
+        //public string? tsaDate { get; set; }
+        //public string? tsaType { get; set; }
+        //public string? locationVerifiedDate { get; set; }
+        //public YesOrNo? electronicInvoice { get; set; }
         public YesOrNo? addressValidatedFlag { get; set; }
         [StringLength(3)]
         public string? accountOwner { get; set; }
@@ -99,16 +99,16 @@ namespace BrinksAPI.Models
         public string? kycOpeningStation { get; set; }
         [StringLength(10)]
         public string? lob { get; set; }
-        public YesOrNo? allowCollect { get; set; } = YesOrNo.Y;
-        public YesOrNo? adyenPay { get; set; }
-        [RequiredIf("adyenPay", YesOrNo.Y)]
+        //public YesOrNo? allowCollect { get; set; } = YesOrNo.Y;
+        //public YesOrNo? adyenPay { get; set; }
+        //[RequiredIf("adyenPay", YesOrNo.Y)]
  
-        [StringLength(1)]
-        public string? adyenPayPreference { get; set; }
-        [StringLength(50)]
-        public string? adyenTokenId { get; set; }
-        [StringLength(50)]
-        public string? adyenPayByLinkId { get; set; }
+        //[StringLength(1)]
+        //public string? adyenPayPreference { get; set; }
+        //[StringLength(50)]
+        //public string? adyenTokenId { get; set; }
+        //[StringLength(50)]
+        //public string? adyenPayByLinkId { get; set; }
         public string? eoriNumber { get; set; }
 
     }
